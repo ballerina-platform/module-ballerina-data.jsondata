@@ -1,0 +1,19 @@
+[package]
+org = "ballerina"
+name = "jsondata"
+version = "@toml.version@"
+authors = ["Ballerina"]
+keywords = ["json"]
+repository = "https://github.com/ballerina-platform/module-ballerina.jsondata"
+#icon = "icon.png"
+license = ["Apache-2.0"]
+distribution = "2201.8.1"
+
+[platform.java17]
+graalvmCompatible = true
+
+[[platform.java17.dependency]]
+groupId = "io.ballerina.stdlib"
+artifactId = "jsondata-native"
+version = "@toml.version@"
+path = "../native/build/libs/data.jsondata-native-@project.version@.jar"
