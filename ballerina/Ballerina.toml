@@ -1,6 +1,6 @@
 [package]
 org = "ballerina"
-name = "jsondata"
+name = "data.jsondata"
 version = "0.1.0"
 authors = ["Ballerina"]
 keywords = ["json"]

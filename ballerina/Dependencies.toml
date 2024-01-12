@@ -9,20 +9,20 @@ distribution-version = "2201.8.1"
 
 [[package]]
 org = "ballerina"
-name = "jballerina.java"
-version = "0.0.0"
-modules = [
-	{org = "ballerina", packageName = "jballerina.java", moduleName = "jballerina.java"}
-]
-
-[[package]]
-org = "ballerina"
-name = "jsondata"
+name = "data.jsondata"
 version = "0.1.0"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"}
 ]
 modules = [
-	{org = "ballerina", packageName = "jsondata", moduleName = "jsondata"}
+	{org = "ballerina", packageName = "data.jsondata", moduleName = "data.jsondata"}
+]
+
+[[package]]
+org = "ballerina"
+name = "jballerina.java"
+version = "0.0.0"
+modules = [
+	{org = "ballerina", packageName = "jballerina.java", moduleName = "jballerina.java"}
 ]
 

@@ -16,10 +16,10 @@
 
 import ballerina/jballerina.java;
 
-public isolated function fromJsonWithType(json v, Options options = {}, typedesc<record {}> t = <>)
+public isolated function fromJsonWithType(json v, Options options = {}, typedesc<anydata> t = <>)
         returns t|Error = @java:Method {'class: "io.ballerina.stdlib.data.jsondata.json.Native"} external;
 
-public isolated function fromJsonStringWithType(string|byte[]|stream<byte[], error?> s, Options options = {}, typedesc<record {}> t = <>)
+public isolated function fromJsonStringWithType(string|byte[]|stream<byte[], error?> s, Options options = {}, typedesc<anydata> t = <>)
         returns t|Error = @java:Method {'class: "io.ballerina.stdlib.data.jsondata.json.Native"} external;
 
 # Represent the options that can be used for filtering in the projection.

@@ -1,6 +1,6 @@
 [package]
 org = "ballerina"
-name = "jsondata"
+name = "data.jsondata"
 version = "@toml.version@"
 authors = ["Ballerina"]
 keywords = ["json"]

@@ -31,7 +31,11 @@ import io.ballerina.runtime.api.values.BTypedesc;
 public class Native {
 
     public static Object fromJsonWithType(Object json, BMap<BString, Object> options, BTypedesc typed) {
-        return null;
+        try {
+            return JsonTraverse.traverse(json, typed.getDescribingType());
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public static Object fromJsonStringWithType(Environment env, Object json, BMap<BString, Object> options,
