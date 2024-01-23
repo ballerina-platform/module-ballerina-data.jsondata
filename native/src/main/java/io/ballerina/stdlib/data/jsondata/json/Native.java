@@ -19,9 +19,12 @@
 package io.ballerina.stdlib.data.jsondata.json;
 
 import io.ballerina.runtime.api.Environment;
+import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 import io.ballerina.runtime.api.values.BTypedesc;
+
+import java.io.StringReader;
 
 /**
  * This class is used to convert json inform of string, byte[], byte-stream to record or json type.
@@ -40,6 +43,14 @@ public class Native {
 
     public static Object fromJsonStringWithType(Environment env, Object json, BMap<BString, Object> options,
                                                BTypedesc typed) {
+        try {
+            Type expType = typed.getDescribingType();
+            if (json instanceof BString) {
+                return JsonParser.parse(new StringReader(((BString) json).getValue()), expType);
+            }
+        } catch (Exception e) {
+            return null;
+        }
         return null;
     }
 }

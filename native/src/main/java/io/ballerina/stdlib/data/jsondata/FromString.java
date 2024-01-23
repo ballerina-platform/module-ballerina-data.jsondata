@@ -48,11 +48,7 @@ public class FromString {
         }
     }
 
-    public static Object fromStringWithTypeInternal(BString string, Type expType) {
-        return fromStringWithType(string, expType);
-    }
-
-    private static Object fromStringWithType(BString string, Type expType) {
+    public static Object fromStringWithType(BString string, Type expType) {
         String value = string.getValue();
         try {
             switch (expType.getTag()) {
