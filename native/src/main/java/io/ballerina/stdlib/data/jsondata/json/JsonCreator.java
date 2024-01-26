@@ -156,14 +156,22 @@ public class JsonCreator {
                     type + "' in field '" + getCurrentFieldPath(sm) + "'");
         }
 
-        switch (TypeUtils.getType(currentJson).getTag()) {
+        Type currentJsonNodeType = TypeUtils.getType(currentJson);
+
+        switch (currentJsonNodeType.getTag()) {
             case TypeTags.MAP_TAG:
             case TypeTags.RECORD_TYPE_TAG:
                 ((BMap<BString, Object>) currentJson).put(StringUtils.fromString(sm.fieldNames.pop()),
                         convertedValue);
                 return currentJson;
             case TypeTags.ARRAY_TAG:
-                ((BArray) currentJson).append(convertedValue);
+                // Handle projection in array.
+                ArrayType arrayType = (ArrayType) currentJsonNodeType;
+                if (arrayType.getState() == ArrayType.ArrayState.CLOSED &&
+                        arrayType.getSize() <= sm.arrayIndexes.peek()) {
+                    return currentJson;
+                }
+                ((BArray) currentJson).add(sm.arrayIndexes.peek(), convertedValue);
                 return currentJson;
             case TypeTags.TUPLE_TAG:
                 ((BArray) currentJson).add(sm.arrayIndexes.peek(), convertedValue);

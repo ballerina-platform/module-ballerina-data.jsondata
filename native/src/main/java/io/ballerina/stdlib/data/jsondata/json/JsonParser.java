@@ -22,6 +22,7 @@ import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.flags.SymbolFlags;
+import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.Field;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.Type;
@@ -296,9 +297,16 @@ public class JsonParser {
                 return FIELD_END_STATE;
             }
 
+            Type parentNodeType = TypeUtils.getType(parentNode);
             switch (TypeUtils.getType(parentNode).getTag()) {
                 case TypeTags.ARRAY_TAG:
-                    ((BArray) parentNode).append(currentJsonNode);
+                    // Handle projection in array.
+                    ArrayType arrayType = (ArrayType) parentNodeType;
+                    if (arrayType.getState() == ArrayType.ArrayState.CLOSED &&
+                            arrayType.getSize() <= arrayIndexes.peek()) {
+                        break;
+                    }
+                    ((BArray) parentNode).add(arrayIndexes.peek(), currentJsonNode);
                     break;
                 case TypeTags.TUPLE_TAG:
                     ((BArray) parentNode).add(arrayIndexes.peek(), currentJsonNode);
@@ -541,7 +549,6 @@ public class JsonParser {
                     } else if (ch == '{') {
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
                                 sm.arrayIndexes.peek()));
-                        sm.arrayIndexes.push(0);
                         Optional<BMap<BString, Object>> nextMap = JsonCreator.initNewMapValue(sm);
                         if (nextMap.isPresent()) {
                             sm.currentJsonNode = nextMap.get();
