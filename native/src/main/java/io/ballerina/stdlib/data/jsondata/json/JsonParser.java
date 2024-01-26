@@ -39,6 +39,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Stack;
 
 /**
@@ -49,13 +50,6 @@ import java.util.Stack;
 public class JsonParser {
 
     private static final ThreadLocal<StateMachine> tlStateMachine = ThreadLocal.withInitial(StateMachine::new);
-
-    private static Object changeForBString(Object jsonObj) {
-        if (jsonObj instanceof String) {
-            return StringUtils.fromString((String) jsonObj);
-        }
-        return jsonObj;
-    }
 
     /**
      * Parses the contents in the given {@link Reader} and returns a json.
@@ -100,10 +94,6 @@ public class JsonParser {
         private static final char REV_SOL = '\\';
         private static final char SOL = '/';
         private static final char EOF = (char) -1;
-        private static final String NULL = "null";
-        private static final String TRUE = "true";
-        private static final String FALSE = "false";
-
         private static final State DOC_START_STATE = new DocumentStartState();
         private static final State DOC_END_STATE = new DocumentEndState();
         static final State FIRST_FIELD_READY_STATE = new FirstFieldReadyState();
@@ -154,6 +144,7 @@ public class JsonParser {
         Stack<Type> expectedTypes = new Stack<>();
         int jsonFieldDepth = 0;
         Stack<Integer> arrayIndexes = new Stack<>();
+        Stack<ParserContext> parserContexts = new Stack<>();
 
         StateMachine() {
             reset();
@@ -263,6 +254,16 @@ public class JsonParser {
             if (jsonFieldDepth > 0) {
                 jsonFieldDepth--;
             }
+
+            if (!expectedTypes.isEmpty() && expectedTypes.peek() == null) {
+                // Skip the value and continue to next state.
+                parserContexts.pop();
+                if (parserContexts.peek() == ParserContext.MAP) {
+                    return FIELD_END_STATE;
+                }
+                return ARRAY_ELEMENT_END_STATE;
+            }
+
             Map<String, Field> remainingFields = fieldHierarchy.pop();
             restType.pop();
             for (Field field : remainingFields.values()) {
@@ -274,11 +275,21 @@ public class JsonParser {
         }
 
         private State finalizeObject() {
-            if (this.nodesStack.isEmpty()) {
+            // Skip the value and continue to next state.
+            parserContexts.pop();
+
+            if (!expectedTypes.isEmpty() && expectedTypes.peek() == null) {
+                if (parserContexts.peek() == ParserContext.MAP) {
+                    return FIELD_END_STATE;
+                }
+                return ARRAY_ELEMENT_END_STATE;
+            }
+
+            if (nodesStack.isEmpty()) {
                 return DOC_END_STATE;
             }
 
-            Object parentNode = this.nodesStack.pop();
+            Object parentNode = nodesStack.pop();
             if (TypeUtils.getReferredType(TypeUtils.getType(parentNode)).getTag() == TypeTags.RECORD_TYPE_TAG ||
                     TypeUtils.getReferredType(TypeUtils.getType(parentNode)).getTag() == TypeTags.MAP_TAG) {
                 currentJsonNode = parentNode;
@@ -300,6 +311,10 @@ public class JsonParser {
             return ARRAY_ELEMENT_END_STATE;
         }
 
+        public enum ParserContext {
+            MAP,
+            ARRAY
+        }
 
 
         /**
@@ -334,8 +349,10 @@ public class JsonParser {
                     sm.processLocation(ch);
                     if (ch == '{') {
                         sm.currentJsonNode = JsonCreator.initRecordValue(sm.expectedTypes.peek());
+                        sm.parserContexts.push(JsonParser.StateMachine.ParserContext.MAP);
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
+                        sm.parserContexts.push(JsonParser.StateMachine.ParserContext.ARRAY);
                         sm.currentJsonNode = JsonCreator.initArrayValue(sm.expectedTypes.peek());
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else if (StateMachine.isWhitespace(ch)) {
@@ -437,14 +454,21 @@ public class JsonParser {
                         // Get member type of the array and set as expected type.
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
                                 sm.arrayIndexes.peek()));
-                        sm.currentJsonNode = JsonCreator.initNewMapValue(sm);
+                        Optional<BMap<BString, Object>> nextMap = JsonCreator.initNewMapValue(sm);
+                        if (nextMap.isPresent()) {
+                            sm.currentJsonNode = nextMap.get();
+                        } else {
+                            // This will restrict from checking the fieldHierarchy.
+                            sm.jsonFieldDepth++;
+                        }
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
                         // Get member type of the array and set as expected type.
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
                                 sm.arrayIndexes.peek()));
                         sm.arrayIndexes.push(0);
-                        sm.currentJsonNode = JsonCreator.initNewArrayValue(sm);
+                        Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
+                        nextArray.ifPresent(array -> sm.currentJsonNode = array);
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else if (ch == ']') {
                         state = sm.finalizeObject();
@@ -518,13 +542,20 @@ public class JsonParser {
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
                                 sm.arrayIndexes.peek()));
                         sm.arrayIndexes.push(0);
-                        sm.currentJsonNode = JsonCreator.initNewMapValue(sm);
+                        Optional<BMap<BString, Object>> nextMap = JsonCreator.initNewMapValue(sm);
+                        if (nextMap.isPresent()) {
+                            sm.currentJsonNode = nextMap.get();
+                        } else {
+                            // This will restrict from checking the fieldHierarchy.
+                            sm.jsonFieldDepth++;
+                        }
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
                                 sm.arrayIndexes.peek()));
                         sm.arrayIndexes.push(0);
-                        sm.currentJsonNode = JsonCreator.initNewArrayValue(sm);
+                        Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
+                        nextArray.ifPresent(array -> sm.currentJsonNode = array);
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else {
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
@@ -578,6 +609,8 @@ public class JsonParser {
                                 fieldType = sm.currentField.getFieldType();
                             }
                             sm.expectedTypes.push(fieldType);
+                        } else if (sm.expectedTypes.peek() == null) {
+                            sm.expectedTypes.push(null);
                         }
                         state = END_FIELD_NAME_STATE;
                     } else if (ch == REV_SOL) {
@@ -644,13 +677,22 @@ public class JsonParser {
                         state = STRING_FIELD_VALUE_STATE;
                         sm.currentQuoteChar = ch;
                     } else if (ch == '{') {
-                        sm.currentJsonNode = JsonCreator.initNewMapValue(sm);
+                        Optional<BMap<BString, Object>> nextMap = JsonCreator.initNewMapValue(sm);
+                        if (nextMap.isPresent()) {
+                            sm.currentJsonNode = nextMap.get();
+                        } else {
+                            // This will restrict from checking the fieldHierarchy.
+                            sm.jsonFieldDepth++;
+                        }
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
                         sm.arrayIndexes.push(0);
-                        sm.currentJsonNode = JsonCreator.initNewArrayValue(sm);
-                        JsonCreator.updateRecordFieldValue(StringUtils.fromString(sm.currentField.getFieldName()),
-                                sm.nodesStack.peek(), sm.currentJsonNode);
+                        Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
+                        if (nextArray.isPresent()) {
+                            sm.currentJsonNode = nextArray.get();
+                            JsonCreator.updateRecordFieldValue(StringUtils.fromString(sm.currentField.getFieldName()),
+                                    sm.nodesStack.peek(), sm.currentJsonNode);
+                        }
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else {
                         state = NON_STRING_FIELD_VALUE_STATE;
@@ -765,10 +807,17 @@ public class JsonParser {
                     sm.processLocation(ch);
                     if (ch == '{') {
                         state = FIRST_FIELD_READY_STATE;
-                        sm.currentJsonNode = JsonCreator.initNewMapValue(sm);
+                        Optional<BMap<BString, Object>> nextMap = JsonCreator.initNewMapValue(sm);
+                        if (nextMap.isPresent()) {
+                            sm.currentJsonNode = nextMap.get();
+                        } else {
+                            // This will restrict from checking the fieldHierarchy.
+                            sm.jsonFieldDepth++;
+                        }
                     } else if (ch == '[') {
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
-                        sm.currentJsonNode = JsonCreator.initNewArrayValue(sm);
+                        Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
+                        nextArray.ifPresent(bArray -> sm.currentJsonNode = bArray);
                     } else if (ch == '}') {
                         sm.processNonStringValue();
                         state = sm.finalizeNonArrayObject();
@@ -809,15 +858,22 @@ public class JsonParser {
                     sm.processLocation(ch);
                     if (ch == '{') {
                         state = FIRST_FIELD_READY_STATE;
-                        sm.currentJsonNode = JsonCreator.initNewMapValue(sm);
+                        Optional<BMap<BString, Object>> nextMap = JsonCreator.initNewMapValue(sm);
+                        if (nextMap.isPresent()) {
+                            sm.currentJsonNode = nextMap.get();
+                        } else {
+                            // This will restrict from checking the fieldHierarchy.
+                            sm.jsonFieldDepth++;
+                        }
                     } else if (ch == '[') {
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
-                        sm.currentJsonNode = JsonCreator.initNewArrayValue(sm);
+                        Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
+                        nextArray.ifPresent(bArray -> sm.currentJsonNode = bArray);
                     } else if (ch == ']') {
                         sm.processNonStringValue();
-                        sm.expectedTypes.pop();
                         sm.arrayIndexes.pop();
                         state = sm.finalizeObject();
+                        sm.expectedTypes.pop();
                     } else if (ch == ',') {
                         sm.processNonStringValue();
                         state = NON_FIRST_ARRAY_ELEMENT_READY_STATE;
@@ -935,6 +991,7 @@ public class JsonParser {
                         state = NON_FIRST_FIELD_READY_STATE;
                     } else if (ch == '}') {
                         state = sm.finalizeNonArrayObject();
+                        sm.expectedTypes.pop();
                     } else {
                         StateMachine.throwExpected(",", "}");
                     }
@@ -968,9 +1025,9 @@ public class JsonParser {
                         int arrayIndex = sm.arrayIndexes.pop();
                         sm.arrayIndexes.push(arrayIndex + 1);
                     } else if (ch == ']') {
-                        sm.expectedTypes.pop();
                         sm.arrayIndexes.pop();
                         state = sm.finalizeObject();
+                        sm.expectedTypes.pop();
                     } else {
                         StateMachine.throwExpected(",", "]");
                     }

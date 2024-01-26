@@ -19,18 +19,23 @@
 package io.ballerina.stdlib.data.jsondata.json;
 
 import io.ballerina.runtime.api.TypeTags;
-import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
-import io.ballerina.runtime.api.types.*;
-import io.ballerina.runtime.api.utils.JsonUtils;
+import io.ballerina.runtime.api.types.ArrayType;
+import io.ballerina.runtime.api.types.RecordType;
+import io.ballerina.runtime.api.types.TupleType;
+import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
-import io.ballerina.runtime.api.values.*;
+import io.ballerina.runtime.api.values.BArray;
+import io.ballerina.runtime.api.values.BError;
+import io.ballerina.runtime.api.values.BMap;
+import io.ballerina.runtime.api.values.BString;
 import io.ballerina.stdlib.data.jsondata.FromString;
 import io.ballerina.stdlib.data.jsondata.utils.Constants;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Optional;
 
 /**
  * Create objects for partially parsed json.
@@ -39,92 +44,7 @@ import java.util.Iterator;
  */
 public class JsonCreator {
 
-    // convert json[] to output array
-    static BArray finalizeArray(JsonParser.StateMachine sm, Type arrType, BArray currArr)
-            throws JsonParser.JsonParserException {
-        int arrTypeTag = arrType.getTag();
-        BListInitialValueEntry[] initialValues = new BListInitialValueEntry[currArr.size()];
-        for (int i = 0; i < currArr.size(); i++) {
-            Object curElement = currArr.get(i);
-            Type currElmType = TypeUtils.getType(curElement);
-            if (currElmType.getTag() == TypeTags.ARRAY_TAG) {
-                if (arrTypeTag == TypeTags.ARRAY_TAG) {
-                    curElement = finalizeArray(sm, ((ArrayType) arrType).getElementType(), (BArray) curElement);
-                } else if (arrTypeTag == TypeTags.TUPLE_TAG) {
-                    curElement = finalizeArray(sm, ((TupleType) arrType).getTupleTypes().get(i), (BArray) curElement);
-                } else {
-                    throw new JsonParser.JsonParserException("invalid type in field " +
-                            getCurrentFieldPath(sm));
-                }
-            } else {
-                if (arrTypeTag == TypeTags.ARRAY_TAG) {
-                    curElement = JsonCreator.convertJSON(sm, curElement, ((ArrayType) arrType).getElementType());
-                } else if (arrTypeTag == TypeTags.TUPLE_TAG) {
-                    curElement = JsonCreator.convertJSON(sm, curElement, ((TupleType) arrType).getTupleTypes().get(i));
-                } else {
-                    throw new JsonParser.JsonParserException("invalid type in field " +
-                            getCurrentFieldPath(sm));
-                }
-            }
-
-            initialValues[i] = ValueCreator.createListInitialValueEntry(curElement);
-        }
-
-        if (arrTypeTag == TypeTags.ARRAY_TAG) {
-            return ValueCreator.createArrayValue((ArrayType) arrType, initialValues);
-        } else if (arrTypeTag == TypeTags.TUPLE_TAG) {
-            return ValueCreator.createTupleValue((TupleType) arrType, initialValues);
-        } else {
-            throw new JsonParser.JsonParserException("invalid type in field " +
-                    getCurrentFieldPath(sm));
-        }
-    }
-
-    static BArray finalizeArray(JsonTraverse.JsonTree jsonTree, Type arrType, BArray currArr) {
-        int arrTypeTag = arrType.getTag();
-        BListInitialValueEntry[] initialValues = new BListInitialValueEntry[currArr.size()];
-        for (int i = 0; i < currArr.size(); i++) {
-            Object curElement = currArr.get(i);
-            Type currElmType = TypeUtils.getType(curElement);
-            if (currElmType.getTag() == TypeTags.ARRAY_TAG) {
-                if (arrTypeTag == TypeTags.ARRAY_TAG) {
-                    curElement = finalizeArray(jsonTree, ((ArrayType) arrType).getElementType(), (BArray) curElement);
-                } else if (arrTypeTag == TypeTags.TUPLE_TAG) {
-                    curElement = finalizeArray(jsonTree, ((TupleType) arrType).getTupleTypes().get(i),
-                            (BArray) curElement);
-                } else {
-                    throw ErrorCreator.createError(StringUtils.fromString("invalid type in field "));
-                }
-            } else {
-                if (arrTypeTag == TypeTags.ARRAY_TAG) {
-                    curElement = JsonCreator.convertJSON(jsonTree, curElement, ((ArrayType) arrType).getElementType());
-                } else if (arrTypeTag == TypeTags.TUPLE_TAG) {
-                    TupleType tupleType = (TupleType) arrType;
-                    if (tupleType.getTupleTypes().size() <= i) {
-                        curElement = JsonCreator.convertJSON(jsonTree, curElement,
-                                (tupleType.getRestType()));
-                    } else {
-                        curElement = JsonCreator.convertJSON(jsonTree, curElement,
-                                (tupleType.getTupleTypes().get(i)));
-                    }
-                } else {
-                    throw ErrorCreator.createError(StringUtils.fromString("invalid type in field "));
-                }
-            }
-            initialValues[i] = ValueCreator.createListInitialValueEntry(curElement);
-        }
-
-        if (arrTypeTag == TypeTags.ARRAY_TAG) {
-            return ValueCreator.createArrayValue((ArrayType) arrType, initialValues);
-        } else if (arrTypeTag == TypeTags.TUPLE_TAG) {
-            return ValueCreator.createTupleValue((TupleType) arrType, initialValues);
-        } else {
-            throw ErrorCreator.createError(StringUtils.fromString("invalid type in field "));
-        }
-    }
-
-    static BMap<BString, Object> initRecordValue(Type expectedType)
-            throws JsonParser.JsonParserException {
+    static BMap<BString, Object> initRecordValue(Type expectedType) throws JsonParser.JsonParserException {
         if (expectedType.getTag() != TypeTags.RECORD_TYPE_TAG) {
             throw new JsonParser.JsonParserException("expected record type for input type");
         }
@@ -142,14 +62,14 @@ public class JsonCreator {
         }
     }
 
-    static BMap<BString, Object> initNewMapValue(JsonParser.StateMachine sm)
+    static Optional<BMap<BString, Object>> initNewMapValue(JsonParser.StateMachine sm)
             throws JsonParser.JsonParserException {
-        Type currentType = TypeUtils.getReferredType(sm.expectedTypes.peek());
-
-//        if (currentType == null) {
-//            // TODO: Check optional and Update the CurrentJsonNode.
-//            return Optional.empty();
-//        }
+        sm.parserContexts.push(JsonParser.StateMachine.ParserContext.MAP);
+        Type expType = sm.expectedTypes.peek();
+        if (expType == null) {
+            return Optional.empty();
+        }
+        Type currentType = TypeUtils.getReferredType(expType);
 
         if (sm.currentJsonNode != null) {
             sm.nodesStack.push(sm.currentJsonNode);
@@ -186,48 +106,24 @@ public class JsonCreator {
             ((BMap<BString, Object>) currentJson).put(StringUtils.fromString(sm.fieldNames.peek()),
                     nextMapValue);
         }
-        return nextMapValue;
+        return Optional.of(nextMapValue);
     }
 
-    static BArray initNewArrayValue(JsonParser.StateMachine sm) throws JsonParser.JsonParserException {
+    static Optional<BArray> initNewArrayValue(JsonParser.StateMachine sm) throws JsonParser.JsonParserException {
+        sm.parserContexts.push(JsonParser.StateMachine.ParserContext.ARRAY);
+        Type expType = sm.expectedTypes.peek();
+        if (expType == null) {
+            return Optional.empty();
+        }
+
         Object currentJsonNode = sm.currentJsonNode;
         BArray nextArrValue = initArrayValue(sm.expectedTypes.peek());
         if (currentJsonNode == null) {
-            return nextArrValue;
+            return Optional.ofNullable(nextArrValue);
         }
 
         sm.nodesStack.push(sm.currentJsonNode);
-        return nextArrValue;
-    }
-
-    static Object convertJSON(JsonParser.StateMachine sm, Object value, Type type)
-            throws JsonParser.JsonParserException {
-        // all types are currently allowed for readonly type fields
-        if (type.getTag() == TypeTags.READONLY_TAG) {
-            return value;
-        }
-        try {
-            return JsonUtils.convertJSON(value, type);
-        } catch (Exception e) {
-            throw new JsonParser.JsonParserException("incompatible value '" + value + "' for type '" +
-                    type + "' in field '" + getCurrentFieldPath(sm) + "'");
-        }
-    }
-
-    static Object convertJSON(JsonTraverse.JsonTree jsonTree, Object value, Type type) {
-        // all types are currently allowed for readonly type fields
-        if (type.getTag() == TypeTags.READONLY_TAG) {
-            return value;
-        }
-        try {
-            return JsonUtils.convertJSON(value, type);
-        } catch (Exception e) {
-            if (jsonTree.fieldNames.isEmpty()) {
-                throw ErrorCreator.createError(StringUtils.fromString("incompatible type for json: " + type));
-            }
-            throw ErrorCreator.createError(StringUtils.fromString("incompatible value '" + value + "' for type '" +
-                    type + "' in field '" + getCurrentFieldPath(jsonTree)));
-        }
+        return Optional.ofNullable(nextArrValue);
     }
 
     private static String getCurrentFieldPath(JsonParser.StateMachine sm) {
@@ -287,6 +183,10 @@ public class JsonCreator {
     }
 
     static Type getMemberType(Type expectedType, int index) {
+        if (expectedType == null) {
+            return null;
+        }
+
         if (expectedType.getTag() == TypeTags.ARRAY_TAG) {
             return ((ArrayType) expectedType).getElementType();
         } else if (expectedType.getTag() == TypeTags.TUPLE_TAG) {
