@@ -24,6 +24,7 @@ import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.flags.SymbolFlags;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.Field;
+import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.utils.StringUtils;
@@ -208,8 +209,11 @@ public class JsonParser {
 //                case TypeTags.JSON_TAG:
 //                case TypeTags.ANYDATA_TAG:
 //                case TypeTags.UNION_TAG:
-//                case TypeTags.MAP_TAG:
-//                    break;
+                case TypeTags.MAP_TAG:
+                    expectedTypes.push(type);
+                    fieldHierarchy.push(new HashMap<>());
+                    restType.push(((MapType) type).getConstrainedType());
+                    break;
                 default:
                     throw ErrorCreator.createError(StringUtils.fromString("unsupported type: " + type));
 

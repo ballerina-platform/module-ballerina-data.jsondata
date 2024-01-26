@@ -21,6 +21,7 @@ package io.ballerina.stdlib.data.jsondata.json;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.ArrayType;
+import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.TupleType;
 import io.ballerina.runtime.api.types.Type;
@@ -45,11 +46,15 @@ import java.util.Optional;
 public class JsonCreator {
 
     static BMap<BString, Object> initRecordValue(Type expectedType) throws JsonParser.JsonParserException {
-        if (expectedType.getTag() != TypeTags.RECORD_TYPE_TAG) {
-            throw new JsonParser.JsonParserException("expected record type for input type");
-        }
 
-        return ValueCreator.createRecordValue((RecordType) expectedType);
+        switch (expectedType.getTag()) {
+            case TypeTags.RECORD_TYPE_TAG:
+                return ValueCreator.createRecordValue((RecordType) expectedType);
+            case TypeTags.MAP_TAG:
+                return ValueCreator.createMapValue((MapType) expectedType);
+            default:
+                throw new JsonParser.JsonParserException("expected record type for input type");
+        }
     }
 
     static BArray initArrayValue(Type expectedType) throws JsonParser.JsonParserException {
@@ -82,6 +87,11 @@ public class JsonCreator {
                 nextMapValue = ValueCreator.createRecordValue(recordType);
                 sm.fieldHierarchy.push(new HashMap<>(recordType.getFields()));
                 sm.restType.push(recordType.getRestFieldType());
+                break;
+            case TypeTags.MAP_TAG:
+                nextMapValue = ValueCreator.createMapValue((MapType) currentType);
+                sm.fieldHierarchy.push(new HashMap<>());
+                sm.restType.push(((MapType) currentType).getConstrainedType());
                 break;
             case TypeTags.JSON_TAG:
                 nextMapValue = ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
