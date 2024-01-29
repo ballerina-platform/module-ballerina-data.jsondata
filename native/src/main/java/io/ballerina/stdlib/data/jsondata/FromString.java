@@ -18,16 +18,21 @@
 
 package io.ballerina.stdlib.data.jsondata;
 
+import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
+import io.ballerina.runtime.api.creators.ErrorCreator;
+import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.ReferenceType;
 import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.types.UnionType;
+import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BString;
 import io.ballerina.runtime.api.values.BTypedesc;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -66,6 +71,8 @@ public class FromString {
                     return stringToNull(value);
                 case TypeTags.UNION_TAG:
                     return stringToUnion(string, (UnionType) expType);
+                case TypeTags.JSON_TAG:
+                    return stringToJson(string);
                 case TypeTags.TYPE_REFERENCED_TYPE_TAG:
                     return fromStringWithType(string, ((ReferenceType) expType).getReferredType());
                 default:
@@ -134,6 +141,19 @@ public class FromString {
         return returnError(string.getValue(), expType.toString());
     }
 
+    private static Object stringToJson(BString string) {
+        ArrayList<Type> jsonMembers = new ArrayList<>();
+        jsonMembers.add(PredefinedTypes.TYPE_NULL);
+        jsonMembers.add(PredefinedTypes.TYPE_BOOLEAN);
+        jsonMembers.add(PredefinedTypes.TYPE_INT);
+        jsonMembers.add(PredefinedTypes.TYPE_FLOAT);
+        jsonMembers.add(PredefinedTypes.TYPE_DECIMAL);
+        jsonMembers.add(PredefinedTypes.TYPE_STRING);
+
+        UnionType jsonType = TypeCreator.createUnionType(jsonMembers);
+        return stringToUnion(string, jsonType);
+    }
+
     private static boolean hasFloatOrDecimalLiteralSuffix(String value) {
         int length = value.length();
         if (length == 0) {
@@ -152,8 +172,6 @@ public class FromString {
     }
 
     private static BError returnError(String string, String expType) {
-//        return DiagnosticLog.error(DiagnosticErrorCode.CANNOT_CONVERT_TO_EXPECTED_TYPE,
-//                PredefinedTypes.TYPE_STRING.getName(), string, expType);
-        return null;
+        return ErrorCreator.createError(StringUtils.fromString("Cannot convert to the exptype"));
     }
 }

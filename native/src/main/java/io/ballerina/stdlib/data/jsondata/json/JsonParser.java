@@ -130,6 +130,7 @@ public class JsonParser {
 
         Object currentJsonNode;
         Deque<Object> nodesStack;
+        // TODO: Need group same level field and keep the hierarchy.
         Deque<String> fieldNames;
 
         private StringBuilder hexBuilder = new StringBuilder(4);
@@ -206,8 +207,12 @@ public class JsonParser {
                 case TypeTags.STRING_TAG:
                     expectedTypes.push(type);
                     break;
-//                case TypeTags.JSON_TAG:
-//                case TypeTags.ANYDATA_TAG:
+                case TypeTags.JSON_TAG:
+                case  TypeTags.ANYDATA_TAG:
+                    expectedTypes.push(type);
+                    fieldHierarchy.push(new HashMap<>());
+                    restType.push(type);
+                    break;
 //                case TypeTags.UNION_TAG:
                 case TypeTags.MAP_TAG:
                     expectedTypes.push(type);
@@ -295,13 +300,13 @@ public class JsonParser {
             }
 
             Object parentNode = nodesStack.pop();
-            if (TypeUtils.getReferredType(TypeUtils.getType(parentNode)).getTag() == TypeTags.RECORD_TYPE_TAG ||
-                    TypeUtils.getReferredType(TypeUtils.getType(parentNode)).getTag() == TypeTags.MAP_TAG) {
+            Type parentNodeType = TypeUtils.getType(parentNode);
+            int parentNodeTypeTag = TypeUtils.getReferredType(parentNodeType).getTag();
+            if (parentNodeTypeTag == TypeTags.RECORD_TYPE_TAG || parentNodeTypeTag == TypeTags.MAP_TAG) {
                 currentJsonNode = parentNode;
                 return FIELD_END_STATE;
             }
 
-            Type parentNodeType = TypeUtils.getType(parentNode);
             switch (TypeUtils.getType(parentNode).getTag()) {
                 case TypeTags.ARRAY_TAG:
                     // Handle projection in array.
@@ -360,7 +365,7 @@ public class JsonParser {
                     ch = buff[i];
                     sm.processLocation(ch);
                     if (ch == '{') {
-                        sm.currentJsonNode = JsonCreator.initRecordValue(sm.expectedTypes.peek());
+                        sm.currentJsonNode = JsonCreator.initRootMapValue(sm.expectedTypes.peek());
                         sm.parserContexts.push(JsonParser.StateMachine.ParserContext.MAP);
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
@@ -701,7 +706,7 @@ public class JsonParser {
                         Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
                         if (nextArray.isPresent()) {
                             sm.currentJsonNode = nextArray.get();
-                            JsonCreator.updateRecordFieldValue(StringUtils.fromString(sm.currentField.getFieldName()),
+                            JsonCreator.updateRecordFieldValue(StringUtils.fromString(sm.fieldNames.peek()),
                                     sm.nodesStack.peek(), sm.currentJsonNode);
                         }
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;

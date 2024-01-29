@@ -18,6 +18,7 @@
 
 package io.ballerina.stdlib.data.jsondata.json;
 
+import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.ArrayType;
@@ -45,25 +46,34 @@ import java.util.Optional;
  */
 public class JsonCreator {
 
-    static BMap<BString, Object> initRecordValue(Type expectedType) throws JsonParser.JsonParserException {
-
+    static BMap<BString, Object> initRootMapValue(Type expectedType)
+            throws JsonParser.JsonParserException {
         switch (expectedType.getTag()) {
             case TypeTags.RECORD_TYPE_TAG:
                 return ValueCreator.createRecordValue((RecordType) expectedType);
             case TypeTags.MAP_TAG:
                 return ValueCreator.createMapValue((MapType) expectedType);
+            case TypeTags.JSON_TAG:
+                return ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
+            case TypeTags.ANYDATA_TAG:
+                return ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
             default:
                 throw new JsonParser.JsonParserException("expected record type for input type");
         }
     }
 
     static BArray initArrayValue(Type expectedType) throws JsonParser.JsonParserException {
-        if (expectedType.getTag() == TypeTags.TUPLE_TAG) {
-            return ValueCreator.createTupleValue((TupleType) expectedType);
-        } else if (expectedType.getTag() == TypeTags.ARRAY_TAG) {
-            return ValueCreator.createArrayValue((ArrayType) expectedType);
-        } else {
-            throw new JsonParser.JsonParserException("expected array or tuple type for input type");
+        switch (expectedType.getTag()) {
+            case TypeTags.TUPLE_TAG:
+                return ValueCreator.createTupleValue((TupleType) expectedType);
+            case TypeTags.ARRAY_TAG:
+                return ValueCreator.createArrayValue((ArrayType) expectedType);
+            case TypeTags.JSON_TAG:
+                return ValueCreator.createArrayValue(PredefinedTypes.TYPE_JSON_ARRAY);
+            case TypeTags.ANYDATA_TAG:
+                return ValueCreator.createArrayValue(PredefinedTypes.TYPE_ANYDATA_ARRAY);
+            default:
+                throw new JsonParser.JsonParserException("expected array or tuple type for input type");
         }
     }
 
@@ -97,13 +107,11 @@ public class JsonCreator {
                 nextMapValue = ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
                 sm.fieldHierarchy.push(new HashMap<>());
                 sm.restType.push(sm.definedJsonType);
-                sm.jsonFieldDepth++;
                 break;
             case TypeTags.ANYDATA_TAG:
                 nextMapValue = ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
                 sm.fieldHierarchy.push(new HashMap<>());
                 sm.restType.push(sm.definedJsonType);
-                sm.jsonFieldDepth++;
                 break;
             default:
                 throw new JsonParser.JsonParserException("invalid type in field " + getCurrentFieldPath(sm));
@@ -159,7 +167,7 @@ public class JsonCreator {
     static Object convertAndUpdateCurrentJsonNode(JsonParser.StateMachine sm, BString value, Type type)
             throws JsonParser.JsonParserException {
         Object currentJson = sm.currentJsonNode;
-        Object convertedValue = FromString.fromStringWithType(value, type);
+        Object convertedValue = convertToExpectedType(value, type);
         // TODO: Remove null case after properly returning error.
         if (convertedValue == null || convertedValue instanceof BError) {
             throw new JsonParser.JsonParserException("incompatible value '" + value + "' for type '" +
@@ -189,6 +197,13 @@ public class JsonCreator {
             default:
                 return convertedValue;
         }
+    }
+
+    private static Object convertToExpectedType(BString value, Type type) {
+        if (type.getTag() == TypeTags.ANYDATA_TAG) {
+            return FromString.fromStringWithType(value, PredefinedTypes.TYPE_JSON);
+        }
+        return FromString.fromStringWithType(value, type);
     }
 
     static void updateRecordFieldValue(BString fieldName, Object parent, Object currentJson) {
