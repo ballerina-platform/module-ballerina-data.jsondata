@@ -211,7 +211,7 @@ public class BJsonProvider extends AbstractJsonProvider {
         }
         Type targetType;
         if (isMap(obj)) {
-            targetType = PredefinedTypes.TYPE_MAP;
+            targetType = PredefinedTypes.TYPE_JSON;
         } else if (isArray(obj)) {
             targetType = PredefinedTypes.TYPE_JSON_ARRAY;
         } else if (obj instanceof BString) {

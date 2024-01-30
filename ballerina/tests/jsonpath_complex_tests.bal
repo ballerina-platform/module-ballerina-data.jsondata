@@ -689,8 +689,14 @@ function testFunctionExpression() returns error? {
     result = check read(j4, `$['a1'].append({})`);
     test:assertEquals(result, [decimalJson, intJson, floatJson, {}]);
 
+    result = check read(j4, `$['a1'].append({"a1":3})`);
+    test:assertEquals(result, [decimalJson, intJson, floatJson, {a1: 3}]);
+
     result = check read(j4, `$['a1'].append()`);
     test:assertEquals(result, [decimalJson, intJson, floatJson]);
+
+    result = check read(j4, `$.append()`);
+    test:assertEquals(result, j4);
 
     result = check read(j4, `$['a3'].keys()`);
     test:assertEquals(result, ());
