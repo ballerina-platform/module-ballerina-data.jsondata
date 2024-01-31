@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-module io.ballerina.xlibb.jsonpath {
+module io.ballerina.stdlib.jsonpath {
     requires io.ballerina.runtime;
     requires io.ballerina.lang;
     requires json.path;

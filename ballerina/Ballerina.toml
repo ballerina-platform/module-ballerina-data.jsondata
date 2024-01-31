@@ -11,7 +11,7 @@ export = ["data.jsondata"]
 
 [[platform.java11.dependency]]
 path = "../native/build/libs/jsonpath-native-1.0.2-SNAPSHOT.jar"
-groupId = "io.ballerina.xlibb"
+groupId = "io.ballerina.stdlib"
 artifactId = "jsonpath-native"
 version = "1.0.2"
 

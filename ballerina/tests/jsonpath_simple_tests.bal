@@ -13,61 +13,60 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-
 import ballerina/test;
 
 final readonly & json value = {
-  "event": {
-    "name":"Bond Movies",
-    "movies": [
-      {
-        "name": "Licence to Kill",
-        "star": "Timothy Dalton",
-        "rating": 6.6
-      },
-      {
-        "name": "GoldenEye",
-        "star": "Pierce Brosnan",
-        "rating": 7.2
-      },
-      {
-        "name": "Tomorrow Never Dies",
-        "star": "Pierce Brosnan",
-        "rating": 6.5
-      },
-      {
-        "name": "Skyfall",
-        "star": "Daniel Craig",
-        "rating": 7.8
-      }
-    ]
-  }
+    event: {
+        name: "Bond Movies",
+        movies: [
+            {
+                name: "Licence to Kill",
+                star: "Timothy Dalton",
+                rating: 6.6
+            },
+            {
+                name: "GoldenEye",
+                star: "Pierce Brosnan",
+                rating: 7.2
+            },
+            {
+                name: "Tomorrow Never Dies",
+                star: "Pierce Brosnan",
+                rating: 6.5
+            },
+            {
+                name: "Skyfall",
+                star: "Daniel Craig",
+                rating: 7.8
+            }
+        ]
+    }
 };
 
 @test:Config {}
 isolated function testQuery() returns error? {
     json result = check read(value, `$.event.movies`);
     test:assertTrue(result is json[]);
-    test:assertEquals(result, (<json[]> [
+    test:assertEquals(result, (<json[]>[
         {
-          "name": "Licence to Kill",
-          "star": "Timothy Dalton",
-          "rating": 6.6
+            name: "Licence to Kill",
+            star: "Timothy Dalton",
+            rating: 6.6
         },
         {
-          "name": "GoldenEye",
-          "star": "Pierce Brosnan",
-          "rating": 7.2
+            name: "GoldenEye",
+            star: "Pierce Brosnan",
+            rating: 7.2
         },
         {
-          "name": "Tomorrow Never Dies",
-          "star": "Pierce Brosnan",
-          "rating": 6.5
+            name: "Tomorrow Never Dies",
+            star: "Pierce Brosnan",
+            rating: 6.5
         },
         {
-          "name": "Skyfall",
-          "star": "Daniel Craig",
-          "rating": 7.8
+            name: "Skyfall",
+            star: "Daniel Craig",
+            rating: 7.8
         }
     ]));
 }
@@ -88,33 +87,33 @@ isolated function testQuery3() returns error? {
 isolated function testQuery4() returns error? {
     json result = check read(value, `$.event.movies[?(@.rating>7)]`);
     test:assertEquals(result, <json[]>[
-      {
-        "name": "GoldenEye",
-        "star": "Pierce Brosnan",
-        "rating": 7.2
-      },
-      {
-        "name": "Skyfall",
-        "star": "Daniel Craig",
-        "rating": 7.8
-      }
+        {
+            name: "GoldenEye",
+            star: "Pierce Brosnan",
+            rating: 7.2
+        },
+        {
+            name: "Skyfall",
+            star: "Daniel Craig",
+            rating: 7.8
+        }
     ]);
 }
 
 @test:Config {}
 isolated function testQuery5() returns error? {
-  int a = 7;
+    int a = 7;
     json result = check read(value, `$.event.movies[?(@.rating>${a})]`);
     test:assertEquals(result, <json[]>[
         {
-          "name": "GoldenEye",
-          "star": "Pierce Brosnan",
-          "rating": 7.2
+            name: "GoldenEye",
+            star: "Pierce Brosnan",
+            rating: 7.2
         },
         {
-          "name": "Skyfall",
-          "star": "Daniel Craig",
-          "rating": 7.8
+            name: "Skyfall",
+            star: "Daniel Craig",
+            rating: 7.8
         }
     ]);
 }
@@ -134,5 +133,5 @@ function testQuery7() returns error? {
 @test:Config {}
 function testQuery8() returns error? {
     json result = check read(value, `$..rating.avg()`);
-    test:assertEquals(result, 28.1/4);
+    test:assertEquals(result, 28.1 / 4);
 }

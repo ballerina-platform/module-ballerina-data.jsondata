@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package io.ballerina.xlibb.jsonpath;
+package io.ballerina.stdlib.jsonpath;
 
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.Module;
