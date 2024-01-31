@@ -34,10 +34,6 @@ import static io.ballerina.runtime.api.utils.StringUtils.fromString;
  *
  * @since 0.1.0
  */
-
-/**
- * Provides helper of json-path.
- */
 public class Utils {
     public static final String ERROR = "Error";
     private static Module jsonpathModule;
