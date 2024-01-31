@@ -34,9 +34,12 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 import io.ballerina.stdlib.data.jsondata.FromString;
 import io.ballerina.stdlib.data.jsondata.utils.Constants;
+import io.ballerina.stdlib.data.jsondata.utils.DiagnosticErrorCode;
+import io.ballerina.stdlib.data.jsondata.utils.DiagnosticLog;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -46,8 +49,7 @@ import java.util.Optional;
  */
 public class JsonCreator {
 
-    static BMap<BString, Object> initRootMapValue(Type expectedType)
-            throws JsonParser.JsonParserException {
+    static BMap<BString, Object> initRootMapValue(Type expectedType) {
         switch (expectedType.getTag()) {
             case TypeTags.RECORD_TYPE_TAG:
                 return ValueCreator.createRecordValue((RecordType) expectedType);
@@ -58,11 +60,11 @@ public class JsonCreator {
             case TypeTags.ANYDATA_TAG:
                 return ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
             default:
-                throw new JsonParser.JsonParserException("expected record type for input type");
+                throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, expectedType, "map type");
         }
     }
 
-    static BArray initArrayValue(Type expectedType) throws JsonParser.JsonParserException {
+    static BArray initArrayValue(Type expectedType) {
         switch (expectedType.getTag()) {
             case TypeTags.TUPLE_TAG:
                 return ValueCreator.createTupleValue((TupleType) expectedType);
@@ -73,12 +75,11 @@ public class JsonCreator {
             case TypeTags.ANYDATA_TAG:
                 return ValueCreator.createArrayValue(PredefinedTypes.TYPE_ANYDATA_ARRAY);
             default:
-                throw new JsonParser.JsonParserException("expected array or tuple type for input type");
+                throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, expectedType, "list type");
         }
     }
 
-    static Optional<BMap<BString, Object>> initNewMapValue(JsonParser.StateMachine sm)
-            throws JsonParser.JsonParserException {
+    static Optional<BMap<BString, Object>> initNewMapValue(JsonParser.StateMachine sm) {
         sm.parserContexts.push(JsonParser.StateMachine.ParserContext.MAP);
         Type expType = sm.expectedTypes.peek();
         if (expType == null) {
@@ -106,28 +107,26 @@ public class JsonCreator {
             case TypeTags.JSON_TAG:
                 nextMapValue = ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
                 sm.fieldHierarchy.push(new HashMap<>());
-                sm.restType.push(sm.definedJsonType);
+                sm.restType.push(PredefinedTypes.TYPE_JSON);
                 break;
             case TypeTags.ANYDATA_TAG:
                 nextMapValue = ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
                 sm.fieldHierarchy.push(new HashMap<>());
-                sm.restType.push(sm.definedJsonType);
+                sm.restType.push(PredefinedTypes.TYPE_JSON);
                 break;
             default:
-                throw new JsonParser.JsonParserException("invalid type in field " + getCurrentFieldPath(sm));
+                throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE_FOR_FIELD, getCurrentFieldPath(sm));
         }
 
         Object currentJson = sm.currentJsonNode;
         int valueTypeTag = TypeUtils.getType(currentJson).getTag();
         if (valueTypeTag == TypeTags.MAP_TAG || valueTypeTag == TypeTags.RECORD_TYPE_TAG) {
-            // TODO: Fix -> Using fieldName as the key is wrong all the time when json as exp type.
-            ((BMap<BString, Object>) currentJson).put(StringUtils.fromString(sm.fieldNames.peek()),
-                    nextMapValue);
+            ((BMap<BString, Object>) currentJson).put(StringUtils.fromString(sm.fieldNames.peek()), nextMapValue);
         }
         return Optional.of(nextMapValue);
     }
 
-    static Optional<BArray> initNewArrayValue(JsonParser.StateMachine sm) throws JsonParser.JsonParserException {
+    static Optional<BArray> initNewArrayValue(JsonParser.StateMachine sm) {
         sm.parserContexts.push(JsonParser.StateMachine.ParserContext.ARRAY);
         Type expType = sm.expectedTypes.peek();
         if (expType == null) {
@@ -154,28 +153,15 @@ public class JsonCreator {
         return result.toString();
     }
 
-    static String getCurrentFieldPath(JsonTraverse.JsonTree jsonTree) {
-        Iterator<String> itr = jsonTree.fieldNames.descendingIterator();
-
-        StringBuilder result = new StringBuilder(itr.hasNext() ? itr.next() : "");
-        while (itr.hasNext()) {
-            result.append(".").append(itr.next());
-        }
-        return result.toString();
-    }
-
-    static Object convertAndUpdateCurrentJsonNode(JsonParser.StateMachine sm, BString value, Type type)
-            throws JsonParser.JsonParserException {
+    static Object convertAndUpdateCurrentJsonNode(JsonParser.StateMachine sm, BString value, Type type) {
         Object currentJson = sm.currentJsonNode;
         Object convertedValue = convertToExpectedType(value, type);
-        // TODO: Remove null case after properly returning error.
-        if (convertedValue == null || convertedValue instanceof BError) {
-            throw new JsonParser.JsonParserException("incompatible value '" + value + "' for type '" +
-                    type + "' in field '" + getCurrentFieldPath(sm) + "'");
+        if (convertedValue instanceof BError) {
+            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_VALUE_FOR_FIELD, value, type,
+                    getCurrentFieldPath(sm));
         }
 
         Type currentJsonNodeType = TypeUtils.getType(currentJson);
-
         switch (currentJsonNodeType.getTag()) {
             case TypeTags.MAP_TAG:
             case TypeTags.RECORD_TYPE_TAG:
@@ -223,9 +209,32 @@ public class JsonCreator {
         if (expectedType.getTag() == TypeTags.ARRAY_TAG) {
             return ((ArrayType) expectedType).getElementType();
         } else if (expectedType.getTag() == TypeTags.TUPLE_TAG) {
-            return ((TupleType) expectedType).getTupleTypes().get(index);
+            TupleType tupleType = (TupleType) expectedType;
+            List<Type> tupleTypes = tupleType.getTupleTypes();
+            if (tupleTypes.size() < index + 1) {
+                return tupleType.getRestType();
+            }
+            return tupleTypes.get(index);
         } else {
             return expectedType;
+        }
+    }
+
+    static void validateListSize(int currentIndex, Type expType) {
+        int expLength = 0;
+        if (expType == null) {
+            return;
+        }
+
+        if (expType.getTag() == TypeTags.ARRAY_TAG) {
+            expLength = ((ArrayType) expType).getSize();
+        } else if (expType.getTag() == TypeTags.TUPLE_TAG) {
+            TupleType tupleType = (TupleType) expType;
+            expLength = tupleType.getTupleTypes().size();
+        }
+
+        if (expLength >= 0 && expLength > currentIndex + 1) {
+            throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
         }
     }
 }

@@ -18,8 +18,8 @@
 
 package io.ballerina.stdlib.data.jsondata.json;
 
+import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
-import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.flags.SymbolFlags;
 import io.ballerina.runtime.api.types.ArrayType;
@@ -29,12 +29,15 @@ import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.TupleType;
 import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.types.UnionType;
+import io.ballerina.runtime.api.utils.JsonUtils;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
+import io.ballerina.stdlib.data.jsondata.utils.DiagnosticErrorCode;
+import io.ballerina.stdlib.data.jsondata.utils.DiagnosticLog;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -95,6 +98,7 @@ public class JsonTraverse {
                     traverseMapJsonOrArrayJson(json, referredType);
                     break;
                 case TypeTags.ARRAY_TAG:
+                    rootArray = referredType;
                     currentJsonNode = ValueCreator.createArrayValue((ArrayType) referredType);
                     nodesStack.push(currentJsonNode);
                     traverseMapJsonOrArrayJson(json, referredType);
@@ -120,12 +124,12 @@ public class JsonTraverse {
                             // Ignore
                         }
                     }
-                    return ErrorCreator.createError(StringUtils.fromString("incompatible type for json: " + type));
+                    return DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, type, PredefinedTypes.TYPE_ANYDATA);
                 case TypeTags.JSON_TAG:
                 case TypeTags.ANYDATA_TAG:
                     return json;
                 default:
-                    return ErrorCreator.createError(StringUtils.fromString("incompatible type for json: " + type));
+                    return DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, type, PredefinedTypes.TYPE_ANYDATA);
             }
             return currentJsonNode;
         }
@@ -142,7 +146,7 @@ public class JsonTraverse {
                     this.fieldHierarchy.pop();
                     this.restType.pop();
                 }
-                throw ErrorCreator.createError(StringUtils.fromString("incompatible type for json: " + type));
+                throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE_FOR_FIELD, getCurrentFieldPath());
             }
             nodesStack.pop();
         }
@@ -167,8 +171,8 @@ public class JsonTraverse {
                 switch (currentFieldTypeTag) {
                     case TypeTags.MAP_TAG:
                         if (!checkTypeCompatibility(((MapType) currentFieldType).getConstrainedType(), mapValue)) {
-                            throw ErrorCreator.createError(StringUtils.fromString("incompatible value '" + mapValue +
-                                    "' for type '" + currentFieldType + "' in field '" + getCurrentFieldPath() + "'"));
+                            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_VALUE_FOR_FIELD, mapValue,
+                                    currentFieldType, getCurrentFieldPath());
                         }
                         ((BMap<BString, Object>) currentJsonNode).put(StringUtils.fromString(fieldNames.pop()),
                                 mapValue);
@@ -199,8 +203,7 @@ public class JsonTraverse {
                 case TypeTags.ARRAY_TAG:
                     int expectedArraySize = ((ArrayType) rootArray).getSize();
                     if (expectedArraySize > array.getLength()) {
-                        throw ErrorCreator.createError(StringUtils.fromString(
-                                "size mismatch between target and source"));
+                        throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
                     }
                     if (expectedArraySize == -1) {
                         traverseArrayMembers(array.getLength(), array, parentJsonNode);
@@ -212,8 +215,7 @@ public class JsonTraverse {
                     Type restType = ((TupleType) rootArray).getRestType();
                     int expectedTupleTypeCount = ((TupleType) rootArray).getTupleTypes().size();
                     if (expectedTupleTypeCount > array.getLength()) {
-                        throw ErrorCreator.createError(StringUtils.fromString(
-                                "size mismatch between target and source"));
+                        throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
                     }
 
                     for (int i = 0; i < array.getLength(); i++) {
@@ -225,7 +227,7 @@ public class JsonTraverse {
                         } else {
                             continue;
                         }
-                        ((BArray) parentJsonNode).append(currentJsonNode);
+                        ((BArray) parentJsonNode).add(i, currentJsonNode);
                     }
                     break;
             }
@@ -236,7 +238,7 @@ public class JsonTraverse {
             for (int i = 0; i < length; i++) {
                 Object jsonMember = array.get(i);
                 currentJsonNode = traverseJson(jsonMember, ((ArrayType) rootArray).getElementType());
-                ((BArray) parentJsonNode).append(currentJsonNode);
+                ((BArray) parentJsonNode).add(i, currentJsonNode);
             }
         }
 
@@ -284,19 +286,24 @@ public class JsonTraverse {
         private void checkOptionalFieldsAndLogError(Map<String, Field> currentField) {
             currentField.values().forEach(field -> {
                 if (SymbolFlags.isFlagOn(field.getFlags(), SymbolFlags.REQUIRED)) {
-                    throw ErrorCreator.createError(StringUtils.fromString("required field '" + field.getFieldName() +
-                            "' not present in JSON"));
+                    throw DiagnosticLog.error(DiagnosticErrorCode.REQUIRED_FIELD_NOT_PRESENT, field.getFieldName());
                 }
             });
         }
 
         private Object convertToBasicType(Object json, Type targetType) {
-            Type jsonType = TypeUtils.getType(json);
-            if (TypeUtils.isSameType(jsonType, targetType)) {
+            if (targetType.getTag() == TypeTags.READONLY_TAG) {
                 return json;
             }
-            return ErrorCreator.createError(StringUtils.fromString("incompatible type expected '" + targetType +
-                    "', found '" + jsonType + "'"));
+            try {
+                // TODO: string x = check jsondata:fromJsonWithType(5); should it error?
+                return JsonUtils.convertJSON(json, targetType);
+            } catch (Exception e) {
+                if (fieldNames.isEmpty()) {
+                    throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, targetType, targetType);
+                }
+                throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, targetType, targetType);
+            }
         }
 
         private String getCurrentFieldPath() {

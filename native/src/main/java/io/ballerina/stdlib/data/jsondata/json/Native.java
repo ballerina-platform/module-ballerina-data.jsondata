@@ -20,6 +20,7 @@ package io.ballerina.stdlib.data.jsondata.json;
 
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 import io.ballerina.runtime.api.values.BTypedesc;
@@ -36,8 +37,8 @@ public class Native {
     public static Object fromJsonWithType(Object json, BMap<BString, Object> options, BTypedesc typed) {
         try {
             return JsonTraverse.traverse(json, typed.getDescribingType());
-        } catch (Exception e) {
-            return null;
+        } catch (BError e) {
+            return e;
         }
     }
 
@@ -48,8 +49,8 @@ public class Native {
             if (json instanceof BString) {
                 return JsonParser.parse(new StringReader(((BString) json).getValue()), expType);
             }
-        } catch (Exception e) {
-            return null;
+        } catch (BError e) {
+            return e;
         }
         return null;
     }

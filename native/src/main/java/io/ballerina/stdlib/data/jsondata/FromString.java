@@ -27,6 +27,7 @@ import io.ballerina.runtime.api.types.ReferenceType;
 import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BString;
@@ -34,6 +35,7 @@ import io.ballerina.runtime.api.values.BTypedesc;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -42,6 +44,27 @@ import java.util.List;
  * @since 0.1.0
  */
 public class FromString {
+
+    private static final HashMap<Integer, Integer> TYPE_PRIORITY_ORDER = new HashMap<>() {{
+        int precedence = 0;
+        put(TypeTags.INT_TAG, precedence++);
+        put(TypeTags.FLOAT_TAG, precedence++);
+        put(TypeTags.DECIMAL_TAG, precedence++);
+        put(TypeTags.NULL_TAG, precedence++);
+        put(TypeTags.BOOLEAN_TAG, precedence++);
+        put(TypeTags.JSON_TAG, precedence++);
+        put(TypeTags.STRING_TAG, precedence);
+    }};
+
+    private static final ArrayList<Type> BASIC_JSON_MEMBER_TYPES = new ArrayList<>() {{
+        add(PredefinedTypes.TYPE_NULL);
+        add(PredefinedTypes.TYPE_BOOLEAN);
+        add(PredefinedTypes.TYPE_INT);
+        add(PredefinedTypes.TYPE_FLOAT);
+        add(PredefinedTypes.TYPE_DECIMAL);
+        add(PredefinedTypes.TYPE_STRING);
+    }};
+    private static final UnionType JSON_TYPE_WITH_BASIC_TYPES = TypeCreator.createUnionType(BASIC_JSON_MEMBER_TYPES);
 
     public static Object fromStringWithType(BString string, BTypedesc typed) {
         Type expType = typed.getDescribingType();
@@ -72,7 +95,7 @@ public class FromString {
                 case TypeTags.UNION_TAG:
                     return stringToUnion(string, (UnionType) expType);
                 case TypeTags.JSON_TAG:
-                    return stringToJson(string);
+                    return stringToUnion(string, JSON_TYPE_WITH_BASIC_TYPES);
                 case TypeTags.TYPE_REFERENCED_TYPE_TAG:
                     return fromStringWithType(string, ((ReferenceType) expType).getReferredType());
                 default:
@@ -118,7 +141,8 @@ public class FromString {
 
     private static Object stringToUnion(BString string, UnionType expType) throws NumberFormatException {
         List<Type> memberTypes = expType.getMemberTypes();
-        memberTypes.sort(Comparator.comparingInt(t -> t.getTag()));
+        memberTypes.sort(Comparator.comparingInt(t -> TYPE_PRIORITY_ORDER.getOrDefault(
+                TypeUtils.getReferredType(t).getTag(), Integer.MAX_VALUE)));
         boolean isStringExpType = false;
         for (Type memberType : memberTypes) {
             try {
@@ -139,19 +163,6 @@ public class FromString {
             return string;
         }
         return returnError(string.getValue(), expType.toString());
-    }
-
-    private static Object stringToJson(BString string) {
-        ArrayList<Type> jsonMembers = new ArrayList<>();
-        jsonMembers.add(PredefinedTypes.TYPE_NULL);
-        jsonMembers.add(PredefinedTypes.TYPE_BOOLEAN);
-        jsonMembers.add(PredefinedTypes.TYPE_INT);
-        jsonMembers.add(PredefinedTypes.TYPE_FLOAT);
-        jsonMembers.add(PredefinedTypes.TYPE_DECIMAL);
-        jsonMembers.add(PredefinedTypes.TYPE_STRING);
-
-        UnionType jsonType = TypeCreator.createUnionType(jsonMembers);
-        return stringToUnion(string, jsonType);
     }
 
     private static boolean hasFloatOrDecimalLiteralSuffix(String value) {

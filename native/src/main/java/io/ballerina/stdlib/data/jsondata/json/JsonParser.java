@@ -18,21 +18,22 @@
 
 package io.ballerina.stdlib.data.jsondata.json;
 
-import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
-import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.flags.SymbolFlags;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.Field;
 import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
+import io.ballerina.stdlib.data.jsondata.utils.DiagnosticErrorCode;
+import io.ballerina.stdlib.data.jsondata.utils.DiagnosticLog;
 import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.io.IOException;
@@ -61,7 +62,7 @@ public class JsonParser {
      * @throws BError for any parsing error
      */
     public static Object parse(Reader reader, Type type)
-            throws BError, JsonParserException {
+            throws BError {
         StateMachine sm = tlStateMachine.get();
         try {
             return sm.execute(reader, TypeUtils.getReferredType(type));
@@ -126,7 +127,6 @@ public class JsonParser {
                 new StringFieldUnicodeHexProcessingState();
         private static final State STRING_VALUE_UNICODE_HEX_PROCESSING_STATE =
                 new StringValueUnicodeHexProcessingState();
-        Type definedJsonType = PredefinedTypes.TYPE_JSON;
 
         Object currentJsonNode;
         Deque<Object> nodesStack;
@@ -185,9 +185,9 @@ public class JsonParser {
             }
         }
 
-        public Object execute(Reader reader, Type type) throws BError, JsonParserException {
+        public Object execute(Reader reader, Type type) throws BError {
             switch (type.getTag()) {
-                // TODO: Handle all anydata type except record.
+                // TODO: Handle readonly and singleton type as expType.
                 case TypeTags.RECORD_TYPE_TAG:
                     RecordType recordType = (RecordType) type;
                     expectedTypes.push(recordType);
@@ -213,15 +213,19 @@ public class JsonParser {
                     fieldHierarchy.push(new HashMap<>());
                     restType.push(type);
                     break;
-//                case TypeTags.UNION_TAG:
                 case TypeTags.MAP_TAG:
                     expectedTypes.push(type);
                     fieldHierarchy.push(new HashMap<>());
                     restType.push(((MapType) type).getConstrainedType());
                     break;
+                case TypeTags.UNION_TAG:
+                    if (isSupportedUnionType((UnionType) type)) {
+                        expectedTypes.push(type);
+                        break;
+                    }
+                    throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
                 default:
-                    throw ErrorCreator.createError(StringUtils.fromString("unsupported type: " + type));
-
+                    throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
             }
 
             State currentState = DOC_START_STATE;
@@ -236,11 +240,29 @@ public class JsonParser {
                 }
                 return currentJsonNode;
             } catch (IOException e) {
-                throw ErrorCreator.createError(StringUtils.fromString("Error reading JSON: " + e.getMessage()));
+                throw DiagnosticLog.error(DiagnosticErrorCode.JSON_READER_FAILURE, e.getMessage());
             } catch (JsonParserException e) {
-                throw ErrorCreator.createError(StringUtils.fromString(e.getMessage() + " at line: " + this.line +
-                        " column: " + this.column));
+                throw DiagnosticLog.error(DiagnosticErrorCode.JSON_PARSER_EXCEPTION, e.getMessage(), line, column);
             }
+        }
+
+        private boolean isSupportedUnionType(UnionType type) {
+            boolean isContainUnsupportedMember = false;
+            for (Type memberType : type.getMemberTypes()) {
+                switch (memberType.getTag()) {
+                    case TypeTags.RECORD_TYPE_TAG:
+                    case TypeTags.OBJECT_TYPE_TAG:
+                    case TypeTags.MAP_TAG:
+                    case TypeTags.JSON_TAG:
+                    case TypeTags.ANYDATA_TAG:
+                        isContainUnsupportedMember = true;
+                        break;
+                    case TypeTags.UNION_TAG:
+                        isContainUnsupportedMember = isSupportedUnionType(type);
+                        break;
+                }
+            }
+            return !isContainUnsupportedMember;
         }
 
         private void append(char ch) {
@@ -260,7 +282,7 @@ public class JsonParser {
             this.charBuff = newBuff;
         }
 
-        private State finalizeNonArrayObject() throws JsonParserException {
+        private State finalizeNonArrayObject() {
             if (jsonFieldDepth > 0) {
                 jsonFieldDepth--;
             }
@@ -278,7 +300,7 @@ public class JsonParser {
             restType.pop();
             for (Field field : remainingFields.values()) {
                 if (SymbolFlags.isFlagOn(field.getFlags(), SymbolFlags.REQUIRED)) {
-                    throw new JsonParserException("required field '" + field.getFieldName() + "' not present in JSON");
+                    throw DiagnosticLog.error(DiagnosticErrorCode.REQUIRED_FIELD_NOT_PRESENT, field.getFieldName());
                 }
             }
             return finalizeObject();
@@ -370,6 +392,11 @@ public class JsonParser {
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
                         sm.parserContexts.push(JsonParser.StateMachine.ParserContext.ARRAY);
+                        Type expType = sm.expectedTypes.peek();
+                        // In this point we know rhs is json[] or anydata[] hence init index counter.
+                        if (expType.getTag() == TypeTags.JSON_TAG || expType.getTag() == TypeTags.ANYDATA_TAG) {
+                            sm.arrayIndexes.push(0);
+                        }
                         sm.currentJsonNode = JsonCreator.initArrayValue(sm.expectedTypes.peek());
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else if (StateMachine.isWhitespace(ch)) {
@@ -437,6 +464,7 @@ public class JsonParser {
                         continue;
                     } else if (ch == '}') {
                         state = sm.finalizeNonArrayObject();
+                        sm.expectedTypes.pop();
                     } else {
                         StateMachine.throwExpected("\"", "}");
                     }
@@ -489,6 +517,7 @@ public class JsonParser {
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else if (ch == ']') {
                         state = sm.finalizeObject();
+                        sm.expectedTypes.pop();
                     } else {
                         state = NON_STRING_ARRAY_ELEMENT_STATE;
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
@@ -751,13 +780,12 @@ public class JsonParser {
                         } else if (sm.currentField != null) {
                             sm.currentJsonNode = JsonCreator.convertAndUpdateCurrentJsonNode(sm,
                                     StringUtils.fromString(s), expType);
-                        // TODO: Why ignore anydata type?
-                        } else if (sm.restType.peek() != null && sm.restType.peek().getTag() != TypeTags.ANYDATA_TAG) {
+                        } else if (sm.restType.peek() != null) {
                             try {
                                 sm.currentJsonNode = JsonCreator.convertAndUpdateCurrentJsonNode(sm,
                                         StringUtils.fromString(s), expType);
                                 // this element will be ignored in projection
-                            } catch (JsonParserException ignored) { }
+                            } catch (BError ignored) { }
                         }
                         state = FIELD_END_STATE;
                     } else if (ch == REV_SOL) {
@@ -790,8 +818,7 @@ public class JsonParser {
                     ch = buff[i];
                     sm.processLocation(ch);
                     if (ch == sm.currentQuoteChar) {
-                        sm.currentJsonNode = JsonCreator.convertAndUpdateCurrentJsonNode(sm,
-                                StringUtils.fromString(sm.value()), sm.expectedTypes.pop());
+                        sm.processValue();
                         state = ARRAY_ELEMENT_END_STATE;
                     } else if (ch == REV_SOL) {
                         state = STRING_AE_ESC_CHAR_PROCESSING_STATE;
@@ -835,16 +862,18 @@ public class JsonParser {
                         Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
                         nextArray.ifPresent(bArray -> sm.currentJsonNode = bArray);
                     } else if (ch == '}') {
-                        sm.processNonStringValue();
+                        sm.processValue();
                         state = sm.finalizeNonArrayObject();
+                        sm.expectedTypes.pop();
                     } else if (ch == ']') {
-                        sm.processNonStringValue();
+                        sm.processValue();
                         state = sm.finalizeObject();
+                        sm.expectedTypes.pop();
                     } else if (ch == ',') {
-                        sm.processNonStringValue();
+                        sm.processValue();
                         state = NON_FIRST_FIELD_READY_STATE;
                     } else if (StateMachine.isWhitespace(ch)) {
-                        sm.processNonStringValue();
+                        sm.processValue();
                         state = FIELD_END_STATE;
                     } else if (ch == EOF) {
                         throw new JsonParserException("unexpected end of JSON document");
@@ -886,19 +915,19 @@ public class JsonParser {
                         Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
                         nextArray.ifPresent(bArray -> sm.currentJsonNode = bArray);
                     } else if (ch == ']') {
-                        sm.processNonStringValue();
-                        sm.arrayIndexes.pop();
+                        sm.processValue();
+                        int currentIndex = sm.arrayIndexes.pop();
                         state = sm.finalizeObject();
-                        sm.expectedTypes.pop();
+                        JsonCreator.validateListSize(currentIndex, sm.expectedTypes.pop());
                     } else if (ch == ',') {
-                        sm.processNonStringValue();
+                        sm.processValue();
                         state = NON_FIRST_ARRAY_ELEMENT_READY_STATE;
 
                         // Update index of the array element
                         int arrayIndex = sm.arrayIndexes.pop();
                         sm.arrayIndexes.push(arrayIndex + 1);
                     } else if (StateMachine.isWhitespace(ch)) {
-                        sm.processNonStringValue();
+                        sm.processValue();
                         state = ARRAY_ELEMENT_END_STATE;
                     } else if (ch == EOF) {
                         throw new JsonParserException("unexpected end of JSON document");
@@ -947,7 +976,7 @@ public class JsonParser {
             }
         }
 
-        private void processNonStringValue() throws JsonParserException {
+        private void processValue() {
             Type expType = expectedTypes.pop();
             BString value = StringUtils.fromString(value());
             if (expType == null) {
@@ -971,7 +1000,7 @@ public class JsonParser {
                     sm.processLocation(ch);
                     if (StateMachine.isWhitespace(ch) || ch == EOF) {
                         sm.currentJsonNode = null;
-                        sm.processNonStringValue();
+                        sm.processValue();
                         state = DOC_END_STATE;
                     } else {
                         sm.append(ch);
@@ -1041,9 +1070,9 @@ public class JsonParser {
                         int arrayIndex = sm.arrayIndexes.pop();
                         sm.arrayIndexes.push(arrayIndex + 1);
                     } else if (ch == ']') {
-                        sm.arrayIndexes.pop();
+                        int currentIndex = sm.arrayIndexes.pop();
                         state = sm.finalizeObject();
-                        sm.expectedTypes.pop();
+                        JsonCreator.validateListSize(currentIndex, sm.expectedTypes.pop());
                     } else {
                         StateMachine.throwExpected(",", "]");
                     }
