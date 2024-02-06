@@ -483,7 +483,7 @@ isolated function testFromJsonWithType19() returns error? {
     test:assertEquals(y.books[2].author, "Alexandra Quinn");
 }
 
-@test:Config {enable: false}
+@test:Config
 isolated function testFromJsonWithType20() returns error? {
     // TODO: Fix these bugs and enable the tests.
     json jsonVal1 = {
@@ -524,8 +524,8 @@ isolated function testFromJsonWithType20() returns error? {
             "d": "2"
         }],
         "b": [{
-            "c": "world",
-            "d": "2"
+            "c": "war",
+            "d": "3"
         }]
     };
 
@@ -541,8 +541,8 @@ isolated function testFromJsonWithType20() returns error? {
             "d": "2"
         }]);
     test:assertEquals(val3["b"], [{
-            "c": "world",
-            "d": "2"
+            "c": "war",
+            "d": "3"
         }]);
 }
 
@@ -706,7 +706,7 @@ isolated function testJsonAsExpTypeForFromJsonWithType() returns error? {
     test:assertEquals(val5, [[1], 2.0]);
 }
 
-@test:Config {enable: false}
+@test:Config
 isolated function testMapAsExpTypeForFromJsonWithType() returns error? {
     record {|
         string a;
@@ -742,13 +742,13 @@ isolated function testMapAsExpTypeForFromJsonWithType() returns error? {
             "d": "2"
         },
         "b": {
-            "c": "world",
-            "d": "2"
+            "c": "war",
+            "d": "3"
         }
     };
 
     map<map<string>> val3 = check fromJsonWithType(jsonVal3);
-    test:assertEquals(val3, {"a": {"c": "world", "d": "2"}, "b": {"c": "world", "d": "2"}});
+    test:assertEquals(val3, {"a": {"c": "world", "d": "2"}, "b": {"c": "war", "d": "3"}});
 
     record {|
         map<string> a;
@@ -757,9 +757,9 @@ isolated function testMapAsExpTypeForFromJsonWithType() returns error? {
 
     map<record {|
         string c;
-        int d;
+        string d;
     |}> val5 = check fromJsonWithType(jsonVal3);
-    test:assertEquals(val5, {"a": {"c": "world", "d": 2}, "b": {"c": "world", "d": 2}});
+    test:assertEquals(val5, {"a": {"c": "world", "d": "2"}, "b": {"c": "war", "d": "3"}});
 }
 
 @test:Config
@@ -987,6 +987,10 @@ isolated function testFromJsonWithTypeNegative4() returns error? {
     RN2|Error a = fromJsonWithType("1");
     test:assertTrue(a is error);
     test:assertEquals((<error>a).message(), "incompatible expected type 'data.jsondata:RN2' for value '1'");
+
+    string|Error b = fromJsonWithType(1);
+    test:assertTrue(b is error);
+    test:assertEquals((<error>b).message(), "incompatible expected type 'string' for value '1'");
 }
 
 @test:Config
