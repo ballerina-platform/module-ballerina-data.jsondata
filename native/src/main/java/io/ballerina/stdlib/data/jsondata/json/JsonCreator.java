@@ -157,8 +157,11 @@ public class JsonCreator {
         Object currentJson = sm.currentJsonNode;
         Object convertedValue = convertToExpectedType(value, type);
         if (convertedValue instanceof BError) {
-            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_VALUE_FOR_FIELD, value, type,
-                    getCurrentFieldPath(sm));
+            if (sm.currentField != null) {
+                throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_VALUE_FOR_FIELD, value, type,
+                        getCurrentFieldPath(sm));
+            }
+            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
         }
 
         Type currentJsonNodeType = TypeUtils.getType(currentJson);

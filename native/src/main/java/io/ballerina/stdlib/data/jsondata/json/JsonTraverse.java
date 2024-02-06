@@ -146,6 +146,10 @@ public class JsonTraverse {
                     this.fieldHierarchy.pop();
                     this.restType.pop();
                 }
+
+                if (fieldNames.isEmpty()) {
+                    throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, json);
+                }
                 throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE_FOR_FIELD, getCurrentFieldPath());
             }
             nodesStack.pop();
@@ -201,19 +205,23 @@ public class JsonTraverse {
             BArray array = (BArray) json;
             switch (rootArray.getTag()) {
                 case TypeTags.ARRAY_TAG:
-                    int expectedArraySize = ((ArrayType) rootArray).getSize();
+                    ArrayType arrayType = (ArrayType) rootArray;
+                    int expectedArraySize = arrayType.getSize();
                     if (expectedArraySize > array.getLength()) {
                         throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
                     }
+
+                    Type elementType = arrayType.getElementType();
                     if (expectedArraySize == -1) {
-                        traverseArrayMembers(array.getLength(), array, parentJsonNode);
+                        traverseArrayMembers(array.getLength(), array, elementType, parentJsonNode);
                     } else {
-                        traverseArrayMembers(expectedArraySize, array, parentJsonNode);
+                        traverseArrayMembers(expectedArraySize, array, elementType, parentJsonNode);
                     }
                     break;
                 case TypeTags.TUPLE_TAG:
-                    Type restType = ((TupleType) rootArray).getRestType();
-                    int expectedTupleTypeCount = ((TupleType) rootArray).getTupleTypes().size();
+                    TupleType tupleType = (TupleType) rootArray;
+                    Type restType = tupleType.getRestType();
+                    int expectedTupleTypeCount = tupleType.getTupleTypes().size();
                     if (expectedTupleTypeCount > array.getLength()) {
                         throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
                     }
@@ -221,7 +229,7 @@ public class JsonTraverse {
                     for (int i = 0; i < array.getLength(); i++) {
                         Object jsonMember = array.get(i);
                         if (i < expectedTupleTypeCount) {
-                            currentJsonNode = traverseJson(jsonMember, ((TupleType) rootArray).getTupleTypes().get(i));
+                            currentJsonNode = traverseJson(jsonMember, tupleType.getTupleTypes().get(i));
                         } else if (restType != null) {
                             currentJsonNode = traverseJson(jsonMember, restType);
                         } else {
@@ -234,10 +242,10 @@ public class JsonTraverse {
             currentJsonNode = parentJsonNode;
         }
 
-        private void traverseArrayMembers(long length, BArray array, Object parentJsonNode) {
+        private void traverseArrayMembers(long length, BArray array, Type elementType, Object parentJsonNode) {
             for (int i = 0; i < length; i++) {
                 Object jsonMember = array.get(i);
-                currentJsonNode = traverseJson(jsonMember, ((ArrayType) rootArray).getElementType());
+                currentJsonNode = traverseJson(jsonMember, elementType);
                 ((BArray) parentJsonNode).add(i, currentJsonNode);
             }
         }
@@ -300,9 +308,10 @@ public class JsonTraverse {
                 return JsonUtils.convertJSON(json, targetType);
             } catch (Exception e) {
                 if (fieldNames.isEmpty()) {
-                    throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, targetType, targetType);
+                    throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, targetType, json);
                 }
-                throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, targetType, targetType);
+                throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_VALUE_FOR_FIELD, json, targetType,
+                        getCurrentFieldPath());
             }
         }
 
