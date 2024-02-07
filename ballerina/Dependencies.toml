@@ -12,11 +12,25 @@ org = "ballerina"
 name = "data.jsondata"
 version = "0.1.0"
 dependencies = [
+	{org = "ballerina", name = "io"},
 	{org = "ballerina", name = "jballerina.java"},
 	{org = "ballerina", name = "test"}
 ]
 modules = [
 	{org = "ballerina", packageName = "data.jsondata", moduleName = "data.jsondata"}
+]
+
+[[package]]
+org = "ballerina"
+name = "io"
+version = "1.6.0"
+scope = "testOnly"
+dependencies = [
+	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "lang.value"}
+]
+modules = [
+	{org = "ballerina", packageName = "io", moduleName = "io"}
 ]
 
 [[package]]
@@ -30,6 +44,15 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "lang.error"
+version = "0.0.0"
+scope = "testOnly"
+dependencies = [
+	{org = "ballerina", name = "jballerina.java"}
+]
+
+[[package]]
+org = "ballerina"
+name = "lang.value"
 version = "0.0.0"
 scope = "testOnly"
 dependencies = [
