@@ -42,9 +42,9 @@ public class DataReaderThreadPool {
 
         @Override
         public Thread newThread(Runnable runnable) {
-            Thread ballerinaSql = new Thread(runnable);
-            ballerinaSql.setName("bal-data-xmldata-thread");
-            return ballerinaSql;
+            Thread ballerinaData = new Thread(runnable);
+            ballerinaData.setName("bal-data-jsondata-thread");
+            return ballerinaData;
         }
     }
 }

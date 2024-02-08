@@ -24,10 +24,14 @@ rootProject.name = 'data.jsondata'
 include(':checkstyle')
 include(':data.jsondata-native')
 include(':data.jsondata-ballerina')
+include(':data.jsondata-compiler-plugin')
+include(':data.jsondata-compiler-plugin-tests')
 
 project(':checkstyle').projectDir = file("build-config${File.separator}checkstyle")
 project(':data.jsondata-native').projectDir = file('native')
 project(':data.jsondata-ballerina').projectDir = file('ballerina')
+project(':data.jsondata-compiler-plugin').projectDir = file('compiler-plugin')
+project(':data.jsondata-compiler-plugin-tests').projectDir = file('compiler-plugin-test')
 
 gradleEnterprise {
     buildScan {
