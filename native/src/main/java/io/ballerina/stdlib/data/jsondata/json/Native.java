@@ -21,6 +21,7 @@ package io.ballerina.stdlib.data.jsondata.json;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.Future;
 import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.utils.JsonUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
@@ -38,7 +39,7 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 
 /**
- * This class is used to convert json inform of string, byte[], byte-stream to record or json type.
+ * Json conversions.
  *
  * @since 0.1.0
  */
@@ -76,5 +77,9 @@ public class Native {
         } catch (Exception e) {
             return DiagnosticLog.error(DiagnosticErrorCode.JSON_PARSER_EXCEPTION, e.getMessage());
         }
+    }
+
+    public static Object toJson(Object value) {
+        return JsonUtils.convertToJson(value);
     }
 }

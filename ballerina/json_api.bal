@@ -16,11 +16,30 @@
 
 import ballerina/jballerina.java;
 
+# Convert value of type `json` to subtype of `anydata`.
+#
+# + v - Source JSON value
+# + options - Options to be used for filtering in the projection
+# + t - Target type
+# + return - On success, returns the given target type value, else returns an `jsondata:Error`
 public isolated function fromJsonWithType(json v, Options options = {}, typedesc<anydata> t = <>)
         returns t|Error = @java:Method {'class: "io.ballerina.stdlib.data.jsondata.json.Native"} external;
 
+# Converts JSON string, byte[] or byte-block-stream to subtype of anydata.
+#
+# + s - Source JSON string value or byte[] or byte-block-stream
+# + options - Options to be used for filtering in the projection
+# + t - Target type
+# + return - On success, returns the given target type value, else returns an `jsondata:Error`
 public isolated function fromJsonStringWithType(string|byte[]|stream<byte[], error?> s, Options options = {}, typedesc<anydata> t = <>)
         returns t|Error = @java:Method {'class: "io.ballerina.stdlib.data.jsondata.json.Native"} external;
+
+# Converts a value of type `anydata` to `json`.
+#
+# + v - Source anydata value
+# + return - representation of `v` as value of type json
+public isolated function toJson(anydata v) 
+        returns json|Error = @java:Method {'class: "io.ballerina.stdlib.data.jsondata.json.Native"} external;
 
 # Represent the options that can be used for filtering in the projection.
 #
