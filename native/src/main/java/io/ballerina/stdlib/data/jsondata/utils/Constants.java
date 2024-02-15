@@ -21,8 +21,14 @@ package io.ballerina.stdlib.data.jsondata.utils;
 import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.types.MapType;
+import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.values.BString;
 
 public class Constants {
     public static final MapType JSON_MAP_TYPE = TypeCreator.createMapType(PredefinedTypes.TYPE_JSON);
     public static final MapType ANYDATA_MAP_TYPE = TypeCreator.createMapType(PredefinedTypes.TYPE_ANYDATA);
+    public static final BString VALUE = StringUtils.fromString("value");
+    public static final String FIELD = "$field$.";
+    public static final String FIELD_REGEX = "\\$field\\$\\.";
+    public static final String NAME = "Name";
 }

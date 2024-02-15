@@ -179,3 +179,12 @@ type Union int|float;
 
 type INTARR int[3];
 type INTTUPLE [int, int, int, int...];
+
+type BookN record {
+    string title;
+    @Name {
+        value: "author"
+    }
+    string name;
+    string author;
+};

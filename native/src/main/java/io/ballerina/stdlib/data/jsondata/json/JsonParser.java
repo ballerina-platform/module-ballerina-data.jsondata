@@ -191,7 +191,7 @@ public class JsonParser {
                 case TypeTags.RECORD_TYPE_TAG:
                     RecordType recordType = (RecordType) type;
                     expectedTypes.push(recordType);
-                    fieldHierarchy.push(new HashMap<>(recordType.getFields()));
+                    fieldHierarchy.push(JsonCreator.getAllFieldsInRecord(recordType));
                     restType.push(recordType.getRestFieldType());
                     break;
                 case TypeTags.ARRAY_TAG:
@@ -532,7 +532,6 @@ public class JsonParser {
                 }
                 return state;
             }
-
         }
 
         /**
@@ -561,7 +560,6 @@ public class JsonParser {
                 sm.index = i + 1;
                 return state;
             }
-
         }
 
         /**
@@ -616,7 +614,6 @@ public class JsonParser {
                 }
                 return state;
             }
-
         }
 
         private String value() {
@@ -627,7 +624,6 @@ public class JsonParser {
 
         private String processFieldName() {
             String value = this.value();
-            this.fieldNames.push(value);
             return value;
         }
 
@@ -651,12 +647,14 @@ public class JsonParser {
                             if (sm.currentField == null) {
                                 fieldType = sm.restType.peek();
                             } else {
+                                jsonFieldName = sm.currentField.getFieldName();
                                 fieldType = sm.currentField.getFieldType();
                             }
                             sm.expectedTypes.push(fieldType);
                         } else if (sm.expectedTypes.peek() == null) {
                             sm.expectedTypes.push(null);
                         }
+                        sm.fieldNames.push(jsonFieldName);
                         state = END_FIELD_NAME_STATE;
                     } else if (ch == REV_SOL) {
                         state = FIELD_NAME_ESC_CHAR_PROCESSING_STATE;
@@ -672,7 +670,6 @@ public class JsonParser {
                 sm.index = i + 1;
                 return state;
             }
-
         }
 
         /**
@@ -700,7 +697,6 @@ public class JsonParser {
                 sm.index = i + 1;
                 return state;
             }
-
         }
 
         /**
@@ -751,7 +747,6 @@ public class JsonParser {
                 }
                 return state;
             }
-
         }
 
         /**
@@ -802,7 +797,6 @@ public class JsonParser {
                 sm.index = i + 1;
                 return state;
             }
-
         }
 
         /**
@@ -941,7 +935,6 @@ public class JsonParser {
                 sm.index = i + 1;
                 return state;
             }
-
         }
 
         /**
@@ -1014,7 +1007,6 @@ public class JsonParser {
                         StringUtils.fromString(sm.value()), sm.expectedTypes.peek());
                 return state;
             }
-
         }
 
         /**

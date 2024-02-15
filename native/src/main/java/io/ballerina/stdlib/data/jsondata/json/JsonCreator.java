@@ -22,6 +22,7 @@ import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.ArrayType;
+import io.ballerina.runtime.api.types.Field;
 import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.TupleType;
@@ -40,6 +41,7 @@ import io.ballerina.stdlib.data.jsondata.utils.DiagnosticLog;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -52,7 +54,7 @@ public class JsonCreator {
     static BMap<BString, Object> initRootMapValue(Type expectedType) {
         switch (expectedType.getTag()) {
             case TypeTags.RECORD_TYPE_TAG:
-                return ValueCreator.createRecordValue((RecordType) expectedType);
+                return ValueCreator.createRecordValue(expectedType.getPackage(), expectedType.getName());
             case TypeTags.MAP_TAG:
                 return ValueCreator.createMapValue((MapType) expectedType);
             case TypeTags.JSON_TAG:
@@ -95,7 +97,7 @@ public class JsonCreator {
         switch (currentType.getTag()) {
             case TypeTags.RECORD_TYPE_TAG:
                 RecordType recordType = (RecordType) currentType;
-                nextMapValue = ValueCreator.createRecordValue(recordType);
+                nextMapValue = ValueCreator.createRecordValue(expType.getPackage(), expType.getName());
                 sm.fieldHierarchy.push(new HashMap<>(recordType.getFields()));
                 sm.restType.push(recordType.getRestFieldType());
                 break;
@@ -239,5 +241,39 @@ public class JsonCreator {
         if (expLength >= 0 && expLength > currentIndex + 1) {
             throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
         }
+    }
+
+    static Map<String, Field> getAllFieldsInRecord(RecordType recordType) {
+        BMap<BString, Object> annotations = recordType.getAnnotations();
+        Map<String, String> modifiedNames = new HashMap<>();
+        for (BString annotationKey : annotations.getKeys()) {
+            String keyStr = annotationKey.getValue();
+            if (!keyStr.contains(Constants.FIELD)) {
+                continue;
+            }
+            String fieldName = keyStr.split(Constants.FIELD_REGEX)[1];
+            Map<BString, Object> fieldAnnotation = (Map<BString, Object>) annotations.get(annotationKey);
+            modifiedNames.put(fieldName, getModifiedName(fieldAnnotation, fieldName));
+        }
+
+        Map<String, Field> fields = new HashMap<>();
+        Map<String, Field> recordFields = recordType.getFields();
+        for (String key : recordFields.keySet()) {
+            String fieldName = modifiedNames.getOrDefault(key, key);
+            if (fields.containsKey(fieldName)) {
+                throw DiagnosticLog.error(DiagnosticErrorCode.DUPLICATE_FIELD, fieldName);
+            }
+            fields.put(fieldName, recordFields.get(key));
+        }
+        return fields;
+    }
+
+    static String getModifiedName(Map<BString, Object> fieldAnnotation, String fieldName) {
+        for (BString key : fieldAnnotation.keySet()) {
+            if (key.getValue().endsWith(Constants.NAME)) {
+                return ((Map<BString, Object>) fieldAnnotation.get(key)).get(Constants.VALUE).toString();
+            }
+        }
+        return fieldName;
     }
 }

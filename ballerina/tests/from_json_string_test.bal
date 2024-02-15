@@ -1015,3 +1015,15 @@ isolated function testFromJsonStringWithTypeNegative5() returns error? {
     test:assertTrue(y is error);
     test:assertEquals((<error>y).message(), "array size is not compatible with the expected size");
 }
+
+@test:Config
+isolated function testDuplicateFieldInRecordTypeWithFromJsonStringWithType() returns error? {
+    string str = string `{
+        "title": "Clean Code",
+        "author": "Robert C. Martin",
+        `;
+
+    BookN|Error x = fromJsonStringWithType(str);
+    test:assertTrue(x is error);
+    test:assertEquals((<error>x).message(), "duplicate field 'author'");
+}

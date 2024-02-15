@@ -119,21 +119,11 @@ public class JsondataRecordFieldValidator implements AnalysisTask<SyntaxNodeAnal
     private void validateExpectedType(TypeSymbol typeSymbol, SyntaxNodeAnalysisContext ctx) {
         typeSymbol.getLocation().ifPresent(location -> currentLocation = location);
         switch (typeSymbol.typeKind()) {
-            case UNION -> {
-                validateUnionType((UnionTypeSymbol) typeSymbol, typeSymbol.getLocation(), ctx);
-            }
-            case RECORD -> {
-                validateRecordType((RecordTypeSymbol) typeSymbol, ctx);
-            }
-            case ARRAY -> {
-                validateExpectedType(((ArrayTypeSymbol) typeSymbol).memberTypeDescriptor(), ctx);
-            }
-            case TUPLE -> {
-                validateTupleType((TupleTypeSymbol) typeSymbol, ctx);
-            }
-            case TYPE_REFERENCE -> {
-                validateExpectedType(((TypeReferenceTypeSymbol) typeSymbol).typeDescriptor(), ctx);
-            }
+            case UNION -> validateUnionType((UnionTypeSymbol) typeSymbol, typeSymbol.getLocation(), ctx);
+            case RECORD -> validateRecordType((RecordTypeSymbol) typeSymbol, ctx);
+            case ARRAY -> validateExpectedType(((ArrayTypeSymbol) typeSymbol).memberTypeDescriptor(), ctx);
+            case TUPLE -> validateTupleType((TupleTypeSymbol) typeSymbol, ctx);
+            case TYPE_REFERENCE -> validateExpectedType(((TypeReferenceTypeSymbol) typeSymbol).typeDescriptor(), ctx);
         }
     }
 
