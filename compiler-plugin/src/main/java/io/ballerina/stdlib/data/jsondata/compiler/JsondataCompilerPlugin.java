@@ -26,8 +26,8 @@ import io.ballerina.projects.plugins.CompilerPluginContext;
  */
 public class JsondataCompilerPlugin extends CompilerPlugin {
 
-        @Override
-        public void init(CompilerPluginContext compilerPluginContext) {
-            compilerPluginContext.addCodeAnalyzer(new JsondataCodeAnalyzer());
-        }
+    @Override
+    public void init(CompilerPluginContext compilerPluginContext) {
+        compilerPluginContext.addCodeAnalyzer(new JsondataCodeAnalyzer());
+    }
 }

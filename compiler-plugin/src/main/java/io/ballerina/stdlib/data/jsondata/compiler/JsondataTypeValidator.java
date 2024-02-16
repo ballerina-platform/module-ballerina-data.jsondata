@@ -56,7 +56,7 @@ import java.util.Optional;
 /**
  * Jsondata Record Field Validator.
  */
-public class JsondataRecordFieldValidator implements AnalysisTask<SyntaxNodeAnalysisContext> {
+public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisContext> {
 
     private SemanticModel semanticModel;
     private final HashMap<Location, DiagnosticInfo> allDiagnosticInfo = new HashMap<>();
@@ -201,7 +201,6 @@ public class JsondataRecordFieldValidator implements AnalysisTask<SyntaxNodeAnal
         if (symbol.isEmpty()) {
             return;
         }
-        TypeSymbol typeSymbol = ((VariableSymbol) symbol.get()).typeDescriptor();
-        validateExpectedType(typeSymbol, ctx);
+        validateExpectedType(((VariableSymbol) symbol.get()).typeDescriptor(), ctx);
     }
 }

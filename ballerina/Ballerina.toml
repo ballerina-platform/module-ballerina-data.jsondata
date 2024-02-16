@@ -5,7 +5,6 @@ version = "0.1.0"
 authors = ["Ballerina"]
 keywords = ["json"]
 repository = "https://github.com/ballerina-platform/module-ballerina.jsondata"
-#icon = "icon.png"
 license = ["Apache-2.0"]
 distribution = "2201.8.4"
 

@@ -16,7 +16,6 @@
  * under the License.
  */
 
-
 package io.ballerina.stdlib.data.jsondata.compiler;
 
 import io.ballerina.tools.diagnostics.DiagnosticSeverity;
@@ -49,5 +48,4 @@ public enum JsondataDiagnosticCodes {
     public DiagnosticSeverity getSeverity() {
         return severity;
     }
-
 }

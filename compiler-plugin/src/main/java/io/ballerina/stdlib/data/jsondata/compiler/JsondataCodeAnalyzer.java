@@ -28,10 +28,9 @@ import java.util.List;
  * Jsondata Code Analyzer.
  */
 public class JsondataCodeAnalyzer extends CodeAnalyzer {
-
-        @Override
-        public void init(CodeAnalysisContext codeAnalysisContext) {
-            codeAnalysisContext.addSyntaxNodeAnalysisTask(new JsondataRecordFieldValidator(),
-                    List.of(SyntaxKind.MODULE_PART));
-        }
+    @Override
+    public void init(CodeAnalysisContext codeAnalysisContext) {
+        codeAnalysisContext.addSyntaxNodeAnalysisTask(new JsondataTypeValidator(),
+                List.of(SyntaxKind.MODULE_PART));
+    }
 }

@@ -128,10 +128,19 @@ public class JsonCreator {
         return Optional.of(nextMapValue);
     }
 
+    static void updateNextMapValue(JsonParser.StateMachine sm) {
+        Optional<BMap<BString, Object>> nextMap = initNewMapValue(sm);
+        if (nextMap.isPresent()) {
+            sm.currentJsonNode = nextMap.get();
+        } else {
+            // This will restrict from checking the fieldHierarchy.
+            sm.jsonFieldDepth++;
+        }
+    }
+
     static Optional<BArray> initNewArrayValue(JsonParser.StateMachine sm) {
         sm.parserContexts.push(JsonParser.StateMachine.ParserContext.ARRAY);
-        Type expType = sm.expectedTypes.peek();
-        if (expType == null) {
+        if (sm.expectedTypes.peek() == null) {
             return Optional.empty();
         }
 
@@ -141,7 +150,7 @@ public class JsonCreator {
             return Optional.ofNullable(nextArrValue);
         }
 
-        sm.nodesStack.push(sm.currentJsonNode);
+        sm.nodesStack.push(currentJsonNode);
         return Optional.ofNullable(nextArrValue);
     }
 
@@ -220,9 +229,8 @@ public class JsonCreator {
                 return tupleType.getRestType();
             }
             return tupleTypes.get(index);
-        } else {
-            return expectedType;
         }
+        return expectedType;
     }
 
     static void validateListSize(int currentIndex, Type expType) {

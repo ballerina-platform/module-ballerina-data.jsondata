@@ -20,18 +20,18 @@ package io.ballerina.stdlib.data.jsondata;
 
 import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
-import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.ReferenceType;
 import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.types.UnionType;
-import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BString;
 import io.ballerina.runtime.api.values.BTypedesc;
+import io.ballerina.stdlib.data.jsondata.utils.DiagnosticErrorCode;
+import io.ballerina.stdlib.data.jsondata.utils.DiagnosticLog;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -143,24 +143,16 @@ public class FromString {
         List<Type> memberTypes = expType.getMemberTypes();
         memberTypes.sort(Comparator.comparingInt(t -> TYPE_PRIORITY_ORDER.getOrDefault(
                 TypeUtils.getReferredType(t).getTag(), Integer.MAX_VALUE)));
-        boolean isStringExpType = false;
         for (Type memberType : memberTypes) {
             try {
                 Object result = fromStringWithType(string, memberType);
-                if (result instanceof BString) {
-                    isStringExpType = true;
-                    continue;
-                } else if (result instanceof BError) {
+                if (result instanceof BError) {
                     continue;
                 }
                 return result;
             } catch (Exception e) {
                 // Skip
             }
-        }
-
-        if (isStringExpType) {
-            return string;
         }
         return returnError(string.getValue(), expType.toString());
     }
@@ -183,6 +175,7 @@ public class FromString {
     }
 
     private static BError returnError(String string, String expType) {
-        return ErrorCreator.createError(StringUtils.fromString("Cannot convert to the exptype"));
+        return DiagnosticLog.error(DiagnosticErrorCode.CANNOT_CONVERT_TO_EXPECTED_TYPE,
+                PredefinedTypes.TYPE_STRING.getName(), string, expType);
     }
 }

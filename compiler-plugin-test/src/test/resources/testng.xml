@@ -21,7 +21,7 @@
 <suite name="BallerinaConstraintCompilerPluginTests">
     <test name="UnitTests">
         <classes>
-<!--            <class name="io.ballerina.stdlib.data.jsondata.compiler.CompilerPluginTest"/>-->
+            <class name="io.ballerina.stdlib.data.jsondata.compiler.CompilerPluginTest"/>
         </classes>
     </test>
 </suite>

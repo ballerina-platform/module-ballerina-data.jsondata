@@ -227,8 +227,7 @@ public class JsonTraverse {
 
         private void traverseArrayMembers(long length, BArray array, Type elementType, Object currentJsonNode) {
             for (int i = 0; i < length; i++) {
-                Object jsonMember = array.get(i);
-                ((BArray) currentJsonNode).add(i, traverseJson(jsonMember, elementType));
+                ((BArray) currentJsonNode).add(i, traverseJson(array.get(i), elementType));
             }
         }
 
@@ -256,16 +255,12 @@ public class JsonTraverse {
         }
 
         private boolean checkTypeCompatibility(Type type, Object json) {
-            if ((json instanceof BString && type.getTag() == TypeTags.STRING_TAG)
+            return ((json == null && type.getTag() == TypeTags.NULL_TAG)
+                    || (json instanceof BString && type.getTag() == TypeTags.STRING_TAG)
                     || (json instanceof Long && type.getTag() == TypeTags.INT_TAG)
                     || (json instanceof Double && (type.getTag() == TypeTags.FLOAT_TAG
                     || type.getTag() == TypeTags.DECIMAL_TAG))
-                    || (Boolean.class.isInstance(json) && type.getTag() == TypeTags.BOOLEAN_TAG)
-                    || (json == null && type.getTag() == TypeTags.NULL_TAG)) {
-                return true;
-            } else {
-                return false;
-            }
+                    || (Boolean.class.isInstance(json) && type.getTag() == TypeTags.BOOLEAN_TAG));
         }
 
         private void checkOptionalFieldsAndLogError(Map<String, Field> currentField) {

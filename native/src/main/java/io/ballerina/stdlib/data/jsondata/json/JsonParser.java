@@ -19,6 +19,7 @@
 package io.ballerina.stdlib.data.jsondata.json;
 
 import io.ballerina.runtime.api.TypeTags;
+import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.flags.SymbolFlags;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.Field;
@@ -30,7 +31,6 @@ import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
-import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 import io.ballerina.stdlib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.stdlib.data.jsondata.utils.DiagnosticLog;
@@ -238,6 +238,10 @@ public class JsonParser {
                         currentState = currentState.transition(this, buff, this.index, count);
                     }
                 }
+                currentState = currentState.transition(this, new char[] { EOF }, 0, 1);
+                if (currentState != DOC_END_STATE) {
+                    throw ErrorCreator.createError(StringUtils.fromString("invalid JSON document"));
+                }
                 return currentJsonNode;
             } catch (IOException e) {
                 throw DiagnosticLog.error(DiagnosticErrorCode.JSON_READER_FAILURE, e.getMessage());
@@ -247,7 +251,6 @@ public class JsonParser {
         }
 
         private boolean isSupportedUnionType(UnionType type) {
-            boolean isContainUnsupportedMember = false;
             for (Type memberType : type.getMemberTypes()) {
                 switch (memberType.getTag()) {
                     case TypeTags.RECORD_TYPE_TAG:
@@ -255,14 +258,12 @@ public class JsonParser {
                     case TypeTags.MAP_TAG:
                     case TypeTags.JSON_TAG:
                     case TypeTags.ANYDATA_TAG:
-                        isContainUnsupportedMember = true;
-                        break;
+                        return false;
                     case TypeTags.UNION_TAG:
-                        isContainUnsupportedMember = isSupportedUnionType(type);
-                        break;
+                        return !isSupportedUnionType(type);
                 }
             }
-            return !isContainUnsupportedMember;
+            return true;
         }
 
         private void append(char ch) {
@@ -355,7 +356,6 @@ public class JsonParser {
             ARRAY
         }
 
-
         /**
          * A specific state in the JSON parsing state machine.
          */
@@ -371,7 +371,6 @@ public class JsonParser {
              * @return the new resulting state
              */
             State transition(StateMachine sm, char[] buff, int i, int count) throws JsonParserException;
-
         }
 
         /**
@@ -499,13 +498,7 @@ public class JsonParser {
                         // Get member type of the array and set as expected type.
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
                                 sm.arrayIndexes.peek()));
-                        Optional<BMap<BString, Object>> nextMap = JsonCreator.initNewMapValue(sm);
-                        if (nextMap.isPresent()) {
-                            sm.currentJsonNode = nextMap.get();
-                        } else {
-                            // This will restrict from checking the fieldHierarchy.
-                            sm.jsonFieldDepth++;
-                        }
+                        JsonCreator.updateNextMapValue(sm);
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
                         // Get member type of the array and set as expected type.
@@ -585,13 +578,7 @@ public class JsonParser {
                     } else if (ch == '{') {
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
                                 sm.arrayIndexes.peek()));
-                        Optional<BMap<BString, Object>> nextMap = JsonCreator.initNewMapValue(sm);
-                        if (nextMap.isPresent()) {
-                            sm.currentJsonNode = nextMap.get();
-                        } else {
-                            // This will restrict from checking the fieldHierarchy.
-                            sm.jsonFieldDepth++;
-                        }
+                        JsonCreator.updateNextMapValue(sm);
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
@@ -718,13 +705,7 @@ public class JsonParser {
                         state = STRING_FIELD_VALUE_STATE;
                         sm.currentQuoteChar = ch;
                     } else if (ch == '{') {
-                        Optional<BMap<BString, Object>> nextMap = JsonCreator.initNewMapValue(sm);
-                        if (nextMap.isPresent()) {
-                            sm.currentJsonNode = nextMap.get();
-                        } else {
-                            // This will restrict from checking the fieldHierarchy.
-                            sm.jsonFieldDepth++;
-                        }
+                        JsonCreator.updateNextMapValue(sm);
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
                         sm.arrayIndexes.push(0);
@@ -843,14 +824,8 @@ public class JsonParser {
                     ch = buff[i];
                     sm.processLocation(ch);
                     if (ch == '{') {
+                        JsonCreator.updateNextMapValue(sm);
                         state = FIRST_FIELD_READY_STATE;
-                        Optional<BMap<BString, Object>> nextMap = JsonCreator.initNewMapValue(sm);
-                        if (nextMap.isPresent()) {
-                            sm.currentJsonNode = nextMap.get();
-                        } else {
-                            // This will restrict from checking the fieldHierarchy.
-                            sm.jsonFieldDepth++;
-                        }
                     } else if (ch == '[') {
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                         Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
@@ -896,14 +871,8 @@ public class JsonParser {
                     ch = buff[i];
                     sm.processLocation(ch);
                     if (ch == '{') {
+                        JsonCreator.updateNextMapValue(sm);
                         state = FIRST_FIELD_READY_STATE;
-                        Optional<BMap<BString, Object>> nextMap = JsonCreator.initNewMapValue(sm);
-                        if (nextMap.isPresent()) {
-                            sm.currentJsonNode = nextMap.get();
-                        } else {
-                            // This will restrict from checking the fieldHierarchy.
-                            sm.jsonFieldDepth++;
-                        }
                     } else if (ch == '[') {
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                         Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
@@ -975,7 +944,6 @@ public class JsonParser {
             if (expType == null) {
                 return;
             }
-
             currentJsonNode = JsonCreator.convertAndUpdateCurrentJsonNode(this, value, expType);
         }
 
@@ -985,7 +953,7 @@ public class JsonParser {
         private static class NonStringValueState implements State {
 
             @Override
-            public State transition(StateMachine sm, char[] buff, int i, int count) throws JsonParserException {
+            public State transition(StateMachine sm, char[] buff, int i, int count) {
                 State state = null;
                 char ch;
                 for (; i < count; i++) {
@@ -1003,8 +971,6 @@ public class JsonParser {
                     break;
                 }
                 sm.index = i + 1;
-                sm.currentJsonNode = JsonCreator.convertAndUpdateCurrentJsonNode(sm,
-                        StringUtils.fromString(sm.value()), sm.expectedTypes.peek());
                 return state;
             }
         }
