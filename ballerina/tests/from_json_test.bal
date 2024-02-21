@@ -5,7 +5,7 @@
 // in compliance with the License.
 // You may obtain a copy of the License at
 //
-//    http://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
@@ -37,6 +37,10 @@ isolated function testJsonToBasicTypes() returns error? {
 
     () val6 = check fromJsonWithType(null);
     test:assertEquals(val6, null);
+
+    decimal dVal = 1.5;
+    decimal val7 = check fromJsonWithType(dVal);
+    test:assertEquals(val7, 1.5d);
 }
 
 @test:Config
@@ -920,6 +924,20 @@ isolated function testArrayOrTupleCaseForFromJsonWithType() returns error? {
     test:assertEquals(val6, [{val: [[1, 2], [2, 3]]}]);
 }
 
+@test:Config
+function testNameAnnotationWithFromJsonWithType() returns error? {
+    json jsonContent =  {
+        "id": 1,
+        "title-name": "Harry Potter",
+        "author-name": "J.K. Rowling"
+    };
+
+    Book2 book = check fromJsonWithType(jsonContent);
+    test:assertEquals(book.id, 1);
+    test:assertEquals(book.title, "Harry Potter");
+    test:assertEquals(book.author, "J.K. Rowling");
+}
+
 // Negative tests for fromJsonWithType() function.
 
 @test:Config
@@ -1017,4 +1035,16 @@ isolated function testFromJsonWithTypeNegative6() {
     TestArr3|Error x = fromJsonWithType(jsonContent);
     test:assertTrue(x is Error);
     test:assertEquals((<Error>x).message(), "incompatible value '4' for type 'int' in field 'house'");
+}
+
+@test:Config
+isolated function testDuplicateFieldInRecordTypeWithFromJsonWithType() returns error? {
+    json jsonContent = string `{
+        "title": "Clean Code",
+        "author": "Robert C. Martin",
+        `;
+
+    BookN|Error x = fromJsonWithType(jsonContent);
+    test:assertTrue(x is error);
+    test:assertEquals((<error>x).message(), "duplicate field 'author'");
 }

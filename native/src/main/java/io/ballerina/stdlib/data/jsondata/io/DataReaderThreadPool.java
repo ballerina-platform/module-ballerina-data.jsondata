@@ -40,6 +40,8 @@ public class DataReaderThreadPool {
 
     /**
      * Thread factory for data reader.
+     *
+     * @since 0.1.0
      */
     static class DataThreadFactory implements ThreadFactory {
 

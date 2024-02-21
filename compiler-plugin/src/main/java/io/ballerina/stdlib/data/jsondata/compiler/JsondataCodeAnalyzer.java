@@ -26,6 +26,8 @@ import java.util.List;
 
 /**
  * Jsondata Code Analyzer.
+ *
+ * @since 0.1.0
  */
 public class JsondataCodeAnalyzer extends CodeAnalyzer {
     @Override

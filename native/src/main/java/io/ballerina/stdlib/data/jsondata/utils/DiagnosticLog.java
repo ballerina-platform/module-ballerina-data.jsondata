@@ -27,7 +27,7 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 
 /**
- * Diagnostic log for data module.
+ * Diagnostic log for jsondata module.
  *
  * @since 0.1.0
  */

@@ -99,21 +99,25 @@ public class JsonCreator {
                 RecordType recordType = (RecordType) currentType;
                 nextMapValue = ValueCreator.createRecordValue(expType.getPackage(), expType.getName());
                 sm.fieldHierarchy.push(new HashMap<>(recordType.getFields()));
+                sm.visitedFieldHierarchy.push(new HashMap<>());
                 sm.restType.push(recordType.getRestFieldType());
                 break;
             case TypeTags.MAP_TAG:
                 nextMapValue = ValueCreator.createMapValue((MapType) currentType);
                 sm.fieldHierarchy.push(new HashMap<>());
+                sm.visitedFieldHierarchy.push(new HashMap<>());
                 sm.restType.push(((MapType) currentType).getConstrainedType());
                 break;
             case TypeTags.JSON_TAG:
                 nextMapValue = ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
                 sm.fieldHierarchy.push(new HashMap<>());
+                sm.visitedFieldHierarchy.push(new HashMap<>());
                 sm.restType.push(PredefinedTypes.TYPE_JSON);
                 break;
             case TypeTags.ANYDATA_TAG:
                 nextMapValue = ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
                 sm.fieldHierarchy.push(new HashMap<>());
+                sm.visitedFieldHierarchy.push(new HashMap<>());
                 sm.restType.push(PredefinedTypes.TYPE_JSON);
                 break;
             default:

@@ -22,10 +22,16 @@ import io.ballerina.tools.diagnostics.DiagnosticSeverity;
 
 import static io.ballerina.tools.diagnostics.DiagnosticSeverity.ERROR;
 
+/**
+ * Diagnostic codes for Jsondata's compiler plugin.
+ *
+ * @since 0.1.0
+ */
 public enum JsondataDiagnosticCodes {
 
-    UNSUPPORTED_UNION_TYPE("BDE202",
-            "unsupported union type: union type does not support multiple complex types", ERROR);
+    UNSUPPORTED_UNION_TYPE("JSON_ERROR_201",
+            "unsupported union type: union type does not support multiple complex types", ERROR),
+    DUPLICATE_FIELD("JSON_ERROR_202", "invalid field: duplicate field found", ERROR);
 
     private final String code;
     private final String message;

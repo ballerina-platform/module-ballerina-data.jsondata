@@ -35,7 +35,6 @@ import io.ballerina.stdlib.data.jsondata.utils.DiagnosticLog;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -45,25 +44,24 @@ import java.util.List;
  */
 public class FromString {
 
-    private static final HashMap<Integer, Integer> TYPE_PRIORITY_ORDER = new HashMap<>() {{
-        int precedence = 0;
-        put(TypeTags.INT_TAG, precedence++);
-        put(TypeTags.FLOAT_TAG, precedence++);
-        put(TypeTags.DECIMAL_TAG, precedence++);
-        put(TypeTags.NULL_TAG, precedence++);
-        put(TypeTags.BOOLEAN_TAG, precedence++);
-        put(TypeTags.JSON_TAG, precedence++);
-        put(TypeTags.STRING_TAG, precedence);
-    }};
+    private static final List<Integer> TYPE_PRIORITY_ORDER = List.of(
+        TypeTags.INT_TAG,
+        TypeTags.FLOAT_TAG,
+        TypeTags.DECIMAL_TAG,
+        TypeTags.NULL_TAG,
+        TypeTags.BOOLEAN_TAG,
+        TypeTags.JSON_TAG,
+        TypeTags.STRING_TAG
+    );
 
-    private static final ArrayList<Type> BASIC_JSON_MEMBER_TYPES = new ArrayList<>() {{
-        add(PredefinedTypes.TYPE_NULL);
-        add(PredefinedTypes.TYPE_BOOLEAN);
-        add(PredefinedTypes.TYPE_INT);
-        add(PredefinedTypes.TYPE_FLOAT);
-        add(PredefinedTypes.TYPE_DECIMAL);
-        add(PredefinedTypes.TYPE_STRING);
-    }};
+    private static final List<Type> BASIC_JSON_MEMBER_TYPES = List.of(
+        PredefinedTypes.TYPE_NULL,
+        PredefinedTypes.TYPE_BOOLEAN,
+        PredefinedTypes.TYPE_INT,
+        PredefinedTypes.TYPE_FLOAT,
+        PredefinedTypes.TYPE_DECIMAL,
+        PredefinedTypes.TYPE_STRING
+    );
     private static final UnionType JSON_TYPE_WITH_BASIC_TYPES = TypeCreator.createUnionType(BASIC_JSON_MEMBER_TYPES);
 
     public static Object fromStringWithType(BString string, BTypedesc typed) {
@@ -140,9 +138,11 @@ public class FromString {
     }
 
     private static Object stringToUnion(BString string, UnionType expType) throws NumberFormatException {
-        List<Type> memberTypes = expType.getMemberTypes();
-        memberTypes.sort(Comparator.comparingInt(t -> TYPE_PRIORITY_ORDER.getOrDefault(
-                TypeUtils.getReferredType(t).getTag(), Integer.MAX_VALUE)));
+        List<Type> memberTypes = new ArrayList<>(expType.getMemberTypes());
+        memberTypes.sort(Comparator.comparingInt(t -> {
+            int index = TYPE_PRIORITY_ORDER.indexOf(TypeUtils.getReferredType(t).getTag());
+            return index == -1 ? Integer.MAX_VALUE : index;
+        }));
         for (Type memberType : memberTypes) {
             try {
                 Object result = fromStringWithType(string, memberType);

@@ -5,7 +5,7 @@
 // in compliance with the License.
 // You may obtain a copy of the License at
 //
-//    http://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
@@ -45,6 +45,38 @@ type CustomerR1 record {|
     string name;
     string product;
 |};
+
+@test:BeforeSuite
+function createLargeFile() returns error? {
+    io:WritableByteChannel wbc = check io:openWritableFile(LARGE_JSON_FILE);
+    string begin = string `{`;
+    string end = "}\n";
+    _ = check wbc.write(begin.toBytes(), 0);
+
+    _ = check wbc.write(string `"employees":
+    [
+        `.toBytes(), 0);
+    _ = check wbc.write(createEmployee(0).toString().toBytes(), 0);
+    foreach int i in 1 ... 1000 {
+        _ = check wbc.write(",\n        ".toBytes(), 0);
+        _ = check wbc.write(createEmployee(i).toString().toBytes(), 0);
+    }
+    _ = check wbc.write("\n    ],\n".toBytes(), 0);
+
+    _ = check wbc.write(string `"customers":
+    [
+        `.toBytes(), 0);
+    _ = check wbc.write(createCustomer(0).toString().toBytes(), 0);
+    foreach int i in 1...1000 {
+        _ = check wbc.write(",\n        ".toBytes(), 0);
+        _ = check wbc.write(createCustomer(i).toString().toBytes(), 0);
+    }
+    _ = check wbc.write("\n    ]\n".toBytes(), 0);
+
+
+    _ = check wbc.write(end.toBytes(), 0);
+    _ = check wbc.close();
+}
 
 @test:Config
 function testLargeFileStream() returns error? {
@@ -103,38 +135,6 @@ function testLargeFileStreamWithProjection() returns error? {
     test:assertEquals(company.customers[4].length(), 2);
     test:assertEquals(company.customers[4].id, 4);
     test:assertEquals(company.customers[4].product, "CHOREO");
-}
-
-@test:BeforeSuite
-function createLargeFile() returns error? {
-    io:WritableByteChannel wbc = check io:openWritableFile(LARGE_JSON_FILE);
-    string begin = string `{`;
-    string end = "}\n";
-    _ = check wbc.write(begin.toBytes(), 0);
-
-    _ = check wbc.write(string `"employees": 
-    [
-        `.toBytes(), 0);
-    _ = check wbc.write(createEmployee(0).toString().toBytes(), 0);
-    foreach int i in 1 ... 1000 {
-        _ = check wbc.write(",\n        ".toBytes(), 0);
-        _ = check wbc.write(createEmployee(i).toString().toBytes(), 0);
-    }
-    _ = check wbc.write("\n    ],\n".toBytes(), 0);
-
-    _ = check wbc.write(string `"customers": 
-    [
-        `.toBytes(), 0);
-    _ = check wbc.write(createCustomer(0).toString().toBytes(), 0);
-    foreach int i in 1...1000 {
-        _ = check wbc.write(",\n        ".toBytes(), 0);
-        _ = check wbc.write(createCustomer(i).toString().toBytes(), 0);
-    }
-    _ = check wbc.write("\n    ]\n".toBytes(), 0);
-
-
-    _ = check wbc.write(end.toBytes(), 0);
-    _ = check wbc.close();
 }
 
 function createEmployee(int id) returns EmployeeR1 {

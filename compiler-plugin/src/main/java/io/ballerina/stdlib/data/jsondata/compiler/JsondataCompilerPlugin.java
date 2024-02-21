@@ -23,6 +23,8 @@ import io.ballerina.projects.plugins.CompilerPluginContext;
 
 /**
  * Compiler plugin for Jsondata's utils functions.
+ *
+ * @since 0.1.0
  */
 public class JsondataCompilerPlugin extends CompilerPlugin {
 

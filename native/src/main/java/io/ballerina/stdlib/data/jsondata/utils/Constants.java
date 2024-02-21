@@ -24,6 +24,11 @@ import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BString;
 
+/**
+ * Constants for jsondata.
+ *
+ * @since 0.1.0
+ */
 public class Constants {
     public static final MapType JSON_MAP_TYPE = TypeCreator.createMapType(PredefinedTypes.TYPE_JSON);
     public static final MapType ANYDATA_MAP_TYPE = TypeCreator.createMapType(PredefinedTypes.TYPE_ANYDATA);

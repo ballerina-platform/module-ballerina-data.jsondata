@@ -19,11 +19,13 @@
 package io.ballerina.stdlib.data.jsondata.compiler;
 
 import io.ballerina.compiler.api.SemanticModel;
+import io.ballerina.compiler.api.symbols.AnnotationAttachmentSymbol;
 import io.ballerina.compiler.api.symbols.ArrayTypeSymbol;
 import io.ballerina.compiler.api.symbols.RecordFieldSymbol;
 import io.ballerina.compiler.api.symbols.RecordTypeSymbol;
 import io.ballerina.compiler.api.symbols.Symbol;
 import io.ballerina.compiler.api.symbols.TupleTypeSymbol;
+import io.ballerina.compiler.api.symbols.TypeDefinitionSymbol;
 import io.ballerina.compiler.api.symbols.TypeDescKind;
 import io.ballerina.compiler.api.symbols.TypeReferenceTypeSymbol;
 import io.ballerina.compiler.api.symbols.TypeSymbol;
@@ -39,6 +41,7 @@ import io.ballerina.compiler.syntax.tree.ModulePartNode;
 import io.ballerina.compiler.syntax.tree.ModuleVariableDeclarationNode;
 import io.ballerina.compiler.syntax.tree.Node;
 import io.ballerina.compiler.syntax.tree.SyntaxKind;
+import io.ballerina.compiler.syntax.tree.TypeDefinitionNode;
 import io.ballerina.compiler.syntax.tree.VariableDeclarationNode;
 import io.ballerina.projects.plugins.AnalysisTask;
 import io.ballerina.projects.plugins.SyntaxNodeAnalysisContext;
@@ -48,13 +51,17 @@ import io.ballerina.tools.diagnostics.DiagnosticInfo;
 import io.ballerina.tools.diagnostics.DiagnosticSeverity;
 import io.ballerina.tools.diagnostics.Location;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 /**
  * Jsondata Record Field Validator.
+ *
+ * @since 0.1.0
  */
 public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisContext> {
 
@@ -78,6 +85,8 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
                 case FUNCTION_DEFINITION -> processFunctionDefinitionNode((FunctionDefinitionNode) member, ctx);
                 case MODULE_VAR_DECL ->
                         processModuleVariableDeclarationNode((ModuleVariableDeclarationNode) member, ctx);
+                case TYPE_DEFINITION ->
+                        processTypeDefinitionNode((TypeDefinitionNode) member, ctx);
             }
         }
     }
@@ -91,7 +100,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
             }
             VariableDeclarationNode variableDeclarationNode = (VariableDeclarationNode) node;
             Optional<ExpressionNode> initializer = variableDeclarationNode.initializer();
-            if (initializer.isEmpty() || !isFromJsonFunctionFromXmldata(initializer.get())) {
+            if (initializer.isEmpty()) {
                 continue;
             }
 
@@ -100,11 +109,20 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
             if (symbol.isEmpty()) {
                 continue;
             }
-            validateExpectedType(((VariableSymbol) symbol.get()).typeDescriptor(), ctx);
+
+            TypeSymbol typeSymbol = ((VariableSymbol) symbol.get()).typeDescriptor();
+            if (!isFromJsonFunctionFromJsondata(initializer.get())) {
+                if (typeSymbol.typeKind() == TypeDescKind.RECORD) {
+                    detectDuplicateFields((RecordTypeSymbol) typeSymbol, ctx);
+                }
+                continue;
+            }
+
+            validateExpectedType(typeSymbol, ctx);
         }
     }
 
-    private boolean isFromJsonFunctionFromXmldata(ExpressionNode expressionNode) {
+    private boolean isFromJsonFunctionFromJsondata(ExpressionNode expressionNode) {
         if (expressionNode.kind() == SyntaxKind.CHECK_EXPRESSION) {
             expressionNode = ((CheckExpressionNode) expressionNode).expression();
         }
@@ -112,7 +130,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
         if (expressionNode.kind() != SyntaxKind.FUNCTION_CALL) {
             return false;
         }
-        String functionName = ((FunctionCallExpressionNode) expressionNode).functionName().toSourceCode().trim();
+        String functionName = ((FunctionCallExpressionNode) expressionNode).functionName().toString().trim();
         return functionName.contains(Constants.FROM_JSON_STRING_WITH_TYPE);
     }
 
@@ -134,10 +152,11 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
     }
 
     private void validateRecordType(RecordTypeSymbol recordTypeSymbol, SyntaxNodeAnalysisContext ctx) {
+        detectDuplicateFields(recordTypeSymbol, ctx);
+
         for (Map.Entry<String, RecordFieldSymbol> entry : recordTypeSymbol.fieldDescriptors().entrySet()) {
             RecordFieldSymbol fieldSymbol = entry.getValue();
-            TypeSymbol typeSymbol = fieldSymbol.typeDescriptor();
-            validateRecordFieldType(typeSymbol, fieldSymbol.getLocation(), ctx);
+            validateRecordFieldType(fieldSymbol.typeDescriptor(), fieldSymbol.getLocation(), ctx);
         }
     }
 
@@ -156,7 +175,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
         int nonPrimitiveMemberCount = 0;
         List<TypeSymbol> memberTypeSymbols = unionTypeSymbol.memberTypeDescriptors();
         for (TypeSymbol memberTypeSymbol : memberTypeSymbols) {
-            if (isPrimitiveType(memberTypeSymbol)) {
+            if (isSupportedUnionMemberType(memberTypeSymbol)) {
                 continue;
             }
             nonPrimitiveMemberCount++;
@@ -167,15 +186,20 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
         }
     }
 
-    private boolean isPrimitiveType(TypeSymbol typeSymbol) {
+    private boolean isSupportedUnionMemberType(TypeSymbol typeSymbol) {
         TypeDescKind kind = typeSymbol.typeKind();
         if (kind == TypeDescKind.TYPE_REFERENCE) {
             kind = ((TypeReferenceTypeSymbol) typeSymbol).typeDescriptor().typeKind();
         }
 
-        return kind == TypeDescKind.INT || kind == TypeDescKind.FLOAT || kind == TypeDescKind.DECIMAL
-                || kind == TypeDescKind.STRING || kind == TypeDescKind.BOOLEAN || kind == TypeDescKind.BYTE
-                || kind == TypeDescKind.NIL;
+        switch (kind) {
+            case INT, FLOAT, DECIMAL, STRING, BOOLEAN, BYTE, NIL, ERROR -> {
+                return true;
+            }
+            default -> {
+                return false;
+            }
+        }
     }
 
     private void reportDiagnosticInfo(SyntaxNodeAnalysisContext ctx, Optional<Location> location,
@@ -193,7 +217,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
     private void processModuleVariableDeclarationNode(ModuleVariableDeclarationNode moduleVariableDeclarationNode,
                                                       SyntaxNodeAnalysisContext ctx) {
         Optional<ExpressionNode> initializer = moduleVariableDeclarationNode.initializer();
-        if (initializer.isEmpty() || !isFromJsonFunctionFromXmldata(initializer.get())) {
+        if (initializer.isEmpty() || !isFromJsonFunctionFromJsondata(initializer.get())) {
             return;
         }
 
@@ -202,5 +226,51 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
             return;
         }
         validateExpectedType(((VariableSymbol) symbol.get()).typeDescriptor(), ctx);
+    }
+
+    private void processTypeDefinitionNode(TypeDefinitionNode typeDefinitionNode, SyntaxNodeAnalysisContext ctx) {
+        Node typeDescriptor = typeDefinitionNode.typeDescriptor();
+        if (typeDescriptor.kind() != SyntaxKind.RECORD_TYPE_DESC) {
+            return;
+        }
+        validateRecordTypeDefinition(typeDefinitionNode, ctx);
+    }
+
+    private void validateRecordTypeDefinition(TypeDefinitionNode typeDefinitionNode, SyntaxNodeAnalysisContext ctx) {
+        Optional<Symbol> symbol = semanticModel.symbol(typeDefinitionNode);
+        if (symbol.isEmpty()) {
+            return;
+        }
+        TypeDefinitionSymbol typeDefinitionSymbol = (TypeDefinitionSymbol) symbol.get();
+        detectDuplicateFields((RecordTypeSymbol) typeDefinitionSymbol.typeDescriptor(), ctx);
+    }
+
+    private void detectDuplicateFields(RecordTypeSymbol recordTypeSymbol, SyntaxNodeAnalysisContext ctx) {
+        List<String> fieldMembers = new ArrayList<>();
+        for (Map.Entry<String, RecordFieldSymbol> entry : recordTypeSymbol.fieldDescriptors().entrySet()) {
+            RecordFieldSymbol fieldSymbol = entry.getValue();
+            String name = getNameFromAnnotation(entry.getKey(), fieldSymbol.annotAttachments());
+            if (fieldMembers.contains(name)) {
+                reportDiagnosticInfo(ctx, fieldSymbol.getLocation(), JsondataDiagnosticCodes.DUPLICATE_FIELD);
+                return;
+            }
+            fieldMembers.add(name);
+        }
+    }
+
+    private String getNameFromAnnotation(String fieldName,
+                                         List<AnnotationAttachmentSymbol> annotationAttachments) {
+        for (AnnotationAttachmentSymbol annotAttSymbol : annotationAttachments) {
+            Optional<String> nameAnnot = annotAttSymbol.typeDescriptor().getName();
+            if (nameAnnot.isEmpty()) {
+                continue;
+            }
+            String value = nameAnnot.get();
+            if (value.equals(Constants.NAME)) {
+                return ((LinkedHashMap<?, ?>) annotAttSymbol.attachmentValue().orElseThrow().value())
+                        .get("value").toString();
+            }
+        }
+        return fieldName;
     }
 }

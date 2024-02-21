@@ -130,7 +130,6 @@ public class JsonParser {
 
         Object currentJsonNode;
         Deque<Object> nodesStack;
-        // TODO: Need group same level field and keep the hierarchy.
         Deque<String> fieldNames;
 
         private StringBuilder hexBuilder = new StringBuilder(4);
@@ -143,6 +142,7 @@ public class JsonParser {
         private char currentQuoteChar;
         Field currentField;
         Stack<Map<String, Field>> fieldHierarchy = new Stack<>();
+        Stack<Map<String, Field>> visitedFieldHierarchy = new Stack<>();
         Stack<Type> restType = new Stack<>();
         Stack<Type> expectedTypes = new Stack<>();
         int jsonFieldDepth = 0;
@@ -188,44 +188,40 @@ public class JsonParser {
         public Object execute(Reader reader, Type type) throws BError {
             switch (type.getTag()) {
                 // TODO: Handle readonly and singleton type as expType.
-                case TypeTags.RECORD_TYPE_TAG:
+                case TypeTags.RECORD_TYPE_TAG -> {
                     RecordType recordType = (RecordType) type;
                     expectedTypes.push(recordType);
                     fieldHierarchy.push(JsonCreator.getAllFieldsInRecord(recordType));
+                    visitedFieldHierarchy.push(new HashMap<>());
                     restType.push(recordType.getRestFieldType());
-                    break;
-                case TypeTags.ARRAY_TAG:
-                case TypeTags.TUPLE_TAG:
+                }
+                case TypeTags.ARRAY_TAG, TypeTags.TUPLE_TAG -> {
                     expectedTypes.push(type);
                     arrayIndexes.push(0);
-                    break;
-                case TypeTags.NULL_TAG:
-                case TypeTags.BOOLEAN_TAG:
-                case TypeTags.INT_TAG:
-                case TypeTags.FLOAT_TAG:
-                case TypeTags.DECIMAL_TAG:
-                case TypeTags.STRING_TAG:
-                    expectedTypes.push(type);
-                    break;
-                case TypeTags.JSON_TAG:
-                case  TypeTags.ANYDATA_TAG:
+                }
+                case TypeTags.NULL_TAG, TypeTags.BOOLEAN_TAG, TypeTags.INT_TAG, TypeTags.FLOAT_TAG,
+                        TypeTags.DECIMAL_TAG, TypeTags.STRING_TAG ->
+                        expectedTypes.push(type);
+                case TypeTags.JSON_TAG, TypeTags.ANYDATA_TAG -> {
                     expectedTypes.push(type);
                     fieldHierarchy.push(new HashMap<>());
+                    visitedFieldHierarchy.push(new HashMap<>());
                     restType.push(type);
-                    break;
-                case TypeTags.MAP_TAG:
+                }
+                case TypeTags.MAP_TAG -> {
                     expectedTypes.push(type);
                     fieldHierarchy.push(new HashMap<>());
+                    visitedFieldHierarchy.push(new HashMap<>());
                     restType.push(((MapType) type).getConstrainedType());
-                    break;
-                case TypeTags.UNION_TAG:
+                }
+                case TypeTags.UNION_TAG -> {
                     if (isSupportedUnionType((UnionType) type)) {
                         expectedTypes.push(type);
                         break;
                     }
                     throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
-                default:
-                    throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
+                }
+                default -> throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
             }
 
             State currentState = DOC_START_STATE;
@@ -253,14 +249,13 @@ public class JsonParser {
         private boolean isSupportedUnionType(UnionType type) {
             for (Type memberType : type.getMemberTypes()) {
                 switch (memberType.getTag()) {
-                    case TypeTags.RECORD_TYPE_TAG:
-                    case TypeTags.OBJECT_TYPE_TAG:
-                    case TypeTags.MAP_TAG:
-                    case TypeTags.JSON_TAG:
-                    case TypeTags.ANYDATA_TAG:
+                    case TypeTags.RECORD_TYPE_TAG, TypeTags.OBJECT_TYPE_TAG, TypeTags.MAP_TAG, TypeTags.JSON_TAG,
+                            TypeTags.ANYDATA_TAG -> {
                         return false;
-                    case TypeTags.UNION_TAG:
+                    }
+                    case TypeTags.UNION_TAG -> {
                         return !isSupportedUnionType(type);
+                    }
                 }
             }
             return true;
@@ -298,6 +293,7 @@ public class JsonParser {
             }
 
             Map<String, Field> remainingFields = fieldHierarchy.pop();
+            visitedFieldHierarchy.pop();
             restType.pop();
             for (Field field : remainingFields.values()) {
                 if (SymbolFlags.isFlagOn(field.getFlags(), SymbolFlags.REQUIRED)) {
@@ -331,7 +327,7 @@ public class JsonParser {
             }
 
             switch (TypeUtils.getType(parentNode).getTag()) {
-                case TypeTags.ARRAY_TAG:
+                case TypeTags.ARRAY_TAG -> {
                     // Handle projection in array.
                     ArrayType arrayType = (ArrayType) parentNodeType;
                     if (arrayType.getState() == ArrayType.ArrayState.CLOSED &&
@@ -339,12 +335,10 @@ public class JsonParser {
                         break;
                     }
                     ((BArray) parentNode).add(arrayIndexes.peek(), currentJsonNode);
-                    break;
-                case TypeTags.TUPLE_TAG:
-                    ((BArray) parentNode).add(arrayIndexes.peek(), currentJsonNode);
-                    break;
-                default:
-                    break;
+                }
+                case TypeTags.TUPLE_TAG -> ((BArray) parentNode).add(arrayIndexes.peek(), currentJsonNode);
+                default -> {
+                }
             }
 
             currentJsonNode = parentNode;
@@ -480,7 +474,7 @@ public class JsonParser {
         private static class FirstArrayElementReadyState implements State {
 
             @Override
-            public State transition(StateMachine sm, char[] buff, int i, int count) throws JsonParserException {
+            public State transition(StateMachine sm, char[] buff, int i, int count) {
                 State state = null;
                 char ch;
                 for (; i < count; i++) {
@@ -561,7 +555,7 @@ public class JsonParser {
         private static class NonFirstArrayElementReadyState implements State {
 
             @Override
-            public State transition(StateMachine sm, char[] buff, int i, int count) throws JsonParserException {
+            public State transition(StateMachine sm, char[] buff, int i, int count) {
                 State state = null;
                 char ch;
                 for (; i < count; i++) {
@@ -629,13 +623,22 @@ public class JsonParser {
                     if (ch == sm.currentQuoteChar) {
                         String jsonFieldName = sm.processFieldName();
                         if (sm.jsonFieldDepth == 0) {
-                            sm.currentField = sm.fieldHierarchy.peek().remove(jsonFieldName);
+                            Field currentField;
+                            if (sm.visitedFieldHierarchy.peek().containsKey(jsonFieldName)) {
+                                currentField = sm.visitedFieldHierarchy.peek().get(jsonFieldName);
+                            } else {
+                                currentField = sm.fieldHierarchy.peek().remove(jsonFieldName);
+                            }
+
+                            sm.currentField = currentField;
                             Type fieldType;
-                            if (sm.currentField == null) {
+                            if (currentField == null) {
                                 fieldType = sm.restType.peek();
                             } else {
-                                jsonFieldName = sm.currentField.getFieldName();
-                                fieldType = sm.currentField.getFieldType();
+                                // Replace modified field name with actual field name.
+                                jsonFieldName = currentField.getFieldName();
+                                fieldType = currentField.getFieldType();
+                                sm.visitedFieldHierarchy.peek().put(jsonFieldName, currentField);
                             }
                             sm.expectedTypes.push(fieldType);
                         } else if (sm.expectedTypes.peek() == null) {
@@ -692,7 +695,7 @@ public class JsonParser {
         private static class FieldValueReadyState implements State {
 
             @Override
-            public State transition(StateMachine sm, char[] buff, int i, int count) throws JsonParserException {
+            public State transition(StateMachine sm, char[] buff, int i, int count) {
                 State state = null;
                 char ch;
                 for (; i < count; i++) {

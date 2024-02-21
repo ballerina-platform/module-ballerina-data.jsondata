@@ -5,7 +5,7 @@
 // in compliance with the License.
 // You may obtain a copy of the License at
 //
-//    http://www.apache.org/licenses/LICENSE-2.0
+// http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
@@ -932,6 +932,37 @@ isolated function testArrayOrTupleCaseForFromJsonStringWithType() returns error?
     string jsonStr6 = string `[{"val" : [["1", 2], [2, "3"]]}]`;
     [record {|int[][] val;|}] val6 = check fromJsonStringWithType(jsonStr6);
     test:assertEquals(val6, [{val: [[1, 2], [2, 3]]}]);
+}
+
+@test:Config
+function testDuplicateKeyInTheStringSource() returns error? {
+    string str = string `{
+        "id": 1,
+        "name": "Anne",
+        "id": 2
+    }`;
+
+    record {
+        int id;
+        string name;
+    } employee = check fromJsonStringWithType(str);
+    test:assertEquals(employee.length(), 2);
+    test:assertEquals(employee.id, 2);
+    test:assertEquals(employee.name, "Anne");
+}
+
+@test:Config
+function testNameAnnotationWithFromJsonStringWithType() returns error? {
+    string jsonStr = string `{
+        "id": 1,
+        "title-name": "Harry Potter",
+        "author-name": "J.K. Rowling"
+    }`;
+
+    Book2 book = check fromJsonStringWithType(jsonStr);
+    test:assertEquals(book.id, 1);
+    test:assertEquals(book.title, "Harry Potter");
+    test:assertEquals(book.author, "J.K. Rowling");
 }
 
 // Negative tests for fromJsonStringWithType() function.

@@ -32,6 +32,7 @@ import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BArray;
+import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
@@ -85,7 +86,7 @@ public class JsonTraverse {
             switch (referredType.getTag()) {
                 case TypeTags.RECORD_TYPE_TAG:
                     RecordType recordType = (RecordType) referredType;
-                    fieldHierarchy.push(new HashMap<>(recordType.getFields()));
+                    fieldHierarchy.push(JsonCreator.getAllFieldsInRecord(recordType));
                     restType.push(recordType.getRestFieldType());
                     return traverseMapJsonOrArrayJson(json,
                             ValueCreator.createRecordValue(type.getPackage(), type.getName()), referredType);
@@ -157,7 +158,8 @@ public class JsonTraverse {
                     continue;
                 }
 
-                fieldNames.push(currentField.getFieldName());
+                String fieldName = currentField.getFieldName();
+                fieldNames.push(fieldName);
                 Type currentFieldType = TypeUtils.getReferredType(currentField.getFieldType());
                 int currentFieldTypeTag = currentFieldType.getTag();
                 Object mapValue = map.get(key);
@@ -174,7 +176,7 @@ public class JsonTraverse {
                         break;
                     default:
                         Object nextJsonNode = traverseJson(mapValue, currentFieldType);
-                        ((BMap<BString, Object>) currentJsonNode).put(key, nextJsonNode);
+                        ((BMap<BString, Object>) currentJsonNode).put(StringUtils.fromString(fieldName), nextJsonNode);
                 }
             }
             Map<String, Field> currentField = fieldHierarchy.pop();
@@ -258,8 +260,8 @@ public class JsonTraverse {
             return ((json == null && type.getTag() == TypeTags.NULL_TAG)
                     || (json instanceof BString && type.getTag() == TypeTags.STRING_TAG)
                     || (json instanceof Long && type.getTag() == TypeTags.INT_TAG)
-                    || (json instanceof Double && (type.getTag() == TypeTags.FLOAT_TAG
-                    || type.getTag() == TypeTags.DECIMAL_TAG))
+                    || (json instanceof Double && type.getTag() == TypeTags.FLOAT_TAG)
+                    || ((json instanceof Double || json instanceof BDecimal) && type.getTag() == TypeTags.DECIMAL_TAG)
                     || (Boolean.class.isInstance(json) && type.getTag() == TypeTags.BOOLEAN_TAG));
         }
 
