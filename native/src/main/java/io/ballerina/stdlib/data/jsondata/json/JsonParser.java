@@ -191,9 +191,7 @@ public class JsonParser {
                 case TypeTags.RECORD_TYPE_TAG -> {
                     RecordType recordType = (RecordType) type;
                     expectedTypes.push(recordType);
-                    fieldHierarchy.push(JsonCreator.getAllFieldsInRecord(recordType));
-                    visitedFieldHierarchy.push(new HashMap<>());
-                    restType.push(recordType.getRestFieldType());
+                    updateExpectedType(JsonCreator.getAllFieldsInRecord(recordType), recordType.getRestFieldType());
                 }
                 case TypeTags.ARRAY_TAG, TypeTags.TUPLE_TAG -> {
                     expectedTypes.push(type);
@@ -204,15 +202,11 @@ public class JsonParser {
                         expectedTypes.push(type);
                 case TypeTags.JSON_TAG, TypeTags.ANYDATA_TAG -> {
                     expectedTypes.push(type);
-                    fieldHierarchy.push(new HashMap<>());
-                    visitedFieldHierarchy.push(new HashMap<>());
-                    restType.push(type);
+                    updateExpectedType(new HashMap<>(), type);
                 }
                 case TypeTags.MAP_TAG -> {
                     expectedTypes.push(type);
-                    fieldHierarchy.push(new HashMap<>());
-                    visitedFieldHierarchy.push(new HashMap<>());
-                    restType.push(((MapType) type).getConstrainedType());
+                    updateExpectedType(new HashMap<>(), ((MapType) type).getConstrainedType());
                 }
                 case TypeTags.UNION_TAG -> {
                     if (isSupportedUnionType((UnionType) type)) {
@@ -276,6 +270,12 @@ public class JsonParser {
             char[] newBuff = new char[charBuff.length * 2];
             System.arraycopy(this.charBuff, 0, newBuff, 0, this.charBuff.length);
             this.charBuff = newBuff;
+        }
+
+        private State finalizeNonArrayObjectAndRemoveExpectedType() {
+            State state = finalizeNonArrayObject();
+            expectedTypes.pop();
+            return state;
         }
 
         private State finalizeNonArrayObject() {
@@ -343,6 +343,30 @@ public class JsonParser {
 
             currentJsonNode = parentNode;
             return ARRAY_ELEMENT_END_STATE;
+        }
+
+        private void updateIndexOfArrayElement() {
+            int arrayIndex = arrayIndexes.pop();
+            arrayIndexes.push(arrayIndex + 1);
+        }
+
+        public void updateExpectedType(Map<String, Field> fields, Type restType) {
+            this.fieldHierarchy.push(new HashMap<>(fields));
+            this.visitedFieldHierarchy.push(new HashMap<>());
+            this.restType.push(restType);
+        }
+
+        private void updateNextArrayValue() {
+            arrayIndexes.push(0);
+            Optional<BArray> nextArray = JsonCreator.initNewArrayValue(this);
+            nextArray.ifPresent(array -> currentJsonNode = array);
+        }
+
+        private State finalizeArrayObject() {
+            int currentIndex = arrayIndexes.pop();
+            State state = finalizeObject();
+            JsonCreator.validateListSize(currentIndex, expectedTypes.pop());
+            return state;
         }
 
         public enum ParserContext {
@@ -456,8 +480,7 @@ public class JsonParser {
                         state = this;
                         continue;
                     } else if (ch == '}') {
-                        state = sm.finalizeNonArrayObject();
-                        sm.expectedTypes.pop();
+                        state = sm.finalizeNonArrayObjectAndRemoveExpectedType();
                     } else {
                         StateMachine.throwExpected("\"", "}");
                     }
@@ -498,13 +521,10 @@ public class JsonParser {
                         // Get member type of the array and set as expected type.
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
                                 sm.arrayIndexes.peek()));
-                        sm.arrayIndexes.push(0);
-                        Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
-                        nextArray.ifPresent(array -> sm.currentJsonNode = array);
+                        sm.updateNextArrayValue();
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else if (ch == ']') {
-                        state = sm.finalizeObject();
-                        sm.expectedTypes.pop();
+                        state = sm.finalizeArrayObject();
                     } else {
                         state = NON_STRING_ARRAY_ELEMENT_STATE;
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
@@ -577,9 +597,7 @@ public class JsonParser {
                     } else if (ch == '[') {
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
                                 sm.arrayIndexes.peek()));
-                        sm.arrayIndexes.push(0);
-                        Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
-                        nextArray.ifPresent(array -> sm.currentJsonNode = array);
+                        sm.updateNextArrayValue();
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else {
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
@@ -604,8 +622,7 @@ public class JsonParser {
         }
 
         private String processFieldName() {
-            String value = this.value();
-            return value;
+            return this.value();
         }
 
         /**
@@ -831,16 +848,13 @@ public class JsonParser {
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
-                        Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
-                        nextArray.ifPresent(bArray -> sm.currentJsonNode = bArray);
+                        sm.updateNextArrayValue();
                     } else if (ch == '}') {
                         sm.processValue();
-                        state = sm.finalizeNonArrayObject();
-                        sm.expectedTypes.pop();
+                        state = sm.finalizeNonArrayObjectAndRemoveExpectedType();
                     } else if (ch == ']') {
                         sm.processValue();
-                        state = sm.finalizeObject();
-                        sm.expectedTypes.pop();
+                        state = sm.finalizeArrayObject();
                     } else if (ch == ',') {
                         sm.processValue();
                         state = NON_FIRST_FIELD_READY_STATE;
@@ -878,20 +892,14 @@ public class JsonParser {
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
-                        Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
-                        nextArray.ifPresent(bArray -> sm.currentJsonNode = bArray);
+                        sm.updateNextArrayValue();
                     } else if (ch == ']') {
                         sm.processValue();
-                        int currentIndex = sm.arrayIndexes.pop();
-                        state = sm.finalizeObject();
-                        JsonCreator.validateListSize(currentIndex, sm.expectedTypes.pop());
+                        state = sm.finalizeArrayObject();
                     } else if (ch == ',') {
                         sm.processValue();
                         state = NON_FIRST_ARRAY_ELEMENT_READY_STATE;
-
-                        // Update index of the array element
-                        int arrayIndex = sm.arrayIndexes.pop();
-                        sm.arrayIndexes.push(arrayIndex + 1);
+                        sm.updateIndexOfArrayElement();
                     } else if (StateMachine.isWhitespace(ch)) {
                         sm.processValue();
                         state = ARRAY_ELEMENT_END_STATE;
@@ -996,8 +1004,7 @@ public class JsonParser {
                     } else if (ch == ',') {
                         state = NON_FIRST_FIELD_READY_STATE;
                     } else if (ch == '}') {
-                        state = sm.finalizeNonArrayObject();
-                        sm.expectedTypes.pop();
+                        state = sm.finalizeNonArrayObjectAndRemoveExpectedType();
                     } else {
                         StateMachine.throwExpected(",", "}");
                     }
@@ -1026,14 +1033,9 @@ public class JsonParser {
                         continue;
                     } else if (ch == ',') {
                         state = NON_FIRST_ARRAY_ELEMENT_READY_STATE;
-
-                        // Update index of the array element
-                        int arrayIndex = sm.arrayIndexes.pop();
-                        sm.arrayIndexes.push(arrayIndex + 1);
+                        sm.updateIndexOfArrayElement();
                     } else if (ch == ']') {
-                        int currentIndex = sm.arrayIndexes.pop();
-                        state = sm.finalizeObject();
-                        JsonCreator.validateListSize(currentIndex, sm.expectedTypes.pop());
+                        state = sm.finalizeArrayObject();
                     } else {
                         StateMachine.throwExpected(",", "]");
                     }

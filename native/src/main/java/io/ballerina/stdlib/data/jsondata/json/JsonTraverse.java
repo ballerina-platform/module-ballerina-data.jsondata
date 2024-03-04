@@ -84,28 +84,28 @@ public class JsonTraverse {
         public Object traverseJson(Object json, Type type) {
             Type referredType = TypeUtils.getReferredType(type);
             switch (referredType.getTag()) {
-                case TypeTags.RECORD_TYPE_TAG:
+                case TypeTags.RECORD_TYPE_TAG -> {
                     RecordType recordType = (RecordType) referredType;
                     fieldHierarchy.push(JsonCreator.getAllFieldsInRecord(recordType));
                     restType.push(recordType.getRestFieldType());
                     return traverseMapJsonOrArrayJson(json,
                             ValueCreator.createRecordValue(type.getPackage(), type.getName()), referredType);
-                case TypeTags.ARRAY_TAG:
+                }
+                case TypeTags.ARRAY_TAG -> {
                     rootArray = referredType;
                     return traverseMapJsonOrArrayJson(json, ValueCreator.createArrayValue((ArrayType) referredType),
                             referredType);
-                case TypeTags.TUPLE_TAG:
+                }
+                case TypeTags.TUPLE_TAG -> {
                     rootArray = referredType;
                     return traverseMapJsonOrArrayJson(json, ValueCreator.createTupleValue((TupleType) referredType),
                             referredType);
-                case TypeTags.NULL_TAG:
-                case TypeTags.BOOLEAN_TAG:
-                case TypeTags.INT_TAG:
-                case TypeTags.FLOAT_TAG:
-                case TypeTags.DECIMAL_TAG:
-                case TypeTags.STRING_TAG:
+                }
+                case TypeTags.NULL_TAG, TypeTags.BOOLEAN_TAG, TypeTags.INT_TAG, TypeTags.FLOAT_TAG,
+                        TypeTags.DECIMAL_TAG, TypeTags.STRING_TAG -> {
                     return convertToBasicType(json, referredType);
-                case TypeTags.UNION_TAG:
+                }
+                case TypeTags.UNION_TAG -> {
                     for (Type memberType : ((UnionType) referredType).getMemberTypes()) {
                         try {
                             return traverseJson(json, memberType);
@@ -113,17 +113,19 @@ public class JsonTraverse {
                             // Ignore
                         }
                     }
-                    return DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, type, PredefinedTypes.TYPE_ANYDATA);
-                case TypeTags.JSON_TAG:
-                case TypeTags.ANYDATA_TAG:
+                    throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, type, PredefinedTypes.TYPE_ANYDATA);
+                }
+                case TypeTags.JSON_TAG, TypeTags.ANYDATA_TAG -> {
                     return json;
-                case TypeTags.MAP_TAG:
+                }
+                case TypeTags.MAP_TAG -> {
                     MapType mapType = (MapType) referredType;
                     fieldHierarchy.push(new HashMap<>());
                     restType.push(mapType.getConstrainedType());
                     return traverseMapJsonOrArrayJson(json, ValueCreator.createMapValue(mapType), referredType);
-                default:
-                    return DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, type, PredefinedTypes.TYPE_ANYDATA);
+                }
+                default ->
+                        throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, type, PredefinedTypes.TYPE_ANYDATA);
             }
         }
 
@@ -165,18 +167,15 @@ public class JsonTraverse {
                 Object mapValue = map.get(key);
 
                 switch (currentFieldTypeTag) {
-                    case TypeTags.NULL_TAG:
-                    case TypeTags.BOOLEAN_TAG:
-                    case TypeTags.INT_TAG:
-                    case TypeTags.FLOAT_TAG:
-                    case TypeTags.DECIMAL_TAG:
-                    case TypeTags.STRING_TAG:
+                    case TypeTags.NULL_TAG, TypeTags.BOOLEAN_TAG, TypeTags.INT_TAG, TypeTags.FLOAT_TAG,
+                            TypeTags.DECIMAL_TAG, TypeTags.STRING_TAG -> {
                         Object value = convertToBasicType(mapValue, currentFieldType);
                         ((BMap<BString, Object>) currentJsonNode).put(StringUtils.fromString(fieldNames.pop()), value);
-                        break;
-                    default:
-                        Object nextJsonNode = traverseJson(mapValue, currentFieldType);
-                        ((BMap<BString, Object>) currentJsonNode).put(StringUtils.fromString(fieldName), nextJsonNode);
+                    }
+                    default -> {
+                        ((BMap<BString, Object>) currentJsonNode).put(StringUtils.fromString(fieldName),
+                                traverseJson(mapValue, currentFieldType));
+                    }
                 }
             }
             Map<String, Field> currentField = fieldHierarchy.pop();
@@ -188,28 +187,26 @@ public class JsonTraverse {
         private Object traverseArrayValue(Object json, Object currentJsonNode) {
             BArray array = (BArray) json;
             switch (rootArray.getTag()) {
-                case TypeTags.ARRAY_TAG:
+                case TypeTags.ARRAY_TAG -> {
                     ArrayType arrayType = (ArrayType) rootArray;
                     int expectedArraySize = arrayType.getSize();
                     if (expectedArraySize > array.getLength()) {
                         throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
                     }
-
                     Type elementType = arrayType.getElementType();
                     if (expectedArraySize == -1) {
                         traverseArrayMembers(array.getLength(), array, elementType, currentJsonNode);
                     } else {
                         traverseArrayMembers(expectedArraySize, array, elementType, currentJsonNode);
                     }
-                    break;
-                case TypeTags.TUPLE_TAG:
+                }
+                case TypeTags.TUPLE_TAG -> {
                     TupleType tupleType = (TupleType) rootArray;
                     Type restType = tupleType.getRestType();
                     int expectedTupleTypeCount = tupleType.getTupleTypes().size();
                     if (expectedTupleTypeCount > array.getLength()) {
                         throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
                     }
-
                     for (int i = 0; i < array.getLength(); i++) {
                         Object jsonMember = array.get(i);
                         Object nextJsonNode;
@@ -222,7 +219,7 @@ public class JsonTraverse {
                         }
                         ((BArray) currentJsonNode).add(i, nextJsonNode);
                     }
-                    break;
+                }
             }
             return currentJsonNode;
         }
@@ -236,33 +233,32 @@ public class JsonTraverse {
         private void addRestField(Type restFieldType, BString key, Object jsonMember, Object currentJsonNode) {
             Object nextJsonValue;
             switch (restFieldType.getTag()) {
-                case TypeTags.ANYDATA_TAG:
-                case TypeTags.JSON_TAG:
-                    ((BMap<BString, Object>) currentJsonNode).put(key, jsonMember);
-                    break;
-                case TypeTags.BOOLEAN_TAG:
-                case TypeTags.INT_TAG:
-                case TypeTags.FLOAT_TAG:
-                case TypeTags.DECIMAL_TAG:
-                case TypeTags.STRING_TAG:
+                case TypeTags.ANYDATA_TAG, TypeTags.JSON_TAG ->
+                        ((BMap<BString, Object>) currentJsonNode).put(key, jsonMember);
+                case TypeTags.BOOLEAN_TAG, TypeTags.INT_TAG, TypeTags.FLOAT_TAG, TypeTags.DECIMAL_TAG,
+                        TypeTags.STRING_TAG -> {
                     if (checkTypeCompatibility(restFieldType, jsonMember)) {
                         ((BMap<BString, Object>) currentJsonNode).put(key, jsonMember);
                     }
-                    break;
-                default:
+                }
+                default -> {
                     nextJsonValue = traverseJson(jsonMember, restFieldType);
                     ((BMap<BString, Object>) currentJsonNode).put(key, nextJsonValue);
-                    break;
+                }
             }
         }
 
         private boolean checkTypeCompatibility(Type type, Object json) {
             return ((json == null && type.getTag() == TypeTags.NULL_TAG)
                     || (json instanceof BString && type.getTag() == TypeTags.STRING_TAG)
-                    || (json instanceof Long && type.getTag() == TypeTags.INT_TAG)
+                    || (isInstanceOfBallerinaInt(json) && type.getTag() == TypeTags.INT_TAG)
                     || (json instanceof Double && type.getTag() == TypeTags.FLOAT_TAG)
                     || ((json instanceof Double || json instanceof BDecimal) && type.getTag() == TypeTags.DECIMAL_TAG)
-                    || (Boolean.class.isInstance(json) && type.getTag() == TypeTags.BOOLEAN_TAG));
+                    || (json instanceof Boolean && type.getTag() == TypeTags.BOOLEAN_TAG));
+        }
+
+        private boolean isInstanceOfBallerinaInt(Object val) {
+            return val instanceof Number && !(val instanceof Double);
         }
 
         private void checkOptionalFieldsAndLogError(Map<String, Field> currentField) {

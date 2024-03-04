@@ -52,33 +52,24 @@ import java.util.Optional;
 public class JsonCreator {
 
     static BMap<BString, Object> initRootMapValue(Type expectedType) {
-        switch (expectedType.getTag()) {
-            case TypeTags.RECORD_TYPE_TAG:
-                return ValueCreator.createRecordValue(expectedType.getPackage(), expectedType.getName());
-            case TypeTags.MAP_TAG:
-                return ValueCreator.createMapValue((MapType) expectedType);
-            case TypeTags.JSON_TAG:
-                return ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
-            case TypeTags.ANYDATA_TAG:
-                return ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
-            default:
-                throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, expectedType, "map type");
-        }
+        return switch (expectedType.getTag()) {
+            case TypeTags.RECORD_TYPE_TAG ->
+                    ValueCreator.createRecordValue(expectedType.getPackage(), expectedType.getName());
+            case TypeTags.MAP_TAG -> ValueCreator.createMapValue((MapType) expectedType);
+            case TypeTags.JSON_TAG -> ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
+            case TypeTags.ANYDATA_TAG -> ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
+            default -> throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, expectedType, "map type");
+        };
     }
 
     static BArray initArrayValue(Type expectedType) {
-        switch (expectedType.getTag()) {
-            case TypeTags.TUPLE_TAG:
-                return ValueCreator.createTupleValue((TupleType) expectedType);
-            case TypeTags.ARRAY_TAG:
-                return ValueCreator.createArrayValue((ArrayType) expectedType);
-            case TypeTags.JSON_TAG:
-                return ValueCreator.createArrayValue(PredefinedTypes.TYPE_JSON_ARRAY);
-            case TypeTags.ANYDATA_TAG:
-                return ValueCreator.createArrayValue(PredefinedTypes.TYPE_ANYDATA_ARRAY);
-            default:
-                throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, expectedType, "list type");
-        }
+        return switch (expectedType.getTag()) {
+            case TypeTags.TUPLE_TAG -> ValueCreator.createTupleValue((TupleType) expectedType);
+            case TypeTags.ARRAY_TAG -> ValueCreator.createArrayValue((ArrayType) expectedType);
+            case TypeTags.JSON_TAG -> ValueCreator.createArrayValue(PredefinedTypes.TYPE_JSON_ARRAY);
+            case TypeTags.ANYDATA_TAG -> ValueCreator.createArrayValue(PredefinedTypes.TYPE_ANYDATA_ARRAY);
+            default -> throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, expectedType, "list type");
+        };
     }
 
     static Optional<BMap<BString, Object>> initNewMapValue(JsonParser.StateMachine sm) {
@@ -95,33 +86,24 @@ public class JsonCreator {
 
         BMap<BString, Object> nextMapValue;
         switch (currentType.getTag()) {
-            case TypeTags.RECORD_TYPE_TAG:
+            case TypeTags.RECORD_TYPE_TAG -> {
                 RecordType recordType = (RecordType) currentType;
                 nextMapValue = ValueCreator.createRecordValue(expType.getPackage(), expType.getName());
-                sm.fieldHierarchy.push(new HashMap<>(recordType.getFields()));
-                sm.visitedFieldHierarchy.push(new HashMap<>());
-                sm.restType.push(recordType.getRestFieldType());
-                break;
-            case TypeTags.MAP_TAG:
+                sm.updateExpectedType(recordType.getFields(), recordType.getRestFieldType());
+            }
+            case TypeTags.MAP_TAG -> {
                 nextMapValue = ValueCreator.createMapValue((MapType) currentType);
-                sm.fieldHierarchy.push(new HashMap<>());
-                sm.visitedFieldHierarchy.push(new HashMap<>());
-                sm.restType.push(((MapType) currentType).getConstrainedType());
-                break;
-            case TypeTags.JSON_TAG:
+                sm.updateExpectedType(new HashMap<>(), ((MapType) currentType).getConstrainedType());
+            }
+            case TypeTags.JSON_TAG -> {
                 nextMapValue = ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
-                sm.fieldHierarchy.push(new HashMap<>());
-                sm.visitedFieldHierarchy.push(new HashMap<>());
-                sm.restType.push(PredefinedTypes.TYPE_JSON);
-                break;
-            case TypeTags.ANYDATA_TAG:
+                sm.updateExpectedType(new HashMap<>(), PredefinedTypes.TYPE_JSON);
+            }
+            case TypeTags.ANYDATA_TAG -> {
                 nextMapValue = ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
-                sm.fieldHierarchy.push(new HashMap<>());
-                sm.visitedFieldHierarchy.push(new HashMap<>());
-                sm.restType.push(PredefinedTypes.TYPE_JSON);
-                break;
-            default:
-                throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE_FOR_FIELD, getCurrentFieldPath(sm));
+                sm.updateExpectedType(new HashMap<>(), PredefinedTypes.TYPE_JSON);
+            }
+            default -> throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE_FOR_FIELD, getCurrentFieldPath(sm));
         }
 
         Object currentJson = sm.currentJsonNode;
@@ -181,12 +163,12 @@ public class JsonCreator {
 
         Type currentJsonNodeType = TypeUtils.getType(currentJson);
         switch (currentJsonNodeType.getTag()) {
-            case TypeTags.MAP_TAG:
-            case TypeTags.RECORD_TYPE_TAG:
+            case TypeTags.MAP_TAG, TypeTags.RECORD_TYPE_TAG -> {
                 ((BMap<BString, Object>) currentJson).put(StringUtils.fromString(sm.fieldNames.pop()),
                         convertedValue);
                 return currentJson;
-            case TypeTags.ARRAY_TAG:
+            }
+            case TypeTags.ARRAY_TAG -> {
                 // Handle projection in array.
                 ArrayType arrayType = (ArrayType) currentJsonNodeType;
                 if (arrayType.getState() == ArrayType.ArrayState.CLOSED &&
@@ -195,11 +177,14 @@ public class JsonCreator {
                 }
                 ((BArray) currentJson).add(sm.arrayIndexes.peek(), convertedValue);
                 return currentJson;
-            case TypeTags.TUPLE_TAG:
+            }
+            case TypeTags.TUPLE_TAG -> {
                 ((BArray) currentJson).add(sm.arrayIndexes.peek(), convertedValue);
                 return currentJson;
-            default:
+            }
+            default -> {
                 return convertedValue;
+            }
         }
     }
 
@@ -211,11 +196,9 @@ public class JsonCreator {
     }
 
     static void updateRecordFieldValue(BString fieldName, Object parent, Object currentJson) {
-        switch (TypeUtils.getType(parent).getTag()) {
-            case TypeTags.MAP_TAG:
-            case TypeTags.RECORD_TYPE_TAG:
-                ((BMap<BString, Object>) parent).put(fieldName, currentJson);
-                 break;
+        int typeTag = TypeUtils.getType(parent).getTag();
+        if (typeTag == TypeTags.MAP_TAG || typeTag == TypeTags.RECORD_TYPE_TAG) {
+            ((BMap<BString, Object>) parent).put(fieldName, currentJson);
         }
     }
 
