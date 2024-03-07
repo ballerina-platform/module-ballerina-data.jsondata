@@ -73,6 +73,7 @@ public class JsonCreator {
     }
 
     static Optional<BMap<BString, Object>> initNewMapValue(JsonParser.StateMachine sm) {
+        JsonParser.StateMachine.ParserContext parentContext = sm.parserContexts.peek();
         sm.parserContexts.push(JsonParser.StateMachine.ParserContext.MAP);
         Type expType = sm.expectedTypes.peek();
         if (expType == null) {
@@ -97,13 +98,18 @@ public class JsonCreator {
             }
             case TypeTags.JSON_TAG -> {
                 nextMapValue = ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
-                sm.updateExpectedType(new HashMap<>(), PredefinedTypes.TYPE_JSON);
+                sm.updateExpectedType(new HashMap<>(), currentType);
             }
             case TypeTags.ANYDATA_TAG -> {
                 nextMapValue = ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
-                sm.updateExpectedType(new HashMap<>(), PredefinedTypes.TYPE_JSON);
+                sm.updateExpectedType(new HashMap<>(), currentType);
             }
-            default -> throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE_FOR_FIELD, getCurrentFieldPath(sm));
+            default -> {
+                if (parentContext == JsonParser.StateMachine.ParserContext.ARRAY) {
+                    throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, currentType, "map type");
+                }
+                throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE_FOR_FIELD, getCurrentFieldPath(sm));
+            }
         }
 
         Object currentJson = sm.currentJsonNode;
@@ -208,7 +214,12 @@ public class JsonCreator {
         }
 
         if (expectedType.getTag() == TypeTags.ARRAY_TAG) {
-            return ((ArrayType) expectedType).getElementType();
+            ArrayType arrayType = (ArrayType) expectedType;
+            if (arrayType.getState() == ArrayType.ArrayState.OPEN
+                    || arrayType.getState() == ArrayType.ArrayState.CLOSED &&  index < arrayType.getSize()) {
+                return arrayType.getElementType();
+            }
+            return null;
         } else if (expectedType.getTag() == TypeTags.TUPLE_TAG) {
             TupleType tupleType = (TupleType) expectedType;
             List<Type> tupleTypes = tupleType.getTupleTypes();

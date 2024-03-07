@@ -825,6 +825,10 @@ isolated function testProjectionInArrayForFromJsonWithType() returns error? {
     };
     record {| record {| string name; int age; |}[1] employees; |} val4 = check fromJsonWithType(jsonVal4);
     test:assertEquals(val4, {employees: [{name: "Prakanth", age: 26}]});
+
+    [int, int, int, record {|int a;|}] jsonVal5 = [1, 2, 3, { a : 2 }];
+    int[2] val5 = check fromJsonWithType(jsonVal5);
+    test:assertEquals(val5, [1, 2]);
 }
 
 @test:Config
@@ -1047,4 +1051,12 @@ isolated function testDuplicateFieldInRecordTypeWithFromJsonWithType() returns e
     BookN|Error x = fromJsonWithType(jsonContent);
     test:assertTrue(x is error);
     test:assertEquals((<error>x).message(), "duplicate field 'author'");
+}
+
+@test:Config
+isolated function testProjectionInArrayNegativeForFromJsonWithType() {
+    [int, int, int, record {|int a;|}] jsonVal5 = [1, 2, 3, { a : 2 }];
+    int[]|error val5 = fromJsonWithType(jsonVal5);
+    test:assertTrue(val5 is error);
+    test:assertEquals((<error>val5).message(), "incompatible expected type 'int' for value '{\"a\":2}'");
 }

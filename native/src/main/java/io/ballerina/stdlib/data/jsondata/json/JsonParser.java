@@ -640,14 +640,12 @@ public class JsonParser {
                     if (ch == sm.currentQuoteChar) {
                         String jsonFieldName = sm.processFieldName();
                         if (sm.jsonFieldDepth == 0) {
-                            Field currentField;
-                            if (sm.visitedFieldHierarchy.peek().containsKey(jsonFieldName)) {
-                                currentField = sm.visitedFieldHierarchy.peek().get(jsonFieldName);
-                            } else {
+                            Field currentField = sm.visitedFieldHierarchy.peek().get(jsonFieldName);
+                            if (currentField == null) {
                                 currentField = sm.fieldHierarchy.peek().remove(jsonFieldName);
                             }
-
                             sm.currentField = currentField;
+
                             Type fieldType;
                             if (currentField == null) {
                                 fieldType = sm.restType.peek();

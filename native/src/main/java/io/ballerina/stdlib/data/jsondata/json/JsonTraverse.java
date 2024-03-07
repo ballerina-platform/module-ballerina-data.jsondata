@@ -172,10 +172,9 @@ public class JsonTraverse {
                         Object value = convertToBasicType(mapValue, currentFieldType);
                         ((BMap<BString, Object>) currentJsonNode).put(StringUtils.fromString(fieldNames.pop()), value);
                     }
-                    default -> {
+                    default ->
                         ((BMap<BString, Object>) currentJsonNode).put(StringUtils.fromString(fieldName),
                                 traverseJson(mapValue, currentFieldType));
-                    }
                 }
             }
             Map<String, Field> currentField = fieldHierarchy.pop();

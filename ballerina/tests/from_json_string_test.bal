@@ -835,6 +835,10 @@ isolated function testProjectionInArrayForFromJsonStringWithType() returns error
     }`;
     record {| record {| string name; int age; |}[1] employees; |} val5 = check fromJsonStringWithType(strVal5);
     test:assertEquals(val5, {employees: [{name: "Prakanth", age: 26}]});
+
+    string strVal6 = string `["1", 2, 3, { "a" : val_a }]`;
+    int[3] val6 = check fromJsonStringWithType(strVal6);
+    test:assertEquals(val6, [1, 2, 3]);
 }
 
 @test:Config
@@ -1057,4 +1061,12 @@ isolated function testDuplicateFieldInRecordTypeWithFromJsonStringWithType() ret
     BookN|Error x = fromJsonStringWithType(str);
     test:assertTrue(x is error);
     test:assertEquals((<error>x).message(), "duplicate field 'author'");
+}
+
+@test:Config
+isolated function testProjectionInArrayNegativeForFromJsonStringWithType() {
+    string strVal1 = string `["1", 2, 3, { "a" : val_a }]`;
+    int[]|error val1 = fromJsonStringWithType(strVal1);
+    test:assertTrue(val1 is error);
+    test:assertEquals((<error>val1).message(), "invalid type 'int' expected 'map type'");
 }
