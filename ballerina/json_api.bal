@@ -54,7 +54,7 @@ public type Error distinct error;
 
 # Defines the name of the JSON Object key.
 #
-# + value - The name of the JSON Object key.
+# + value - The name of the JSON Object key
 public type NameConfig record {|
     string value;
 |};

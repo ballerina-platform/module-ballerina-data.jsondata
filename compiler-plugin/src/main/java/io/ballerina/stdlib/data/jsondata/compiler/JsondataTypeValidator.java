@@ -20,7 +20,9 @@ package io.ballerina.stdlib.data.jsondata.compiler;
 
 import io.ballerina.compiler.api.SemanticModel;
 import io.ballerina.compiler.api.symbols.AnnotationAttachmentSymbol;
+import io.ballerina.compiler.api.symbols.AnnotationSymbol;
 import io.ballerina.compiler.api.symbols.ArrayTypeSymbol;
+import io.ballerina.compiler.api.symbols.ModuleSymbol;
 import io.ballerina.compiler.api.symbols.RecordFieldSymbol;
 import io.ballerina.compiler.api.symbols.RecordTypeSymbol;
 import io.ballerina.compiler.api.symbols.Symbol;
@@ -261,7 +263,11 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
     private String getNameFromAnnotation(String fieldName,
                                          List<AnnotationAttachmentSymbol> annotationAttachments) {
         for (AnnotationAttachmentSymbol annotAttSymbol : annotationAttachments) {
-            Optional<String> nameAnnot = annotAttSymbol.typeDescriptor().getName();
+            AnnotationSymbol annotation = annotAttSymbol.typeDescriptor();
+            if (!getAnnotModuleName(annotation).contains(Constants.JSONDATA)) {
+                continue;
+            }
+            Optional<String> nameAnnot = annotation.getName();
             if (nameAnnot.isEmpty()) {
                 continue;
             }
@@ -272,5 +278,14 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
             }
         }
         return fieldName;
+    }
+
+    private String getAnnotModuleName(AnnotationSymbol annotation) {
+        Optional<ModuleSymbol> moduleSymbol = annotation.getModule();
+        if (moduleSymbol.isEmpty()) {
+            return "";
+        }
+        Optional<String> moduleName = moduleSymbol.get().getName();
+        return moduleName.orElse("");
     }
 }
