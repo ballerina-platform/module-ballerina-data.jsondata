@@ -31,7 +31,9 @@ import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
+import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
+import io.ballerina.stdlib.data.jsondata.utils.Constants;
 import io.ballerina.stdlib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.stdlib.data.jsondata.utils.DiagnosticLog;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -57,15 +59,16 @@ public class JsonParser {
     /**
      * Parses the contents in the given {@link Reader} and returns a json.
      *
-     * @param reader reader which contains the JSON content
+     * @param reader  reader which contains the JSON content
+     * @param options represent the options that can be used to modify the behaviour of conversion
      * @return JSON structure
      * @throws BError for any parsing error
      */
-    public static Object parse(Reader reader, Type type)
+    public static Object parse(Reader reader, BMap<BString, Object> options, Type type)
             throws BError {
         StateMachine sm = tlStateMachine.get();
         try {
-            return sm.execute(reader, TypeUtils.getReferredType(type));
+            return sm.execute(reader, options, TypeUtils.getReferredType(type));
         } finally {
             // Need to reset the state machine before leaving. Otherwise, references to the created
             // JSON values will be maintained and the java GC will not happen properly.
@@ -140,6 +143,7 @@ public class JsonParser {
         private int line;
         private int column;
         private char currentQuoteChar;
+        boolean allowDataProjection;
         Field currentField;
         Stack<Map<String, Field>> fieldHierarchy = new Stack<>();
         Stack<Map<String, Field>> visitedFieldHierarchy = new Stack<>();
@@ -185,7 +189,7 @@ public class JsonParser {
             }
         }
 
-        public Object execute(Reader reader, Type type) throws BError {
+        public Object execute(Reader reader, BMap<BString, Object> options, Type type) throws BError {
             switch (type.getTag()) {
                 // TODO: Handle readonly and singleton type as expType.
                 case TypeTags.RECORD_TYPE_TAG -> {
@@ -217,6 +221,8 @@ public class JsonParser {
                 }
                 default -> throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
             }
+
+            allowDataProjection = (boolean) options.get(Constants.ALLOW_DATA_PROJECTION);
 
             State currentState = DOC_START_STATE;
             try {
@@ -510,17 +516,17 @@ public class JsonParser {
                         state = STRING_ARRAY_ELEMENT_STATE;
                         sm.currentQuoteChar = ch;
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek()));
+                                sm.arrayIndexes.peek(), sm.allowDataProjection));
                     } else if (ch == '{') {
                         // Get member type of the array and set as expected type.
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek()));
+                                sm.arrayIndexes.peek(), sm.allowDataProjection));
                         JsonCreator.updateNextMapValue(sm);
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
                         // Get member type of the array and set as expected type.
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek()));
+                                sm.arrayIndexes.peek(), sm.allowDataProjection));
                         sm.updateNextArrayValue();
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else if (ch == ']') {
@@ -528,7 +534,7 @@ public class JsonParser {
                     } else {
                         state = NON_STRING_ARRAY_ELEMENT_STATE;
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek()));
+                                sm.arrayIndexes.peek(), sm.allowDataProjection));
                     }
                     break;
                 }
@@ -588,20 +594,20 @@ public class JsonParser {
                         state = STRING_ARRAY_ELEMENT_STATE;
                         sm.currentQuoteChar = ch;
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek()));
+                                sm.arrayIndexes.peek(), sm.allowDataProjection));
                     } else if (ch == '{') {
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek()));
+                                sm.arrayIndexes.peek(), sm.allowDataProjection));
                         JsonCreator.updateNextMapValue(sm);
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek()));
+                                sm.arrayIndexes.peek(), sm.allowDataProjection));
                         sm.updateNextArrayValue();
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else {
                         sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek()));
+                                sm.arrayIndexes.peek(), sm.allowDataProjection));
                         state = NON_STRING_ARRAY_ELEMENT_STATE;
                     }
                     break;
@@ -656,6 +662,10 @@ public class JsonParser {
                                 sm.visitedFieldHierarchy.peek().put(jsonFieldName, currentField);
                             }
                             sm.expectedTypes.push(fieldType);
+
+                            if (!sm.allowDataProjection && fieldType == null)  {
+                                throw DiagnosticLog.error(DiagnosticErrorCode.UNDEFINED_FIELD, jsonFieldName);
+                            }
                         } else if (sm.expectedTypes.peek() == null) {
                             sm.expectedTypes.push(null);
                         }

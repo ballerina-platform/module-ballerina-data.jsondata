@@ -22,7 +22,9 @@ import io.ballerina.runtime.api.Future;
 import io.ballerina.runtime.api.types.MethodType;
 import io.ballerina.runtime.api.types.ObjectType;
 import io.ballerina.runtime.api.utils.TypeUtils;
+import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
+import io.ballerina.runtime.api.values.BString;
 import io.ballerina.runtime.api.values.BTypedesc;
 import io.ballerina.stdlib.data.jsondata.json.JsonParser;
 import io.ballerina.stdlib.data.jsondata.utils.DiagnosticLog;
@@ -44,12 +46,15 @@ public class DataReaderTask implements Runnable {
     private final BObject iteratorObj;
     private final Future future;
     private final BTypedesc typed;
+    private final BMap<BString, Object> options;
 
-    public DataReaderTask(Environment env, BObject iteratorObj, Future future, BTypedesc typed) {
+    public DataReaderTask(Environment env, BObject iteratorObj, Future future, BTypedesc typed, BMap<BString,
+            Object> options) {
         this.env = env;
         this.iteratorObj = iteratorObj;
         this.future = future;
         this.typed = typed;
+        this.options = options;
     }
 
     static MethodType resolveNextMethod(BObject iterator) {
@@ -81,7 +86,7 @@ public class DataReaderTask implements Runnable {
         ResultConsumer<Object> resultConsumer = new ResultConsumer<>(future);
         try (var byteBlockSteam = new BallerinaByteBlockInputStream(env, iteratorObj, resolveNextMethod(iteratorObj),
                                                                     resolveCloseMethod(iteratorObj), resultConsumer)) {
-            Object result = JsonParser.parse(new InputStreamReader(byteBlockSteam), typed.getDescribingType());
+            Object result = JsonParser.parse(new InputStreamReader(byteBlockSteam), options, typed.getDescribingType());
             future.complete(result);
         } catch (Exception e) {
             future.complete(DiagnosticLog.getJsonError("Error occurred while reading the stream: " + e.getMessage()));

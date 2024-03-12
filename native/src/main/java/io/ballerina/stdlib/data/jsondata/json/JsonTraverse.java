@@ -36,6 +36,7 @@ import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
+import io.ballerina.stdlib.data.jsondata.utils.Constants;
 import io.ballerina.stdlib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.stdlib.data.jsondata.utils.DiagnosticLog;
 
@@ -55,9 +56,10 @@ public class JsonTraverse {
 
     private static final ThreadLocal<JsonTree> tlJsonTree = ThreadLocal.withInitial(JsonTree::new);
 
-    public static Object traverse(Object json, Type type) {
+    public static Object traverse(Object json, BMap<BString, Object> options, Type type) {
         JsonTree jsonTree = tlJsonTree.get();
         try {
+            jsonTree.allowDataProjection = (boolean) options.get(Constants.ALLOW_DATA_PROJECTION);
             return jsonTree.traverseJson(json, type);
         } catch (BError e) {
             return e;
@@ -72,6 +74,7 @@ public class JsonTraverse {
         Stack<Type> restType = new Stack<>();
         Deque<String> fieldNames = new ArrayDeque<>();
         Type rootArray;
+        boolean allowDataProjection;
 
         void reset() {
             currentField = null;
@@ -130,10 +133,10 @@ public class JsonTraverse {
         }
 
         private Object traverseMapJsonOrArrayJson(Object json, Object currentJsonNode, Type type) {
-            if (json instanceof BMap map) {
-                return traverseMapValue(map, currentJsonNode);
-            } else if (json instanceof BArray) {
-                return traverseArrayValue(json, currentJsonNode);
+            if (json instanceof BMap bMap) {
+                return traverseMapValue(bMap, currentJsonNode);
+            } else if (json instanceof BArray bArray) {
+                return traverseArrayValue(bArray, currentJsonNode);
             } else {
                 // JSON value not compatible with map or array.
                 if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
@@ -157,7 +160,10 @@ public class JsonTraverse {
                         Type restFieldType = TypeUtils.getReferredType(restType.peek());
                         addRestField(restFieldType, key, map.get(key), currentJsonNode);
                     }
-                    continue;
+                    if (allowDataProjection) {
+                        continue;
+                    }
+                    throw DiagnosticLog.error(DiagnosticErrorCode.UNDEFINED_FIELD, key);
                 }
 
                 String fieldName = currentField.getFieldName();
@@ -183,15 +189,20 @@ public class JsonTraverse {
             return currentJsonNode;
         }
 
-        private Object traverseArrayValue(Object json, Object currentJsonNode) {
-            BArray array = (BArray) json;
+        private Object traverseArrayValue(BArray array, Object currentJsonNode) {
             switch (rootArray.getTag()) {
                 case TypeTags.ARRAY_TAG -> {
                     ArrayType arrayType = (ArrayType) rootArray;
                     int expectedArraySize = arrayType.getSize();
-                    if (expectedArraySize > array.getLength()) {
+                    long sourceArraySize = array.getLength();
+                    if (expectedArraySize > sourceArraySize) {
                         throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
                     }
+
+                    if (!allowDataProjection && expectedArraySize < sourceArraySize) {
+                        throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
+                    }
+
                     Type elementType = arrayType.getElementType();
                     if (expectedArraySize == -1) {
                         traverseArrayMembers(array.getLength(), array, elementType, currentJsonNode);
@@ -213,6 +224,8 @@ public class JsonTraverse {
                             nextJsonNode = traverseJson(jsonMember, tupleType.getTupleTypes().get(i));
                         } else if (restType != null) {
                             nextJsonNode = traverseJson(jsonMember, restType);
+                        } else if (!allowDataProjection) {
+                            throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
                         } else {
                             continue;
                         }

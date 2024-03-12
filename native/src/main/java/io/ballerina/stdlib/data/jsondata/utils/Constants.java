@@ -36,4 +36,5 @@ public class Constants {
     public static final String FIELD = "$field$.";
     public static final String FIELD_REGEX = "\\$field\\$\\.";
     public static final String NAME = "Name";
+    public static final BString ALLOW_DATA_PROJECTION = StringUtils.fromString("allowDataProjection");
 }

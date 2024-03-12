@@ -41,11 +41,11 @@ public isolated function fromJsonStringWithType(string|byte[]|stream<byte[], err
 public isolated function toJson(anydata v) 
         returns json|Error = @java:Method {'class: "io.ballerina.stdlib.data.jsondata.json.Native"} external;
 
-# Represent the options that can be used for filtering in the projection.
+# Represent the options that can be used to modify the behaviour of conversion in `fromJsonStringWithType` and `fromJsonWithType`.
 #
-# + numericPreference - field description
+# + allowDataProjection - enable or disable projection
 public type Options record {
-    typedesc<float|decimal> numericPreference = decimal;
+    boolean allowDataProjection = true;
 };
 
 # Represents the error type of the ballerina/data.jsondata module. This error type represents any error that can occur

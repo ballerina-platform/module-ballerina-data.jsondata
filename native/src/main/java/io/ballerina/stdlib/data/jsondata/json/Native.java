@@ -47,7 +47,7 @@ public class Native {
 
     public static Object fromJsonWithType(Object json, BMap<BString, Object> options, BTypedesc typed) {
         try {
-            return JsonTraverse.traverse(json, typed.getDescribingType());
+            return JsonTraverse.traverse(json, options, typed.getDescribingType());
         } catch (BError e) {
             return e;
         }
@@ -58,15 +58,15 @@ public class Native {
         try {
             Type expType = typed.getDescribingType();
             if (json instanceof BString) {
-                return JsonParser.parse(new StringReader(((BString) json).getValue()), expType);
+                return JsonParser.parse(new StringReader(((BString) json).getValue()), options, expType);
             } else if (json instanceof BArray) {
                 byte[] bytes = ((BArray) json).getBytes();
-                return JsonParser.parse(new InputStreamReader(new ByteArrayInputStream(bytes)),
+                return JsonParser.parse(new InputStreamReader(new ByteArrayInputStream(bytes)), options,
                         typed.getDescribingType());
             } else if (json instanceof BStream) {
                 final BObject iteratorObj = ((BStream) json).getIteratorObj();
                 final Future future = env.markAsync();
-                DataReaderTask task = new DataReaderTask(env, iteratorObj, future, typed);
+                DataReaderTask task = new DataReaderTask(env, iteratorObj, future, typed, options);
                 DataReaderThreadPool.EXECUTOR_SERVICE.submit(task);
                 return null;
             } else {

@@ -208,7 +208,7 @@ public class JsonCreator {
         }
     }
 
-    static Type getMemberType(Type expectedType, int index) {
+    static Type getMemberType(Type expectedType, int index, boolean allowDataProjection) {
         if (expectedType == null) {
             return null;
         }
@@ -219,12 +219,20 @@ public class JsonCreator {
                     || arrayType.getState() == ArrayType.ArrayState.CLOSED &&  index < arrayType.getSize()) {
                 return arrayType.getElementType();
             }
+
+            if (!allowDataProjection) {
+                throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
+            }
             return null;
         } else if (expectedType.getTag() == TypeTags.TUPLE_TAG) {
             TupleType tupleType = (TupleType) expectedType;
             List<Type> tupleTypes = tupleType.getTupleTypes();
             if (tupleTypes.size() < index + 1) {
-                return tupleType.getRestType();
+                Type restType = tupleType.getRestType();
+                if (restType == null && !allowDataProjection) {
+                    throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
+                }
+                return restType;
             }
             return tupleTypes.get(index);
         }
