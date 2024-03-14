@@ -63,6 +63,17 @@ public class FromString {
         PredefinedTypes.TYPE_STRING
     );
     private static final UnionType JSON_TYPE_WITH_BASIC_TYPES = TypeCreator.createUnionType(BASIC_JSON_MEMBER_TYPES);
+    public static final Integer BBYTE_MIN_VALUE = 0;
+    public static final Integer BBYTE_MAX_VALUE = 255;
+    public static final Integer SIGNED32_MAX_VALUE = 2147483647;
+    public static final Integer SIGNED32_MIN_VALUE = -2147483648;
+    public static final Integer SIGNED16_MAX_VALUE = 32767;
+    public static final Integer SIGNED16_MIN_VALUE = -32768;
+    public static final Integer SIGNED8_MAX_VALUE = 127;
+    public static final Integer SIGNED8_MIN_VALUE = -128;
+    public static final Long UNSIGNED32_MAX_VALUE = 4294967295L;
+    public static final Integer UNSIGNED16_MAX_VALUE = 65535;
+    public static final Integer UNSIGNED8_MAX_VALUE = 255;
 
     public static Object fromStringWithType(BString string, BTypedesc typed) {
         Type expType = typed.getDescribingType();
@@ -80,6 +91,20 @@ public class FromString {
             switch (expType.getTag()) {
                 case TypeTags.INT_TAG:
                     return stringToInt(value);
+                case TypeTags.BYTE_TAG:
+                    return stringToByte(value);
+                case TypeTags.SIGNED8_INT_TAG:
+                    return stringToSigned8Int(value);
+                case TypeTags.SIGNED16_INT_TAG:
+                    return stringToSigned16Int(value);
+                case TypeTags.SIGNED32_INT_TAG:
+                    return stringToSigned32Int(value);
+                case TypeTags.UNSIGNED8_INT_TAG:
+                    return stringToUnsigned8Int(value);
+                case TypeTags.UNSIGNED16_INT_TAG:
+                    return stringToUnsigned16Int(value);
+                case TypeTags.UNSIGNED32_INT_TAG:
+                    return stringToUnsigned32Int(value);
                 case TypeTags.FLOAT_TAG:
                     return stringToFloat(value);
                 case TypeTags.DECIMAL_TAG:
@@ -106,6 +131,65 @@ public class FromString {
 
     private static Long stringToInt(String value) throws NumberFormatException {
         return Long.parseLong(value);
+    }
+
+    private static int stringToByte(String value) throws NumberFormatException {
+        int intValue = Integer.parseInt(value);
+        if (!isByteLiteral(intValue)) {
+            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, PredefinedTypes.TYPE_BYTE, value);
+        }
+        return intValue;
+    }
+
+    private static long stringToSigned8Int(String value) throws NumberFormatException {
+        long intValue = Long.parseLong(value);
+        if (!isSigned8LiteralValue(intValue)) {
+            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, PredefinedTypes.TYPE_INT_SIGNED_8, value);
+        }
+        return intValue;
+    }
+
+    private static long stringToSigned16Int(String value) throws NumberFormatException {
+        long intValue = Long.parseLong(value);
+        if (!isSigned16LiteralValue(intValue)) {
+            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, PredefinedTypes.TYPE_INT_SIGNED_16, value);
+        }
+        return intValue;
+    }
+
+    private static long stringToSigned32Int(String value) throws NumberFormatException {
+        long intValue = Long.parseLong(value);
+        if (!isSigned32LiteralValue(intValue)) {
+            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, PredefinedTypes.TYPE_INT_SIGNED_32, value);
+        }
+        return intValue;
+    }
+
+    private static long stringToUnsigned8Int(String value) throws NumberFormatException {
+        long intValue = Long.parseLong(value);
+        if (!isUnsigned8LiteralValue(intValue)) {
+            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE,
+                    PredefinedTypes.TYPE_INT_UNSIGNED_8, value);
+        }
+        return intValue;
+    }
+
+    private static long stringToUnsigned16Int(String value) throws NumberFormatException {
+        long intValue = Long.parseLong(value);
+        if (!isUnsigned16LiteralValue(intValue)) {
+            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE,
+                    PredefinedTypes.TYPE_INT_UNSIGNED_16, value);
+        }
+        return intValue;
+    }
+
+    private static long stringToUnsigned32Int(String value) throws NumberFormatException {
+        long intValue = Long.parseLong(value);
+        if (!isUnsigned32LiteralValue(intValue)) {
+            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE,
+                    PredefinedTypes.TYPE_INT_UNSIGNED_32, value);
+        }
+        return intValue;
     }
 
     private static Double stringToFloat(String value) throws NumberFormatException {
@@ -172,6 +256,34 @@ public class FromString {
             default:
                 return false;
         }
+    }
+
+    public static boolean isByteLiteral(long longValue) {
+        return (longValue >= BBYTE_MIN_VALUE && longValue <= BBYTE_MAX_VALUE);
+    }
+
+    public static boolean isSigned32LiteralValue(Long longObject) {
+        return (longObject >= SIGNED32_MIN_VALUE && longObject <= SIGNED32_MAX_VALUE);
+    }
+
+    public static boolean isSigned16LiteralValue(Long longObject) {
+        return (longObject.intValue() >= SIGNED16_MIN_VALUE && longObject.intValue() <= SIGNED16_MAX_VALUE);
+    }
+
+    public static boolean isSigned8LiteralValue(Long longObject) {
+        return (longObject.intValue() >= SIGNED8_MIN_VALUE && longObject.intValue() <= SIGNED8_MAX_VALUE);
+    }
+
+    public static boolean isUnsigned32LiteralValue(Long longObject) {
+        return (longObject >= 0 && longObject <= UNSIGNED32_MAX_VALUE);
+    }
+
+    public static boolean isUnsigned16LiteralValue(Long longObject) {
+        return (longObject.intValue() >= 0 && longObject.intValue() <= UNSIGNED16_MAX_VALUE);
+    }
+
+    public static boolean isUnsigned8LiteralValue(Long longObject) {
+        return (longObject.intValue() >= 0 && longObject.intValue() <= UNSIGNED8_MAX_VALUE);
     }
 
     private static BError returnError(String string, String expType) {

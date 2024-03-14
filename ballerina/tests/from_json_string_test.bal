@@ -37,6 +37,9 @@ isolated function testJsonStringToBasicTypes() returns error? {
 
     () val6 = check fromJsonStringWithType("null");
     test:assertEquals(val6, null);
+
+    string val7 = check fromJsonStringWithType("");
+    test:assertEquals(val7, "");
 }
 
 @test:Config
@@ -969,6 +972,276 @@ function testNameAnnotationWithFromJsonStringWithType() returns error? {
     test:assertEquals(book.author, "J.K. Rowling");
 }
 
+@test:Config
+isolated function testByteAsExpectedTypeForFromJsonStringWithType() returns error? {
+    byte val1 = check fromJsonStringWithType("1");
+    test:assertEquals(val1, 1);
+
+    [byte, int] val2 = check fromJsonStringWithType("[255, 2000]");
+    test:assertEquals(val2, [255, 2000]);
+    
+    string str4 = string `{
+        "id": 1,
+        "name": "Anne",
+        "address": {
+            "street": "Main",
+            "city": "94",
+            "id": 2
+        }
+    }`;
+
+    record {
+        byte id;
+        string name;
+        record {
+            string street;
+            string city;
+            byte id;
+        } address;
+    } val4 = check fromJsonStringWithType(str4);
+    test:assertEquals(val4.length(), 3);
+    test:assertEquals(val4.id, 1);
+    test:assertEquals(val4.name, "Anne");
+    test:assertEquals(val4.address.length(), 3);
+    test:assertEquals(val4.address.street, "Main");
+    test:assertEquals(val4.address.city, "94");
+    test:assertEquals(val4.address.id, 2);
+}
+
+@test:Config
+isolated function testSignedInt8AsExpectedTypeForFromJsonStringWithType() returns error? {
+    int:Signed8 val1 = check fromJsonStringWithType("-128");
+    test:assertEquals(val1, -128);
+
+    int:Signed8 val2 = check fromJsonStringWithType("127");
+    test:assertEquals(val2, 127);
+
+    [int:Signed8, int] val3 = check fromJsonStringWithType("[127, 2000]");
+    test:assertEquals(val3, [127, 2000]);
+    
+    string str4 = string `{
+        "id": 100,
+        "name": "Anne",
+        "address": {
+            "street": "Main",
+            "city": "94",
+            "id": -2
+        }
+    }`;
+
+    record {
+        int:Signed8 id;
+        string name;
+        record {
+            string street;
+            string city;
+            int:Signed8 id;
+        } address;
+    } val4 = check fromJsonStringWithType(str4);
+    test:assertEquals(val4.length(), 3);
+    test:assertEquals(val4.id, 100);
+    test:assertEquals(val4.name, "Anne");
+    test:assertEquals(val4.address.length(), 3);
+    test:assertEquals(val4.address.street, "Main");
+    test:assertEquals(val4.address.city, "94");
+    test:assertEquals(val4.address.id, -2);
+}
+
+@test:Config
+isolated function testSignedInt16AsExpectedTypeForFromJsonStringWithType() returns error? {
+    int:Signed16 val1 = check fromJsonStringWithType("-32768");
+    test:assertEquals(val1, -32768);
+
+    int:Signed16 val2 = check fromJsonStringWithType("32767");
+    test:assertEquals(val2, 32767);
+
+    [int:Signed16, int] val3 = check fromJsonStringWithType("[32767, -324234]");
+    test:assertEquals(val3, [32767, -324234]);
+    
+    string str4 = string `{
+        "id": 100,
+        "name": "Anne",
+        "address": {
+            "street": "Main",
+            "city": "94",
+            "id": -2
+        }
+    }`;
+
+    record {
+        int:Signed16 id;
+        string name;
+        record {
+            string street;
+            string city;
+            int:Signed16 id;
+        } address;
+    } val4 = check fromJsonStringWithType(str4);
+    test:assertEquals(val4.length(), 3);
+    test:assertEquals(val4.id, 100);
+    test:assertEquals(val4.name, "Anne");
+    test:assertEquals(val4.address.length(), 3);
+    test:assertEquals(val4.address.street, "Main");
+    test:assertEquals(val4.address.city, "94");
+    test:assertEquals(val4.address.id, -2);
+}
+
+@test:Config
+isolated function testSignedInt32AsExpectedTypeForFromJsonStringWithType() returns error? {
+    int:Signed32 val1 = check fromJsonStringWithType("-2147483648");
+    test:assertEquals(val1, -2147483648);
+
+    int:Signed32 val2 = check fromJsonStringWithType("2147483647");
+    test:assertEquals(val2, 2147483647);
+
+    int:Signed32[] val3 = check fromJsonStringWithType("[2147483647, -2147483648]");
+    test:assertEquals(val3, [2147483647, -2147483648]);
+    
+    string str4 = string `{
+        "id": 2147483647,
+        "name": "Anne",
+        "address": {
+            "street": "Main",
+            "city": "94",
+            "id": -2147483648
+        }
+    }`;
+
+    record {
+        int:Signed32 id;
+        string name;
+        record {
+            string street;
+            string city;
+            int:Signed32 id;
+        } address;
+    } val4 = check fromJsonStringWithType(str4);
+    test:assertEquals(val4.length(), 3);
+    test:assertEquals(val4.id, 2147483647);
+    test:assertEquals(val4.name, "Anne");
+    test:assertEquals(val4.address.length(), 3);
+    test:assertEquals(val4.address.street, "Main");
+    test:assertEquals(val4.address.city, "94");
+    test:assertEquals(val4.address.id, -2147483648);
+}
+
+@test:Config
+isolated function testUnSignedInt8AsExpectedTypeForFromJsonStringWithType() returns error? {
+    int:Unsigned8 val1 = check fromJsonStringWithType("255");
+    test:assertEquals(val1, 255);
+
+    int:Unsigned8 val2 = check fromJsonStringWithType("0");
+    test:assertEquals(val2, 0);
+
+    int:Unsigned8[] val3 = check fromJsonStringWithType("[0, 255]");
+    test:assertEquals(val3, [0, 255]);
+    
+    string str4 = string `{
+        "id": 0,
+        "name": "Anne",
+        "address": {
+            "street": "Main",
+            "city": "94",
+            "id": 255
+        }
+    }`;
+
+    record {
+        int:Unsigned8 id;
+        string name;
+        record {
+            string street;
+            string city;
+            int:Unsigned8 id;
+        } address;
+    } val4 = check fromJsonStringWithType(str4);
+    test:assertEquals(val4.length(), 3);
+    test:assertEquals(val4.id, 0);
+    test:assertEquals(val4.name, "Anne");
+    test:assertEquals(val4.address.length(), 3);
+    test:assertEquals(val4.address.street, "Main");
+    test:assertEquals(val4.address.city, "94");
+    test:assertEquals(val4.address.id, 255);
+}
+
+@test:Config
+isolated function testUnSignedInt16AsExpectedTypeForFromJsonStringWithType() returns error? {
+    int:Unsigned16 val1 = check fromJsonStringWithType("65535");
+    test:assertEquals(val1, 65535);
+
+    int:Unsigned16 val2 = check fromJsonStringWithType("0");
+    test:assertEquals(val2, 0);
+
+    int:Unsigned16[] val3 = check fromJsonStringWithType("[0, 65535]");
+    test:assertEquals(val3, [0, 65535]);
+    
+    string str4 = string `{
+        "id": 0,
+        "name": "Anne",
+        "address": {
+            "street": "Main",
+            "city": "94",
+            "id": 65535
+        }
+    }`;
+
+    record {
+        int:Unsigned16 id;
+        string name;
+        record {
+            string street;
+            string city;
+            int:Unsigned16 id;
+        } address;
+    } val4 = check fromJsonStringWithType(str4);
+    test:assertEquals(val4.length(), 3);
+    test:assertEquals(val4.id, 0);
+    test:assertEquals(val4.name, "Anne");
+    test:assertEquals(val4.address.length(), 3);
+    test:assertEquals(val4.address.street, "Main");
+    test:assertEquals(val4.address.city, "94");
+    test:assertEquals(val4.address.id, 65535);
+}
+
+@test:Config
+isolated function testUnSignedInt32AsExpectedTypeForFromJsonStringWithType() returns error? {
+    int:Unsigned32 val1 = check fromJsonStringWithType("4294967295");
+    test:assertEquals(val1, 4294967295);
+
+    int:Unsigned32 val2 = check fromJsonStringWithType("0");
+    test:assertEquals(val2, 0);
+
+    int:Unsigned32[] val3 = check fromJsonStringWithType("[0, 4294967295]");
+    test:assertEquals(val3, [0, 4294967295]);
+    
+    string str4 = string `{
+        "id": 0,
+        "name": "Anne",
+        "address": {
+            "street": "Main",
+            "city": "94",
+            "id": 4294967295
+        }
+    }`;
+
+    record {
+        int:Unsigned32 id;
+        string name;
+        record {
+            string street;
+            string city;
+            int:Unsigned32 id;
+        } address;
+    } val4 = check fromJsonStringWithType(str4);
+    test:assertEquals(val4.length(), 3);
+    test:assertEquals(val4.id, 0);
+    test:assertEquals(val4.name, "Anne");
+    test:assertEquals(val4.address.length(), 3);
+    test:assertEquals(val4.address.street, "Main");
+    test:assertEquals(val4.address.city, "94");
+    test:assertEquals(val4.address.id, 4294967295);
+}
+
 // Negative tests for fromJsonStringWithType() function.
 
 @test:Config
@@ -1027,7 +1300,7 @@ isolated function testFromJsonStringWithTypeNegative4() returns error? {
 
     Union|Error y = fromJsonStringWithType(str);
     test:assertTrue(y is error);
-    test:assertEquals((<error>y).message(), "invalid type 'ballerina/data.jsondata:0:Union' expected 'map type'");
+    test:assertEquals((<error>y).message(), "unsupported type 'ballerina/data.jsondata:0:Union'");
 
     table<RN2>|Error z = fromJsonStringWithType(str);
     test:assertTrue(z is error);
@@ -1069,4 +1342,110 @@ isolated function testProjectionInArrayNegativeForFromJsonStringWithType() {
     int[]|error val1 = fromJsonStringWithType(strVal1);
     test:assertTrue(val1 is error);
     test:assertEquals((<error>val1).message(), "invalid type 'int' expected 'map type'");
+}
+
+@test:Config
+isolated function testUnionTypeAsExpTypeForFromJsonStringWithTypeNegative() {
+    string str1 = string `[
+        123, 
+        "Lakshan",
+        {
+            "city": "Colombo",
+            "street": "123",
+            "zip": 123
+        },
+        {
+            "code": 123,
+            "subject": "Bio"
+        }
+    ]`;
+    (map<anydata>|int|float)[]|error err1 = fromJsonStringWithType(str1);
+    test:assertTrue(err1 is error);
+    test:assertEquals((<error> err1).message(), "incompatible expected type '(map<anydata>|int|float)' for value 'Lakshan'");
+
+    string str2 = string `[
+        {
+            "city": "Colombo",
+            "street": "123",
+            "zip": 123
+        },
+        {
+            "code": 123,
+            "subject": "Bio"
+        }
+    ]`;
+    (map<anydata>|int|float)[]|error err2 = fromJsonStringWithType(str2);
+    test:assertTrue(err2 is error);
+    test:assertEquals((<error> err2).message(), "unsupported type '(map<anydata>|int|float)'");
+
+    string str3 = string `{
+        "a": "hello",
+        "b": 1,
+        "c": {
+            "d": "world",
+            "e": 2
+        }
+    }`;
+    (map<anydata>|int|float)|error err3 = fromJsonStringWithType(str3);
+    test:assertTrue(err3 is error);
+    test:assertEquals((<error> err3).message(), "unsupported type '(map<anydata>|int|float)'");
+}
+
+@test:Config
+function testSubTypeOfIntAsExptypeNegative() {
+    byte|error err1 = fromJsonStringWithType("256");
+    test:assertTrue(err1 is error);
+    test:assertEquals((<error> err1).message(), "incompatible expected type 'byte' for value '256'");
+
+    byte|error err2 = fromJsonStringWithType("-1");
+    test:assertTrue(err2 is error);
+    test:assertEquals((<error> err2).message(), "incompatible expected type 'byte' for value '-1'");
+
+    int:Signed8|error err3 = fromJsonStringWithType("128");
+    test:assertTrue(err3 is error);
+    test:assertEquals((<error> err3).message(), "incompatible expected type 'lang.int:Signed8' for value '128'");
+
+    int:Signed8|error err4 = fromJsonStringWithType("-129");
+    test:assertTrue(err4 is error);
+    test:assertEquals((<error> err4).message(), "incompatible expected type 'lang.int:Signed8' for value '-129'");
+
+    int:Unsigned8|error err5 = fromJsonStringWithType("256");
+    test:assertTrue(err5 is error);
+    test:assertEquals((<error> err5).message(), "incompatible expected type 'lang.int:Unsigned8' for value '256'");
+
+    int:Unsigned8|error err6 = fromJsonStringWithType("-1");
+    test:assertTrue(err6 is error);
+    test:assertEquals((<error> err6).message(), "incompatible expected type 'lang.int:Unsigned8' for value '-1'");
+
+    int:Signed16|error err7 = fromJsonStringWithType("32768");
+    test:assertTrue(err7 is error);
+    test:assertEquals((<error> err7).message(), "incompatible expected type 'lang.int:Signed16' for value '32768'");
+
+    int:Signed16|error err8 = fromJsonStringWithType("-32769");
+    test:assertTrue(err8 is error);
+    test:assertEquals((<error> err8).message(), "incompatible expected type 'lang.int:Signed16' for value '-32769'");
+
+    int:Unsigned16|error err9 = fromJsonStringWithType("65536");
+    test:assertTrue(err9 is error);
+    test:assertEquals((<error> err9).message(), "incompatible expected type 'lang.int:Unsigned16' for value '65536'");
+
+    int:Unsigned16|error err10 = fromJsonStringWithType("-1");
+    test:assertTrue(err10 is error);
+    test:assertEquals((<error> err10).message(), "incompatible expected type 'lang.int:Unsigned16' for value '-1'");
+
+    int:Signed32|error err11 = fromJsonStringWithType("2147483648");
+    test:assertTrue(err11 is error);
+    test:assertEquals((<error> err11).message(), "incompatible expected type 'lang.int:Signed32' for value '2147483648'");
+
+    int:Signed32|error err12 = fromJsonStringWithType("-2147483649");
+    test:assertTrue(err12 is error);
+    test:assertEquals((<error> err12).message(), "incompatible expected type 'lang.int:Signed32' for value '-2147483649'");
+
+    int:Unsigned32|error err13 = fromJsonStringWithType("4294967296");
+    test:assertTrue(err13 is error);
+    test:assertEquals((<error> err13).message(), "incompatible expected type 'lang.int:Unsigned32' for value '4294967296'");
+
+    int:Unsigned32|error err14 = fromJsonStringWithType("-1");
+    test:assertTrue(err14 is error);
+    test:assertEquals((<error> err14).message(), "incompatible expected type 'lang.int:Unsigned32' for value '-1'");
 }

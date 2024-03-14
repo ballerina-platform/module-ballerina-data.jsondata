@@ -31,6 +31,7 @@ import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
+import io.ballerina.runtime.api.utils.ValueUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BError;
@@ -105,7 +106,9 @@ public class JsonTraverse {
                             referredType);
                 }
                 case TypeTags.NULL_TAG, TypeTags.BOOLEAN_TAG, TypeTags.INT_TAG, TypeTags.FLOAT_TAG,
-                        TypeTags.DECIMAL_TAG, TypeTags.STRING_TAG -> {
+                        TypeTags.DECIMAL_TAG, TypeTags.STRING_TAG, TypeTags.BYTE_TAG, TypeTags.SIGNED8_INT_TAG,
+                        TypeTags.SIGNED16_INT_TAG, TypeTags.SIGNED32_INT_TAG, TypeTags.UNSIGNED8_INT_TAG,
+                        TypeTags.UNSIGNED16_INT_TAG, TypeTags.UNSIGNED32_INT_TAG -> {
                     return convertToBasicType(json, referredType);
                 }
                 case TypeTags.UNION_TAG -> {
@@ -263,13 +266,13 @@ public class JsonTraverse {
         private boolean checkTypeCompatibility(Type type, Object json) {
             return ((json == null && type.getTag() == TypeTags.NULL_TAG)
                     || (json instanceof BString && type.getTag() == TypeTags.STRING_TAG)
-                    || (isInstanceOfBallerinaInt(json) && type.getTag() == TypeTags.INT_TAG)
+                    || (isBallerinaInt(json) && type.getTag() == TypeTags.INT_TAG)
                     || (json instanceof Double && type.getTag() == TypeTags.FLOAT_TAG)
                     || ((json instanceof Double || json instanceof BDecimal) && type.getTag() == TypeTags.DECIMAL_TAG)
                     || (json instanceof Boolean && type.getTag() == TypeTags.BOOLEAN_TAG));
         }
 
-        private boolean isInstanceOfBallerinaInt(Object val) {
+        private boolean isBallerinaInt(Object val) {
             return val instanceof Number && !(val instanceof Double);
         }
 
@@ -282,19 +285,15 @@ public class JsonTraverse {
         }
 
         private Object convertToBasicType(Object json, Type targetType) {
-            if (targetType.getTag() == TypeTags.READONLY_TAG) {
-                return json;
+            try {
+                return ValueUtils.convert(json, targetType);
+            } catch (BError e) {
+                if (fieldNames.isEmpty()) {
+                    throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, targetType, json.toString());
+                }
+                throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_VALUE_FOR_FIELD, json.toString(), targetType,
+                        getCurrentFieldPath());
             }
-
-            if (checkTypeCompatibility(targetType, json)) {
-                return json;
-            }
-
-            if (fieldNames.isEmpty()) {
-                throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, targetType, json);
-            }
-            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_VALUE_FOR_FIELD, json, targetType,
-                    getCurrentFieldPath());
         }
 
         private String getCurrentFieldPath() {

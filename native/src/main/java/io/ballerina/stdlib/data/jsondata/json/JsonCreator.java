@@ -58,6 +58,7 @@ public class JsonCreator {
             case TypeTags.MAP_TAG -> ValueCreator.createMapValue((MapType) expectedType);
             case TypeTags.JSON_TAG -> ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
             case TypeTags.ANYDATA_TAG -> ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
+            case TypeTags.UNION_TAG -> throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, expectedType);
             default -> throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, expectedType, "map type");
         };
     }
@@ -104,6 +105,7 @@ public class JsonCreator {
                 nextMapValue = ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
                 sm.updateExpectedType(new HashMap<>(), currentType);
             }
+            case TypeTags.UNION_TAG -> throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, currentType);
             default -> {
                 if (parentContext == JsonParser.StateMachine.ParserContext.ARRAY) {
                     throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, currentType, "map type");
