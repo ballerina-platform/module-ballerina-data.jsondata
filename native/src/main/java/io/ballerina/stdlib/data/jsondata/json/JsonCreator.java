@@ -23,6 +23,7 @@ import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.Field;
+import io.ballerina.runtime.api.types.IntersectionType;
 import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.TupleType;
@@ -37,12 +38,14 @@ import io.ballerina.stdlib.data.jsondata.FromString;
 import io.ballerina.stdlib.data.jsondata.utils.Constants;
 import io.ballerina.stdlib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.stdlib.data.jsondata.utils.DiagnosticLog;
+import org.ballerinalang.langlib.value.CloneReadOnly;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Stack;
 
 /**
  * Create objects for partially parsed json.
@@ -78,14 +81,20 @@ public class JsonCreator {
         sm.parserContexts.push(JsonParser.StateMachine.ParserContext.MAP);
         Type expType = sm.expectedTypes.peek();
         if (expType == null) {
+            sm.fieldNameHierarchy.push(new Stack<>());
             return Optional.empty();
         }
-        Type currentType = TypeUtils.getReferredType(expType);
 
         if (sm.currentJsonNode != null) {
             sm.nodesStack.push(sm.currentJsonNode);
         }
+        BMap<BString, Object> nextMapValue = checkTypeAndCreateMappingValue(sm, expType, parentContext);
+        return Optional.of(nextMapValue);
+    }
 
+    static BMap<BString, Object> checkTypeAndCreateMappingValue(JsonParser.StateMachine sm, Type expType,
+                                                                JsonParser.StateMachine.ParserContext parentContext) {
+        Type currentType = TypeUtils.getReferredType(expType);
         BMap<BString, Object> nextMapValue;
         switch (currentType.getTag()) {
             case TypeTags.RECORD_TYPE_TAG -> {
@@ -105,6 +114,13 @@ public class JsonCreator {
                 nextMapValue = ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
                 sm.updateExpectedType(new HashMap<>(), currentType);
             }
+            case TypeTags.INTERSECTION_TAG -> {
+                Optional<Type> mutableType = getMutableType((IntersectionType) currentType);
+                if (mutableType.isEmpty()) {
+                    throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, currentType, "map type");
+                }
+                return checkTypeAndCreateMappingValue(sm, mutableType.get(), parentContext);
+            }
             case TypeTags.UNION_TAG -> throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, currentType);
             default -> {
                 if (parentContext == JsonParser.StateMachine.ParserContext.ARRAY) {
@@ -113,13 +129,7 @@ public class JsonCreator {
                 throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE_FOR_FIELD, getCurrentFieldPath(sm));
             }
         }
-
-        Object currentJson = sm.currentJsonNode;
-        int valueTypeTag = TypeUtils.getType(currentJson).getTag();
-        if (valueTypeTag == TypeTags.MAP_TAG || valueTypeTag == TypeTags.RECORD_TYPE_TAG) {
-            ((BMap<BString, Object>) currentJson).put(StringUtils.fromString(sm.fieldNames.peek()), nextMapValue);
-        }
-        return Optional.of(nextMapValue);
+        return nextMapValue;
     }
 
     static void updateNextMapValue(JsonParser.StateMachine sm) {
@@ -139,7 +149,15 @@ public class JsonCreator {
         }
 
         Object currentJsonNode = sm.currentJsonNode;
-        BArray nextArrValue = initArrayValue(sm.expectedTypes.peek());
+        Type expType = TypeUtils.getReferredType(sm.expectedTypes.peek());
+        if (expType.getTag() == TypeTags.INTERSECTION_TAG) {
+            Optional<Type> type = getMutableType((IntersectionType) expType);
+            if (type.isEmpty()) {
+                throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, expType, "array type");
+            }
+            expType = type.get();
+        }
+        BArray nextArrValue = initArrayValue(expType);
         if (currentJsonNode == null) {
             return Optional.ofNullable(nextArrValue);
         }
@@ -148,12 +166,21 @@ public class JsonCreator {
         return Optional.ofNullable(nextArrValue);
     }
 
-    private static String getCurrentFieldPath(JsonParser.StateMachine sm) {
-        Iterator<String> itr = sm.fieldNames.descendingIterator();
+    static Optional<Type> getMutableType(IntersectionType intersectionType) {
+        for (Type constituentType : intersectionType.getConstituentTypes()) {
+            if (constituentType.getTag() == TypeTags.READONLY_TAG) {
+                continue;
+            }
+            return Optional.of(constituentType);
+        }
+        return Optional.empty();
+    }
 
-        StringBuilder result = new StringBuilder(itr.hasNext() ? itr.next() : "");
+    private static String getCurrentFieldPath(JsonParser.StateMachine sm) {
+        Iterator<Stack<String>> itr = sm.fieldNameHierarchy.iterator();
+        StringBuilder result = new StringBuilder(itr.hasNext() ? itr.next().peek() : "");
         while (itr.hasNext()) {
-            result.append(".").append(itr.next());
+            result.append(".").append(itr.next().peek());
         }
         return result.toString();
     }
@@ -172,7 +199,7 @@ public class JsonCreator {
         Type currentJsonNodeType = TypeUtils.getType(currentJson);
         switch (currentJsonNodeType.getTag()) {
             case TypeTags.MAP_TAG, TypeTags.RECORD_TYPE_TAG -> {
-                ((BMap<BString, Object>) currentJson).put(StringUtils.fromString(sm.fieldNames.pop()),
+                ((BMap<BString, Object>) currentJson).put(StringUtils.fromString(sm.fieldNameHierarchy.peek().pop()),
                         convertedValue);
                 return currentJson;
             }
@@ -241,24 +268,6 @@ public class JsonCreator {
         return expectedType;
     }
 
-    static void validateListSize(int currentIndex, Type expType) {
-        int expLength = 0;
-        if (expType == null) {
-            return;
-        }
-
-        if (expType.getTag() == TypeTags.ARRAY_TAG) {
-            expLength = ((ArrayType) expType).getSize();
-        } else if (expType.getTag() == TypeTags.TUPLE_TAG) {
-            TupleType tupleType = (TupleType) expType;
-            expLength = tupleType.getTupleTypes().size();
-        }
-
-        if (expLength >= 0 && expLength > currentIndex + 1) {
-            throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
-        }
-    }
-
     static Map<String, Field> getAllFieldsInRecord(RecordType recordType) {
         BMap<BString, Object> annotations = recordType.getAnnotations();
         Map<String, String> modifiedNames = new HashMap<>();
@@ -291,5 +300,9 @@ public class JsonCreator {
             }
         }
         return fieldName;
+    }
+
+    static Object constructReadOnlyValue(Object value) {
+        return CloneReadOnly.cloneReadOnly(value);
     }
 }

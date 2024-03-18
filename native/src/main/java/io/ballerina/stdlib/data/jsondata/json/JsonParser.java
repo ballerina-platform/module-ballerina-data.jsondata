@@ -23,6 +23,7 @@ import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.flags.SymbolFlags;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.Field;
+import io.ballerina.runtime.api.types.IntersectionType;
 import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.Type;
@@ -37,6 +38,7 @@ import io.ballerina.stdlib.data.jsondata.utils.Constants;
 import io.ballerina.stdlib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.stdlib.data.jsondata.utils.DiagnosticLog;
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.ballerinalang.langlib.value.CloneReadOnly;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -133,8 +135,6 @@ public class JsonParser {
 
         Object currentJsonNode;
         Deque<Object> nodesStack;
-        Deque<String> fieldNames;
-
         private StringBuilder hexBuilder = new StringBuilder(4);
         private char[] charBuff = new char[1024];
         private int charBuffIndex;
@@ -149,6 +149,7 @@ public class JsonParser {
         Stack<Map<String, Field>> visitedFieldHierarchy = new Stack<>();
         Stack<Type> restType = new Stack<>();
         Stack<Type> expectedTypes = new Stack<>();
+        Stack<Stack<String>> fieldNameHierarchy = new Stack<>();
         int jsonFieldDepth = 0;
         Stack<Integer> arrayIndexes = new Stack<>();
         Stack<ParserContext> parserContexts = new Stack<>();
@@ -163,7 +164,7 @@ public class JsonParser {
             line = 1;
             column = 0;
             nodesStack = new ArrayDeque<>();
-            fieldNames = new ArrayDeque<>();
+            fieldNameHierarchy.clear();
             fieldHierarchy.clear();
             currentField = null;
             restType.clear();
@@ -204,7 +205,7 @@ public class JsonParser {
                 case TypeTags.NULL_TAG, TypeTags.BOOLEAN_TAG, TypeTags.INT_TAG, TypeTags.BYTE_TAG,
                         TypeTags.SIGNED8_INT_TAG, TypeTags.SIGNED16_INT_TAG, TypeTags.SIGNED32_INT_TAG,
                         TypeTags.UNSIGNED8_INT_TAG, TypeTags.UNSIGNED16_INT_TAG, TypeTags.UNSIGNED32_INT_TAG,
-                        TypeTags.FLOAT_TAG, TypeTags.DECIMAL_TAG, TypeTags.STRING_TAG ->
+                        TypeTags.FLOAT_TAG, TypeTags.DECIMAL_TAG, TypeTags.CHAR_STRING_TAG, TypeTags.STRING_TAG ->
                         expectedTypes.push(type);
                 case TypeTags.JSON_TAG, TypeTags.ANYDATA_TAG -> {
                     expectedTypes.push(type);
@@ -220,6 +221,22 @@ public class JsonParser {
                         break;
                     }
                     throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
+                }
+                case TypeTags.INTERSECTION_TAG -> {
+                    Type effectiveType = ((IntersectionType) type).getEffectiveType();
+                    if (!SymbolFlags.isFlagOn(SymbolFlags.READONLY, effectiveType.getFlags())) {
+                        throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
+                    }
+
+                    Object jsonValue = null;
+                    for (Type constituentType : ((IntersectionType) type).getConstituentTypes()) {
+                        if (constituentType.getTag() == TypeTags.READONLY_TAG) {
+                            continue;
+                        }
+                        jsonValue = execute(reader, options, TypeUtils.getReferredType(constituentType));
+                        break;
+                    }
+                    return JsonCreator.constructReadOnlyValue(jsonValue);
                 }
                 default -> throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
             }
@@ -294,6 +311,7 @@ public class JsonParser {
             if (!expectedTypes.isEmpty() && expectedTypes.peek() == null) {
                 // Skip the value and continue to next state.
                 parserContexts.pop();
+                fieldNameHierarchy.pop();
                 if (parserContexts.peek() == ParserContext.MAP) {
                     return FIELD_END_STATE;
                 }
@@ -302,6 +320,7 @@ public class JsonParser {
 
             Map<String, Field> remainingFields = fieldHierarchy.pop();
             visitedFieldHierarchy.pop();
+            fieldNameHierarchy.pop();
             restType.pop();
             for (Field field : remainingFields.values()) {
                 if (SymbolFlags.isFlagOn(field.getFlags(), SymbolFlags.REQUIRED)) {
@@ -326,10 +345,16 @@ public class JsonParser {
                 return DOC_END_STATE;
             }
 
+            if (expectedTypes.peek().isReadOnly()) {
+                currentJsonNode = CloneReadOnly.cloneReadOnly(currentJsonNode);
+            }
+
             Object parentNode = nodesStack.pop();
             Type parentNodeType = TypeUtils.getType(parentNode);
             int parentNodeTypeTag = TypeUtils.getReferredType(parentNodeType).getTag();
             if (parentNodeTypeTag == TypeTags.RECORD_TYPE_TAG || parentNodeTypeTag == TypeTags.MAP_TAG) {
+                ((BMap<BString, Object>) parentNode).put(StringUtils.fromString(fieldNameHierarchy.peek().pop()),
+                        currentJsonNode);
                 currentJsonNode = parentNode;
                 return FIELD_END_STATE;
             }
@@ -362,6 +387,7 @@ public class JsonParser {
             this.fieldHierarchy.push(new HashMap<>(fields));
             this.visitedFieldHierarchy.push(new HashMap<>());
             this.restType.push(restType);
+            this.fieldNameHierarchy.push(new Stack<>());
         }
 
         private void updateNextArrayValue() {
@@ -371,9 +397,9 @@ public class JsonParser {
         }
 
         private State finalizeArrayObject() {
-            int currentIndex = arrayIndexes.pop();
+            arrayIndexes.pop();
             State state = finalizeObject();
-            JsonCreator.validateListSize(currentIndex, expectedTypes.pop());
+            expectedTypes.pop();
             return state;
         }
 
@@ -671,7 +697,7 @@ public class JsonParser {
                         } else if (sm.expectedTypes.peek() == null) {
                             sm.expectedTypes.push(null);
                         }
-                        sm.fieldNames.push(jsonFieldName);
+                        sm.fieldNameHierarchy.peek().push(jsonFieldName);
                         state = END_FIELD_NAME_STATE;
                     } else if (ch == REV_SOL) {
                         state = FIELD_NAME_ESC_CHAR_PROCESSING_STATE;
@@ -742,8 +768,6 @@ public class JsonParser {
                         Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
                         if (nextArray.isPresent()) {
                             sm.currentJsonNode = nextArray.get();
-                            JsonCreator.updateRecordFieldValue(StringUtils.fromString(sm.fieldNames.peek()),
-                                    sm.nodesStack.peek(), sm.currentJsonNode);
                         }
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else {
@@ -783,15 +807,9 @@ public class JsonParser {
                         if (sm.jsonFieldDepth > 0) {
                             sm.currentJsonNode = JsonCreator.convertAndUpdateCurrentJsonNode(sm,
                                     StringUtils.fromString(s), expType);
-                        } else if (sm.currentField != null) {
+                        } else if (sm.currentField != null || sm.restType.peek() != null) {
                             sm.currentJsonNode = JsonCreator.convertAndUpdateCurrentJsonNode(sm,
                                     StringUtils.fromString(s), expType);
-                        } else if (sm.restType.peek() != null) {
-                            try {
-                                sm.currentJsonNode = JsonCreator.convertAndUpdateCurrentJsonNode(sm,
-                                        StringUtils.fromString(s), expType);
-                                // this element will be ignored in projection
-                            } catch (BError ignored) { }
                         }
                         state = FIELD_END_STATE;
                     } else if (ch == REV_SOL) {

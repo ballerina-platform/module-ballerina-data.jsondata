@@ -14,6 +14,62 @@
 // specific language governing permissions and limitations
 // under the License.
 
+type OpenRecord record {};
+
+type SimpleRec1 record {|
+    string a;
+    int b;
+|};
+
+type SimpleRec2 record {
+    string a;
+    int b;
+};
+
+type NestedRecord1 record {|
+    string a; 
+    int b;
+    record {|
+        string d; 
+        int e;
+    |} c;
+|};
+
+type NestedRecord2 record {
+    string a; 
+    int b;
+    record {|
+        string d; 
+        int e;
+    |} c;
+};
+
+type RestRecord1 record {|
+    string a; 
+    anydata...;
+|};
+
+type RestRecord2 record {|
+    string a;
+    int...;
+|};
+
+type RestRecord3 record {|
+    string a;
+    int b;
+    record {|
+        int...;
+    |} c;
+|};
+
+type RestRecord4 record {|
+    string a;
+    int b;
+    record {|
+        decimal|float...;
+    |}...;
+|};
+
 type Address record {
     string street;
     string city;

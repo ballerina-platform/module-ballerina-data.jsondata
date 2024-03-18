@@ -22,9 +22,11 @@ import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.types.IntersectionType;
 import io.ballerina.runtime.api.types.ReferenceType;
 import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.types.UnionType;
+import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BError;
@@ -109,6 +111,8 @@ public class FromString {
                     return stringToFloat(value);
                 case TypeTags.DECIMAL_TAG:
                     return stringToDecimal(value);
+                case TypeTags.CHAR_STRING_TAG:
+                    return stringToChar(value);
                 case TypeTags.STRING_TAG:
                     return string;
                 case TypeTags.BOOLEAN_TAG:
@@ -121,6 +125,8 @@ public class FromString {
                     return stringToUnion(string, JSON_TYPE_WITH_BASIC_TYPES);
                 case TypeTags.TYPE_REFERENCED_TYPE_TAG:
                     return fromStringWithType(string, ((ReferenceType) expType).getReferredType());
+                case TypeTags.INTERSECTION_TAG:
+                    return fromStringWithType(string, ((IntersectionType) expType).getEffectiveType());
                 default:
                     return returnError(value, expType.toString());
             }
@@ -192,6 +198,14 @@ public class FromString {
         return intValue;
     }
 
+    private static BString stringToChar(String value) throws NumberFormatException {
+        if (!isCharLiteralValue(value)) {
+            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE,
+                    PredefinedTypes.TYPE_STRING_CHAR, value);
+        }
+        return StringUtils.fromString(value);
+    }
+
     private static Double stringToFloat(String value) throws NumberFormatException {
         if (hasFloatOrDecimalLiteralSuffix(value)) {
             throw new NumberFormatException();
@@ -258,32 +272,36 @@ public class FromString {
         }
     }
 
-    public static boolean isByteLiteral(long longValue) {
+    private static boolean isByteLiteral(long longValue) {
         return (longValue >= BBYTE_MIN_VALUE && longValue <= BBYTE_MAX_VALUE);
     }
 
-    public static boolean isSigned32LiteralValue(Long longObject) {
+    private static boolean isSigned32LiteralValue(Long longObject) {
         return (longObject >= SIGNED32_MIN_VALUE && longObject <= SIGNED32_MAX_VALUE);
     }
 
-    public static boolean isSigned16LiteralValue(Long longObject) {
+    private static boolean isSigned16LiteralValue(Long longObject) {
         return (longObject.intValue() >= SIGNED16_MIN_VALUE && longObject.intValue() <= SIGNED16_MAX_VALUE);
     }
 
-    public static boolean isSigned8LiteralValue(Long longObject) {
+    private static boolean isSigned8LiteralValue(Long longObject) {
         return (longObject.intValue() >= SIGNED8_MIN_VALUE && longObject.intValue() <= SIGNED8_MAX_VALUE);
     }
 
-    public static boolean isUnsigned32LiteralValue(Long longObject) {
+    private static boolean isUnsigned32LiteralValue(Long longObject) {
         return (longObject >= 0 && longObject <= UNSIGNED32_MAX_VALUE);
     }
 
-    public static boolean isUnsigned16LiteralValue(Long longObject) {
+    private static boolean isUnsigned16LiteralValue(Long longObject) {
         return (longObject.intValue() >= 0 && longObject.intValue() <= UNSIGNED16_MAX_VALUE);
     }
 
-    public static boolean isUnsigned8LiteralValue(Long longObject) {
+    private static boolean isUnsigned8LiteralValue(Long longObject) {
         return (longObject.intValue() >= 0 && longObject.intValue() <= UNSIGNED8_MAX_VALUE);
+    }
+
+    private static boolean isCharLiteralValue(String value) {
+        return value.codePoints().count() == 1;
     }
 
     private static BError returnError(String string, String expType) {

@@ -24,6 +24,7 @@ import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.flags.SymbolFlags;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.Field;
+import io.ballerina.runtime.api.types.IntersectionType;
 import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.TupleType;
@@ -106,9 +107,9 @@ public class JsonTraverse {
                             referredType);
                 }
                 case TypeTags.NULL_TAG, TypeTags.BOOLEAN_TAG, TypeTags.INT_TAG, TypeTags.FLOAT_TAG,
-                        TypeTags.DECIMAL_TAG, TypeTags.STRING_TAG, TypeTags.BYTE_TAG, TypeTags.SIGNED8_INT_TAG,
-                        TypeTags.SIGNED16_INT_TAG, TypeTags.SIGNED32_INT_TAG, TypeTags.UNSIGNED8_INT_TAG,
-                        TypeTags.UNSIGNED16_INT_TAG, TypeTags.UNSIGNED32_INT_TAG -> {
+                        TypeTags.DECIMAL_TAG, TypeTags.STRING_TAG, TypeTags.CHAR_STRING_TAG , TypeTags.BYTE_TAG,
+                        TypeTags.SIGNED8_INT_TAG, TypeTags.SIGNED16_INT_TAG, TypeTags.SIGNED32_INT_TAG,
+                        TypeTags.UNSIGNED8_INT_TAG, TypeTags.UNSIGNED16_INT_TAG, TypeTags.UNSIGNED32_INT_TAG -> {
                     return convertToBasicType(json, referredType);
                 }
                 case TypeTags.UNION_TAG -> {
@@ -129,6 +130,19 @@ public class JsonTraverse {
                     fieldHierarchy.push(new HashMap<>());
                     restType.push(mapType.getConstrainedType());
                     return traverseMapJsonOrArrayJson(json, ValueCreator.createMapValue(mapType), referredType);
+                }
+                case TypeTags.INTERSECTION_TAG -> {
+                    Type effectiveType = ((IntersectionType) referredType).getEffectiveType();
+                    if (!SymbolFlags.isFlagOn(SymbolFlags.READONLY, effectiveType.getFlags())) {
+                        throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
+                    }
+                    for (Type constituentType : ((IntersectionType) referredType).getConstituentTypes()) {
+                        if (constituentType.getTag() == TypeTags.READONLY_TAG) {
+                            continue;
+                        }
+                        return JsonCreator.constructReadOnlyValue(traverseJson(json, constituentType));
+                    }
+                    throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
                 }
                 default ->
                         throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, type, PredefinedTypes.TYPE_ANYDATA);
@@ -198,16 +212,12 @@ public class JsonTraverse {
                     ArrayType arrayType = (ArrayType) rootArray;
                     int expectedArraySize = arrayType.getSize();
                     long sourceArraySize = array.getLength();
-                    if (expectedArraySize > sourceArraySize) {
-                        throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
-                    }
-
                     if (!allowDataProjection && expectedArraySize < sourceArraySize) {
                         throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
                     }
 
                     Type elementType = arrayType.getElementType();
-                    if (expectedArraySize == -1) {
+                    if (expectedArraySize == -1 || expectedArraySize > sourceArraySize) {
                         traverseArrayMembers(array.getLength(), array, elementType, currentJsonNode);
                     } else {
                         traverseArrayMembers(expectedArraySize, array, elementType, currentJsonNode);
@@ -217,9 +227,6 @@ public class JsonTraverse {
                     TupleType tupleType = (TupleType) rootArray;
                     Type restType = tupleType.getRestType();
                     int expectedTupleTypeCount = tupleType.getTupleTypes().size();
-                    if (expectedTupleTypeCount > array.getLength()) {
-                        throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
-                    }
                     for (int i = 0; i < array.getLength(); i++) {
                         Object jsonMember = array.get(i);
                         Object nextJsonNode;
