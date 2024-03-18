@@ -224,6 +224,15 @@ type Library record {
     BookA[2] books;
 };
 
+type Singleton1 1;
+
+type SingletonUnion Singleton1|2|"3";
+
+type SingletonInRecord record {|
+    Singleton1 value;
+    SingletonUnion id;
+|};
+
 //////// Types used for Negative cases /////////
 
 type AddressN record {

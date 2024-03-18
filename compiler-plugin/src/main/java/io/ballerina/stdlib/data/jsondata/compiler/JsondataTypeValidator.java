@@ -195,7 +195,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
         }
 
         switch (kind) {
-            case INT, FLOAT, DECIMAL, STRING, BOOLEAN, BYTE, NIL, ERROR -> {
+            case INT, FLOAT, DECIMAL, STRING, BOOLEAN, BYTE, NIL, SINGLETON, ERROR -> {
                 return true;
             }
             default -> {

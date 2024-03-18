@@ -37,18 +37,23 @@ isolated function testJsonStringToBasicTypes() returns error? {
 
     () val6 = check fromJsonStringWithType("null");
     test:assertEquals(val6, null);
-
-    string val7 = check fromJsonStringWithType("");
-    test:assertEquals(val7, "");
 }
 
 @test:Config
 isolated function testSimpleJsonStringToRecord() returns error? {
     string j = string `{"a": "hello", "b": 1}`;
 
-    record {|string a; int b;|} recA = check fromJsonStringWithType(j);
+    SimpleRec1 recA = check fromJsonStringWithType(j);
     test:assertEquals(recA.a, "hello");
     test:assertEquals(recA.b, 1);
+
+    SimpleRec2 recB = check fromJsonStringWithType(j);
+    test:assertEquals(recB.a, "hello");
+    test:assertEquals(recB.b, 1);
+
+    OpenRecord recC = check fromJsonStringWithType(j);
+    test:assertEquals(recC.get("a"), "hello");
+    test:assertEquals(recC.get("b"), 1);
 }
 
 @test:Config
@@ -72,13 +77,26 @@ isolated function testNestedJsonStringToRecord() returns error? {
         }
     }`;
 
-    record {|string a; int b; record {|string d; int e;|} c;|} recA = check fromJsonStringWithType(str);
+    NestedRecord1 recA = check fromJsonStringWithType(str);
     test:assertEquals(recA.length(), 3);
     test:assertEquals(recA.a, "hello");
     test:assertEquals(recA.b, 1);
     test:assertEquals(recA.c.length(), 2);
     test:assertEquals(recA.c.d, "world");
     test:assertEquals(recA.c.e, 2);
+
+    NestedRecord2 recB = check fromJsonStringWithType(str);
+    test:assertEquals(recB.length(), 3);
+    test:assertEquals(recB.a, "hello");
+    test:assertEquals(recB.b, 1);
+    test:assertEquals(recB.c.length(), 2);
+    test:assertEquals(recB.c.d, "world");
+    test:assertEquals(recB.c.e, 2);
+
+    OpenRecord recC = check fromJsonStringWithType(str);
+    test:assertEquals(recC.get("a"), "hello");
+    test:assertEquals(recC.get("b"), 1);
+    test:assertEquals(recC.get("c"), {d: "world", e: 2});
 }
 
 @test:Config
@@ -942,6 +960,44 @@ isolated function testArrayOrTupleCaseForFromJsonStringWithType() returns error?
 }
 
 @test:Config
+isolated function testListFillerValuesWithFromJsonStringWithType() returns error? {
+    int[2] jsonVal1 = check fromJsonStringWithType("[1]");
+    test:assertEquals(jsonVal1, [1, 0]);
+    
+    [int, float, string, boolean] jsonVal2 = check fromJsonStringWithType("[1]");
+    test:assertEquals(jsonVal2, [1, 0.0, "", false]);
+
+    record {|
+        float[3] A;
+        [int, decimal, float, boolean] B;
+    |} jsonVal3 = check fromJsonStringWithType(string `{"A": [1], "B": [1]}`);
+    test:assertEquals(jsonVal3, {A: [1.0, 0.0, 0.0], B: [1, 0d, 0.0, false]});
+}
+
+@test:Config
+isolated function testSingletonAsExpectedTypeForFromJsonStringWithType() returns error? {
+    "1" val1 = check fromJsonStringWithType("1");
+    test:assertEquals(val1, "1");
+
+    Singleton1 val2 = check fromJsonStringWithType("1");
+    test:assertEquals(val2, 1);
+
+    SingletonUnion val3 = check fromJsonStringWithType("1");
+    test:assertEquals(val3, 1);
+
+    () val4 = check fromJsonStringWithType("null");
+    test:assertEquals(val4, ());
+
+    string str5 = string `{
+        "value": "1",
+        "id": "3"
+    }`;
+    SingletonInRecord val5 = check fromJsonStringWithType(str5);
+    test:assertEquals(val5.id, "3");
+    test:assertEquals(val5.value, 1);
+}
+
+@test:Config
 function testDuplicateKeyInTheStringSource() returns error? {
     string str = string `{
         "id": 1,
@@ -1242,6 +1298,12 @@ isolated function testUnSignedInt32AsExpectedTypeForFromJsonStringWithType() ret
     test:assertEquals(val4.address.id, 4294967295);
 }
 
+// TODO: Fix the behaviour and add tests
+@test:Config
+isolated function testRecordWithRestAsExpectedTypeForFromJsonStringWithType() returns error? {
+    
+}
+
 // Negative tests for fromJsonStringWithType() function.
 
 @test:Config
@@ -1312,19 +1374,6 @@ isolated function testFromJsonStringWithTypeNegative4() returns error? {
 }
 
 @test:Config
-isolated function testFromJsonStringWithTypeNegative5() returns error? {
-    string str = string `[1, 2]`;
-
-    INTARR|Error x = fromJsonStringWithType(str);
-    test:assertTrue(x is error);
-    test:assertEquals((<error>x).message(), "array size is not compatible with the expected size");
-
-    INTTUPLE|Error y = fromJsonStringWithType(str);
-    test:assertTrue(y is error);
-    test:assertEquals((<error>y).message(), "array size is not compatible with the expected size");
-}
-
-@test:Config
 isolated function testDuplicateFieldInRecordTypeWithFromJsonStringWithType() returns error? {
     string str = string `{
         "title": "Clean Code",
@@ -1392,7 +1441,7 @@ isolated function testUnionTypeAsExpTypeForFromJsonStringWithTypeNegative() {
 }
 
 @test:Config
-function testSubTypeOfIntAsExptypeNegative() {
+isolated function testSubTypeOfIntAsExptypeNegative() {
     byte|error err1 = fromJsonStringWithType("256");
     test:assertTrue(err1 is error);
     test:assertEquals((<error> err1).message(), "incompatible expected type 'byte' for value '256'");
@@ -1448,4 +1497,11 @@ function testSubTypeOfIntAsExptypeNegative() {
     int:Unsigned32|error err14 = fromJsonStringWithType("-1");
     test:assertTrue(err14 is error);
     test:assertEquals((<error> err14).message(), "incompatible expected type 'lang.int:Unsigned32' for value '-1'");
+}
+
+@test:Config
+isolated function testEmptyJsonDocumentNegative() {
+    string|error err = fromJsonStringWithType("");
+    test:assertTrue(err is error);
+    test:assertEquals((<error> err).message(), "'empty JSON document' at line: '1' column: '1'");
 }

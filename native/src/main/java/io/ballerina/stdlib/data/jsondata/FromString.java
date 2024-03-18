@@ -22,6 +22,7 @@ import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.types.FiniteType;
 import io.ballerina.runtime.api.types.IntersectionType;
 import io.ballerina.runtime.api.types.ReferenceType;
 import io.ballerina.runtime.api.types.Type;
@@ -119,6 +120,8 @@ public class FromString {
                     return stringToBoolean(value);
                 case TypeTags.NULL_TAG:
                     return stringToNull(value);
+                case TypeTags.FINITE_TYPE_TAG:
+                    return stringToFiniteType(value, (FiniteType) expType);
                 case TypeTags.UNION_TAG:
                     return stringToUnion(string, (UnionType) expType);
                 case TypeTags.JSON_TAG:
@@ -132,6 +135,21 @@ public class FromString {
             }
         } catch (NumberFormatException e) {
             return returnError(value, expType.toString());
+        }
+    }
+
+    private static Object stringToFiniteType(String value, FiniteType finiteType) {
+        return finiteType.getValueSpace().stream()
+                .filter(finiteValue -> !(convertToSingletonValue(value, finiteValue) instanceof BError))
+                .findFirst()
+                .orElseGet(() -> returnError(value, finiteType.toString()));
+    }
+
+    private static Object convertToSingletonValue(String str, Object singletonValue) {
+        if (str.equals(singletonValue.toString())) {
+            return fromStringWithType(StringUtils.fromString(str), TypeUtils.getType(singletonValue));
+        } else {
+            return returnError(str, singletonValue.toString());
         }
     }
 
