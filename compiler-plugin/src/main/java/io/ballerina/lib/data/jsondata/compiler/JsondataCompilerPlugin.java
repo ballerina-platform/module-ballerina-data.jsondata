@@ -16,10 +16,20 @@
  * under the License.
  */
 
-module io.ballerina.stdlib.data {
-    requires io.ballerina.runtime;
-    requires io.ballerina.lang.value;
-    requires junit;
-    requires org.apache.commons.lang3;
-    exports io.ballerina.lib.data.jsondata.json;
+package io.ballerina.lib.data.jsondata.compiler;
+
+import io.ballerina.projects.plugins.CompilerPlugin;
+import io.ballerina.projects.plugins.CompilerPluginContext;
+
+/**
+ * Compiler plugin for Jsondata's utils functions.
+ *
+ * @since 0.1.0
+ */
+public class JsondataCompilerPlugin extends CompilerPlugin {
+
+    @Override
+    public void init(CompilerPluginContext compilerPluginContext) {
+        compilerPluginContext.addCodeAnalyzer(new JsondataCodeAnalyzer());
+    }
 }

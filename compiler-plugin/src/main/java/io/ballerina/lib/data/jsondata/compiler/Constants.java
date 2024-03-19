@@ -16,10 +16,15 @@
  * under the License.
  */
 
-module io.ballerina.stdlib.data {
-    requires io.ballerina.runtime;
-    requires io.ballerina.lang.value;
-    requires junit;
-    requires org.apache.commons.lang3;
-    exports io.ballerina.lib.data.jsondata.json;
+package io.ballerina.lib.data.jsondata.compiler;
+
+/**
+ * Constants for Jsondata's compiler plugin.
+ *
+ * @since 0.1.0
+ */
+public class Constants {
+    static final String FROM_JSON_STRING_WITH_TYPE = "fromJsonStringWithType";
+    static final String NAME = "Name";
+    static final String JSONDATA = "jsondata";
 }

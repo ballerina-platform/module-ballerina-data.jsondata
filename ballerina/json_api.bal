@@ -23,7 +23,7 @@ import ballerina/jballerina.java;
 # + t - Target type
 # + return - On success, returns value belonging to the given target type, else returns an `jsondata:Error` value.
 public isolated function fromJsonWithType(json v, Options options = {}, typedesc<anydata> t = <>)
-        returns t|Error = @java:Method {'class: "io.ballerina.stdlib.data.jsondata.json.Native"} external;
+        returns t|Error = @java:Method {'class: "io.ballerina.lib.data.jsondata.json.Native"} external;
 
 # Converts JSON string, byte[] or byte-block-stream to subtype of anydata.
 #
@@ -32,14 +32,14 @@ public isolated function fromJsonWithType(json v, Options options = {}, typedesc
 # + t - Target type
 # + return - On success, value belonging to the given target type, else returns an `jsondata:Error` value.
 public isolated function fromJsonStringWithType(string|byte[]|stream<byte[], error?> s, Options options = {}, typedesc<anydata> t = <>)
-        returns t|Error = @java:Method {'class: "io.ballerina.stdlib.data.jsondata.json.Native"} external;
+        returns t|Error = @java:Method {'class: "io.ballerina.lib.data.jsondata.json.Native"} external;
 
 # Converts a value of type `anydata` to `json`.
 #
 # + v - Source anydata value
 # + return - representation of `v` as value of type json
 public isolated function toJson(anydata v) 
-        returns json|Error = @java:Method {'class: "io.ballerina.stdlib.data.jsondata.json.Native"} external;
+        returns json|Error = @java:Method {'class: "io.ballerina.lib.data.jsondata.json.Native"} external;
 
 # Represent the options that can be used to modify the behaviour of conversion in `fromJsonStringWithType` and `fromJsonWithType`.
 #

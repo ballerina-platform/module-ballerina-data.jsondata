@@ -16,10 +16,31 @@
  * under the License.
  */
 
-module io.ballerina.stdlib.data {
-    requires io.ballerina.runtime;
-    requires io.ballerina.lang.value;
-    requires junit;
-    requires org.apache.commons.lang3;
-    exports io.ballerina.lib.data.jsondata.json;
+package io.ballerina.lib.data.jsondata.utils;
+
+import io.ballerina.runtime.api.Environment;
+import io.ballerina.runtime.api.Module;
+
+/**
+ * This class will hold module related utility functions.
+ *
+ * @since 0.1.0
+ */
+public class ModuleUtils {
+
+    /**
+     * Time standard library package ID.
+     */
+    private static Module module = null;
+
+    private ModuleUtils() {
+    }
+
+    public static void setModule(Environment env) {
+        module = env.getCurrentModule();
+    }
+
+    public static Module getModule() {
+        return module;
+    }
 }

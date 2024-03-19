@@ -1,6 +1,6 @@
 [plugin]
 id = "constraint-compiler-plugin"
-class = "io.ballerina.stdlib.data.jsondata.compiler.JsondataCompilerPlugin"
+class = "io.ballerina.lib.data.jsondata.compiler.JsondataCompilerPlugin"
 
 [[dependency]]
 path = "../compiler-plugin/build/libs/data.jsondata-compiler-plugin-0.1.0-SNAPSHOT.jar"

@@ -12,7 +12,7 @@ distribution = "2201.8.4"
 graalvmCompatible = true
 
 [[platform.java17.dependency]]
-groupId = "io.ballerina.stdlib"
+groupId = "io.ballerina.lib"
 artifactId = "jsondata-native"
 version = "0.1.0"
 path = "../native/build/libs/data.jsondata-native-0.1.0-SNAPSHOT.jar"
