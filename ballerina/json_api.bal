@@ -21,7 +21,7 @@ import ballerina/jballerina.java;
 # + v - Source JSON value
 # + options - Options to be used for filtering in the projection
 # + t - Target type
-# + return - On success, returns the given target type value, else returns an `jsondata:Error`
+# + return - On success, returns value belonging to the given target type, else returns an `jsondata:Error` value.
 public isolated function fromJsonWithType(json v, Options options = {}, typedesc<anydata> t = <>)
         returns t|Error = @java:Method {'class: "io.ballerina.stdlib.data.jsondata.json.Native"} external;
 
@@ -30,7 +30,7 @@ public isolated function fromJsonWithType(json v, Options options = {}, typedesc
 # + s - Source JSON string value or byte[] or byte-block-stream
 # + options - Options to be used for filtering in the projection
 # + t - Target type
-# + return - On success, returns the given target type value, else returns an `jsondata:Error`
+# + return - On success, value belonging to the given target type, else returns an `jsondata:Error` value.
 public isolated function fromJsonStringWithType(string|byte[]|stream<byte[], error?> s, Options options = {}, typedesc<anydata> t = <>)
         returns t|Error = @java:Method {'class: "io.ballerina.stdlib.data.jsondata.json.Native"} external;
 

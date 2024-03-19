@@ -213,7 +213,7 @@ type TestJson record {
 
 type IntArr int[];
 
-type TUPLE [int, string, [int, float]];
+type Tuple [int, string, [int, float]];
 
 type BookA record {|
     string title;
@@ -231,6 +231,17 @@ type SingletonUnion Singleton1|2|"3";
 type SingletonInRecord record {|
     Singleton1 value;
     SingletonUnion id;
+|};
+
+type PersonA record {|
+    string name;
+    record {|int...;|} measurements;
+|};
+
+type T1 (map<anydata>|int|boolean)[];
+type T2 record {|
+    string p1;
+    map<anydata>|int p2;
 |};
 
 //////// Types used for Negative cases /////////

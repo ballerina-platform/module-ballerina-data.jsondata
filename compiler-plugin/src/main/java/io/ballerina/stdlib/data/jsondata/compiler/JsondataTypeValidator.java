@@ -183,7 +183,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
             nonPrimitiveMemberCount++;
         }
 
-        if (nonPrimitiveMemberCount > 1) {
+        if (nonPrimitiveMemberCount >= 1) {
             reportDiagnosticInfo(ctx, location, JsondataDiagnosticCodes.UNSUPPORTED_UNION_TYPE);
         }
     }

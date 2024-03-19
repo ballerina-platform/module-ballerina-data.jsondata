@@ -25,6 +25,6 @@ package io.ballerina.stdlib.data.jsondata.compiler;
  */
 public class Constants {
     static final String FROM_JSON_STRING_WITH_TYPE = "fromJsonStringWithType";
-    public static final String NAME = "Name";
-    public static final String JSONDATA = "jsondata";
+    static final String NAME = "Name";
+    static final String JSONDATA = "jsondata";
 }

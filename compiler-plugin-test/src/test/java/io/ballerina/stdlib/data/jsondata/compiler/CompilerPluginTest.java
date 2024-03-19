@@ -106,4 +106,18 @@ public class CompilerPluginTest {
         Assert.assertEquals(errorDiagnosticsList.get(1).diagnosticInfo().messageFormat(),
                 "invalid field: duplicate field found");
     }
+
+    @Test
+    public void testComplexUnionTypeAsExpectedType() {
+        DiagnosticResult diagnosticResult =
+                CompilerPluginTestUtils.loadPackage("sample_package_7").getCompilation().diagnosticResult();
+        List<Diagnostic> errorDiagnosticsList = diagnosticResult.diagnostics().stream()
+                .filter(r -> r.diagnosticInfo().severity().equals(DiagnosticSeverity.ERROR))
+                .collect(Collectors.toList());
+        Assert.assertEquals(errorDiagnosticsList.size(), 2);
+        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(),
+                "unsupported union type: union type does not support multiple complex types");
+        Assert.assertEquals(errorDiagnosticsList.get(1).diagnosticInfo().messageFormat(),
+                "unsupported union type: union type does not support multiple complex types");
+    }
 }

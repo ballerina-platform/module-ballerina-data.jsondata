@@ -18,7 +18,7 @@
 
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 
-<suite name="BallerinaConstraintCompilerPluginTests">
+<suite name="BallerinaJsondataCompilerPluginTests">
     <test name="UnitTests">
         <classes>
             <class name="io.ballerina.stdlib.data.jsondata.compiler.CompilerPluginTest"/>

@@ -34,7 +34,6 @@ import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.utils.ValueUtils;
 import io.ballerina.runtime.api.values.BArray;
-import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
@@ -260,28 +259,13 @@ public class JsonTraverse {
                         ((BMap<BString, Object>) currentJsonNode).put(key, jsonMember);
                 case TypeTags.BOOLEAN_TAG, TypeTags.INT_TAG, TypeTags.FLOAT_TAG, TypeTags.DECIMAL_TAG,
                         TypeTags.STRING_TAG -> {
-                    if (checkTypeCompatibility(restFieldType, jsonMember)) {
-                        ((BMap<BString, Object>) currentJsonNode).put(key, jsonMember);
-                    }
+                    ((BMap<BString, Object>) currentJsonNode).put(key, convertToBasicType(jsonMember, restFieldType));
                 }
                 default -> {
                     nextJsonValue = traverseJson(jsonMember, restFieldType);
                     ((BMap<BString, Object>) currentJsonNode).put(key, nextJsonValue);
                 }
             }
-        }
-
-        private boolean checkTypeCompatibility(Type type, Object json) {
-            return ((json == null && type.getTag() == TypeTags.NULL_TAG)
-                    || (json instanceof BString && type.getTag() == TypeTags.STRING_TAG)
-                    || (isBallerinaInt(json) && type.getTag() == TypeTags.INT_TAG)
-                    || (json instanceof Double && type.getTag() == TypeTags.FLOAT_TAG)
-                    || ((json instanceof Double || json instanceof BDecimal) && type.getTag() == TypeTags.DECIMAL_TAG)
-                    || (json instanceof Boolean && type.getTag() == TypeTags.BOOLEAN_TAG));
-        }
-
-        private boolean isBallerinaInt(Object val) {
-            return val instanceof Number && !(val instanceof Double);
         }
 
         private void checkOptionalFieldsAndLogError(Map<String, Field> currentField) {
