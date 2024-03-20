@@ -1,5 +1,5 @@
 import ballerina/data.jsondata;
 
 public function main() returns error? {
-    int|record {| int a;|}|record {| int b;|} val = check jsondata:fromJsonStringWithType("1");
+    int|record {| int a;|}|record {| int b;|} val = check jsondata:parseString("1");
 }

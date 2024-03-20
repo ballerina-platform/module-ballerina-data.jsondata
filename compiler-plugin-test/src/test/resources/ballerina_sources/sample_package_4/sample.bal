@@ -17,4 +17,4 @@ string str = string `{
             "country": "USA"
         }
     }`;
-Person _ = check jsondata:fromJsonStringWithType(str);
+Person _ = check jsondata:parseString(str);

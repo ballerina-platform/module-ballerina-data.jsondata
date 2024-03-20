@@ -12,7 +12,7 @@ The Ballerina JSON Data Library is a comprehensive toolkit designed to facilitat
 
 ### Converting JSON Document value to a record value
 
-To convert an JSON document value to a record value, you can utilize the `fromJsonWithType` function provided by the library. The example below showcases the transformation of an JSON document value into a record value.
+To convert an JSON document value to a record value, you can utilize the `parseAsType` function provided by the library. The example below showcases the transformation of an JSON document value into a record value.
 
 ```ballerina
 import ballerina/data.jsondata;
@@ -27,18 +27,18 @@ type Book record {
 public function main() returns error? {
     json jsonContent = {
         "name": "Clean Code",
-        "author": "Robert C. Martin",
+        "author": "Robert C. Martin",     
         "year": 2008
     };
 
-    Book book = check jsondata:fromJsonWithType(jsonContent);
+    Book book = check jsondata:parseAsType(jsonContent);
     io:println(book);
 }
 ```
 
 ### Converting external JSON document to a record value
 
-For transforming JSON content from an external source into a record value, the `fromJsonStringWithType` function can be used. This external source can be in the form of a string or a byte array/byte stream that houses the JSON data. This is commonly extracted from files or network sockets. The example below demonstrates the conversion of an JSON value from an external source into a record value.
+For transforming JSON content from an external source into a record value, the `parseString`, `parseBytes`, `parseStream` functions can be used. This external source can be in the form of a string or a byte array/byte-block-stream that houses the JSON data. This is commonly extracted from files or network sockets. The example below demonstrates the conversion of an JSON value from an external source into a record value.
 
 ```ballerina
 import ballerina/data.jsondata;
@@ -52,7 +52,7 @@ type Book record {
 
 public function main() returns error? {
     string jsonContent = check io:fileReadString("path/to/file.json");
-    Book book = check jsondata:fromJsonStringWithType(jsonContent);
+    Book book = check jsondata:parseString(jsonContent);
     io:println(book);
 }
 ```
@@ -113,7 +113,7 @@ public function main() returns error? {
         ]
     };
 
-    Author author = check jsondata:fromJsonWithType(jsonContent);
+    Author author = check jsondata:parseAsType(jsonContent);
     io:println(author);
 }
 ```
@@ -155,10 +155,10 @@ public function main() returns error? {
         }
     ];
 
-    Book[] bookArr = check jsondata:fromJsonWithType(jsonContent);
+    Book[] bookArr = check jsondata:parseAsType(jsonContent);
     io:println(bookArr);
-    
-    [Book, Book] bookTuple = check jsondata:fromJsonWithType(jsonContent);
+  
+    [Book, Book] bookTuple = check jsondata:parseAsType(jsonContent);
     io:println(bookTuple);
 }
 ```
@@ -192,7 +192,7 @@ public function main() returns error? {
         "publisher": "Prentice Hall"
     };
 
-    Book book = check jsondata:fromJsonWithType(jsonContent);
+    Book book = check jsondata:parseAsType(jsonContent);
     io:println(book);
 }
 ```
@@ -263,6 +263,5 @@ All contributors are encouraged to read the [Ballerina code of conduct](https://
 
 ## Useful links
 
-[//]: # (* For more information go to the [`jsondata` library]&#40;https://lib.ballerina.io/ballerina/data.jsondata/latest&#41;.)
 * Chat live with us via our [Discord server](https://discord.gg/ballerinalang).
 * Post all technical questions on Stack Overflow with the [#ballerina](https://stackoverflow.com/questions/tagged/ballerina) tag.

@@ -17,15 +17,15 @@
 import ballerina/test;
 
 @test:Config {
-    dataProvider: basicTypeDataProviderForFromJsonStringWithType
+    dataProvider: basicTypeDataProviderForParseString
 }
 isolated function testJsonStringToBasicTypes(string sourceData, typedesc<anydata> expType, 
         anydata expectedData) returns Error? {
-    anydata val1 = check fromJsonStringWithType(sourceData, {}, expType);
+    anydata val1 = check parseString(sourceData, {}, expType);
     test:assertEquals(val1, expectedData);
 }
 
-function basicTypeDataProviderForFromJsonStringWithType() returns [string, typedesc<anydata>, anydata][] {
+function basicTypeDataProviderForParseString() returns [string, typedesc<anydata>, anydata][] {
     return [
         ["5", int, 5],
         ["5.5", float, 5.5],
@@ -36,8 +36,8 @@ function basicTypeDataProviderForFromJsonStringWithType() returns [string, typed
 }
 
 @test:Config
-isolated function testNilAsExpectedTypeWithFromJsonStringWithType() returns error? {
-    () val = check fromJsonStringWithType("null");
+isolated function testNilAsExpectedTypeWithParseString() returns error? {
+    () val = check parseString("null");
     test:assertEquals(val, null);
 }
 
@@ -45,15 +45,15 @@ isolated function testNilAsExpectedTypeWithFromJsonStringWithType() returns erro
 isolated function testSimpleJsonStringToRecord() returns Error? {
     string j = string `{"a": "hello", "b": 1}`;
 
-    SimpleRec1 recA = check fromJsonStringWithType(j);
+    SimpleRec1 recA = check parseString(j);
     test:assertEquals(recA.a, "hello");
     test:assertEquals(recA.b, 1);
 
-    SimpleRec2 recB = check fromJsonStringWithType(j);
+    SimpleRec2 recB = check parseString(j);
     test:assertEquals(recB.a, "hello");
     test:assertEquals(recB.b, 1);
 
-    OpenRecord recC = check fromJsonStringWithType(j);
+    OpenRecord recC = check parseString(j);
     test:assertEquals(recC.get("a"), "hello");
     test:assertEquals(recC.get("b"), 1);
 }
@@ -62,7 +62,7 @@ isolated function testSimpleJsonStringToRecord() returns Error? {
 isolated function testSimpleJsonStringToRecordWithProjection() returns Error? {
     string str = string `{"a": "hello", "b": 1}`;
 
-    record {|string a;|} recA = check fromJsonStringWithType(str);
+    record {|string a;|} recA = check parseString(str);
     test:assertEquals(recA.length(), 1);
     test:assertEquals(recA.a, "hello");
     test:assertEquals(recA, {"a": "hello"});
@@ -79,7 +79,7 @@ isolated function testNestedJsonStringToRecord() returns Error? {
         }
     }`;
 
-    NestedRecord1 recA = check fromJsonStringWithType(str);
+    NestedRecord1 recA = check parseString(str);
     test:assertEquals(recA.length(), 3);
     test:assertEquals(recA.a, "hello");
     test:assertEquals(recA.b, 1);
@@ -87,7 +87,7 @@ isolated function testNestedJsonStringToRecord() returns Error? {
     test:assertEquals(recA.c.d, "world");
     test:assertEquals(recA.c.e, 2);
 
-    NestedRecord2 recB = check fromJsonStringWithType(str);
+    NestedRecord2 recB = check parseString(str);
     test:assertEquals(recB.length(), 3);
     test:assertEquals(recB.a, "hello");
     test:assertEquals(recB.b, 1);
@@ -95,7 +95,7 @@ isolated function testNestedJsonStringToRecord() returns Error? {
     test:assertEquals(recB.c.d, "world");
     test:assertEquals(recB.c.e, 2);
 
-    OpenRecord recC = check fromJsonStringWithType(str);
+    OpenRecord recC = check parseString(str);
     test:assertEquals(recC.get("a"), "hello");
     test:assertEquals(recC.get("b"), 1);
     test:assertEquals(recC.get("c"), {d: "world", e: 2});
@@ -112,7 +112,7 @@ isolated function testNestedJsonStringToRecordWithProjection() returns Error? {
         }
     }`;
 
-    record {|string a; record {|string d;|} c;|} recA = check fromJsonStringWithType(str);
+    record {|string a; record {|string d;|} c;|} recA = check parseString(str);
     test:assertEquals(recA.a, "hello");
     test:assertEquals(recA.c.d, "world");
     test:assertEquals(recA, {"a": "hello", "c": {"d": "world"}});
@@ -122,7 +122,7 @@ isolated function testNestedJsonStringToRecordWithProjection() returns Error? {
 isolated function testJsonStringToRecordWithOptionalFields() returns Error? {
     string str = string `{"a": "hello"}`;
 
-    record {|string a; int b?;|} recA = check fromJsonStringWithType(str);
+    record {|string a; int b?;|} recA = check parseString(str);
     test:assertEquals(recA.length(), 1);
     test:assertEquals(recA.a, "hello");
     test:assertEquals(recA.b, null);
@@ -139,14 +139,14 @@ isolated function testJsonStringToRecordWithOptionalFieldsWithProjection() retur
         }
     }`;
 
-    record {|string a; record {|string d; int f?;|} c;|} recA = check fromJsonStringWithType(str);
+    record {|string a; record {|string d; int f?;|} c;|} recA = check parseString(str);
     test:assertEquals(recA.a, "hello");
     test:assertEquals(recA.c.d, "world");
     test:assertEquals(recA, {"a": "hello", "c": {"d": "world"}});
 }
 
 @test:Config
-isolated function testFromJsonStringWithType1() returns Error? {
+isolated function testParseString1() returns Error? {
     string str = string `{
         "id": 2,
         "name": "Anne",
@@ -156,7 +156,7 @@ isolated function testFromJsonStringWithType1() returns Error? {
         }
     }`;
 
-    R x = check fromJsonStringWithType(str);
+    R x = check parseString(str);
     test:assertEquals(x.id, 2);
     test:assertEquals(x.name, "Anne");
     test:assertEquals(x.address.street, "Main");
@@ -172,13 +172,13 @@ isolated function testMapTypeAsFieldTypeInRecordForJsonString() returns Error? {
         }
     }`;
 
-    Company x = check fromJsonStringWithType(str);
+    Company x = check parseString(str);
     test:assertEquals(x.employees["John"], "Manager");
     test:assertEquals(x.employees["Anne"], "Developer");
 }
 
 @test:Config
-isolated function testFromJsonStringWithType2() returns Error? {
+isolated function testParseString2() returns Error? {
     string str = string `{
         "name": "John",
         "age": 30,
@@ -192,7 +192,7 @@ isolated function testFromJsonStringWithType2() returns Error? {
         }
     }`;
 
-    Person x = check fromJsonStringWithType(str);
+    Person x = check parseString(str);
     test:assertEquals(x.length(), 3);
     test:assertEquals(x.name, "John");
     test:assertEquals(x.age, 30);
@@ -205,7 +205,7 @@ isolated function testFromJsonStringWithType2() returns Error? {
 }
 
 @test:Config
-isolated function testFromJsonStringWithType3() returns Error? {
+isolated function testParseString3() returns Error? {
     string str = string `{
         "title": "To Kill a Mockingbird",
         "author": {
@@ -223,7 +223,7 @@ isolated function testFromJsonStringWithType3() returns Error? {
         }
     }`;
 
-    Book x = check fromJsonStringWithType(str);
+    Book x = check parseString(str);
     test:assertEquals(x.title, "To Kill a Mockingbird");
     test:assertEquals(x.author.name, "Harper Lee");
     test:assertEquals(x.author.birthdate, "1926-04-28");
@@ -236,7 +236,7 @@ isolated function testFromJsonStringWithType3() returns Error? {
 }
 
 @test:Config
-isolated function testFromJsonStringWithType4() returns Error? {
+isolated function testParseString4() returns Error? {
     string str = string `{
         "name": "School Twelve",
         "city": 23,
@@ -246,7 +246,7 @@ isolated function testFromJsonStringWithType4() returns Error? {
         "tp": 12345
     }`;
 
-    School x = check fromJsonStringWithType(str);
+    School x = check parseString(str);
     test:assertEquals(x.length(), 6);
     test:assertEquals(x.name, "School Twelve");
     test:assertEquals(x.number, 12);
@@ -256,7 +256,7 @@ isolated function testFromJsonStringWithType4() returns Error? {
 }
 
 @test:Config
-isolated function testFromJsonStringWithType5() returns Error? {
+isolated function testParseString5() returns Error? {
     string str = string `{
         "intValue": 10,
         "floatValue": 10.5,
@@ -265,7 +265,7 @@ isolated function testFromJsonStringWithType5() returns Error? {
         "doNotParse": "abc"
     }`;
 
-    TestRecord x = check fromJsonStringWithType(str);
+    TestRecord x = check parseString(str);
     test:assertEquals(x.length(), 5);
     test:assertEquals(x.intValue, 10);
     test:assertEquals(x.floatValue, 10.5f);
@@ -275,7 +275,7 @@ isolated function testFromJsonStringWithType5() returns Error? {
 }
 
 @test:Config
-isolated function testFromJsonStringWithType6() returns Error? {
+isolated function testParseString6() returns Error? {
     string str = string `{
         "id": 1,
         "name": "Class A",
@@ -297,7 +297,7 @@ isolated function testFromJsonStringWithType6() returns Error? {
         "monitor": null
     }`;
 
-    Class x = check fromJsonStringWithType(str);
+    Class x = check parseString(str);
     test:assertEquals(x.length(), 5);
     test:assertEquals(x.id, 1);
     test:assertEquals(x.name, "Class A");
@@ -316,7 +316,7 @@ isolated function testFromJsonStringWithType6() returns Error? {
 }
 
 @test:Config
-isolated function testFromJsonStringWithType7() returns Error? {
+isolated function testParseString7() returns Error? {
     string nestedJsonStr = string `{
         "intValue": 5,
         "floatValue": 2.5,
@@ -329,7 +329,7 @@ isolated function testFromJsonStringWithType7() returns Error? {
         "nested1": ${nestedJsonStr}
     }`;
 
-    TestRecord2 x = check fromJsonStringWithType(str);
+    TestRecord2 x = check parseString(str);
     test:assertEquals(x.length(), 2);
     test:assertEquals(x.intValue, 10);
     test:assertEquals(x.nested1.length(), 4);
@@ -337,27 +337,27 @@ isolated function testFromJsonStringWithType7() returns Error? {
 }
 
 @test:Config
-isolated function testFromJsonStringWithType8() returns Error? {
+isolated function testParseString8() returns Error? {
     string str = string `{
         "street": "Main",
         "city": "Mahar",
         "house": 94
     }`;
 
-    TestR x = check fromJsonStringWithType(str);
+    TestR x = check parseString(str);
     test:assertEquals(x.street, "Main");
     test:assertEquals(x.city, "Mahar");
 }
 
 @test:Config
-isolated function testFromJsonStringWithType9() returns Error? {
+isolated function testParseString9() returns Error? {
     string str = string `{
         "street": "Main",
         "city": "Mahar",
         "houses": [94, 95, 96]
     }`;
 
-    TestArr1 x = check fromJsonStringWithType(str);
+    TestArr1 x = check parseString(str);
     test:assertEquals(x.length(), 3);
     test:assertEquals(x.street, "Main");
     test:assertEquals(x.city, "Mahar");
@@ -365,14 +365,14 @@ isolated function testFromJsonStringWithType9() returns Error? {
 }
 
 @test:Config
-isolated function testFromJsonStringWithType10() returns Error? {
+isolated function testParseString10() returns Error? {
     string str = string `{
         "street": "Main",
         "city": 11,
         "house": [94, "Gedara"]
     }`;
 
-    TestArr2 x = check fromJsonStringWithType(str);
+    TestArr2 x = check parseString(str);
     test:assertEquals(x.length(), 3);
     test:assertEquals(x.street, "Main");
     test:assertEquals(x.city, 11);
@@ -380,14 +380,14 @@ isolated function testFromJsonStringWithType10() returns Error? {
 }
 
 @test:Config
-isolated function testFromJsonStringWithType11() returns Error? {
+isolated function testParseString11() returns Error? {
     string str = string `{
         "street": "Main",
         "city": "Mahar",
         "house": [94, [1, 2, 3]]
     }`;
 
-    TestArr3 x = check fromJsonStringWithType(str);
+    TestArr3 x = check parseString(str);
     test:assertEquals(x.length(), 3);
     test:assertEquals(x.street, "Main");
     test:assertEquals(x.city, "Mahar");
@@ -395,7 +395,7 @@ isolated function testFromJsonStringWithType11() returns Error? {
 }
 
 @test:Config
-isolated function testFromJsonStringWithType12() returns Error? {
+isolated function testParseString12() returns Error? {
     string str = string `{
         "street": "Main",
         "city": {
@@ -405,21 +405,21 @@ isolated function testFromJsonStringWithType12() returns Error? {
         "flag": true
     }`;
 
-    TestJson x = check fromJsonStringWithType(str);
+    TestJson x = check parseString(str);
     test:assertEquals(x.length(), 3);
     test:assertEquals(x.street, "Main");
     test:assertEquals(x.city, {"name": "Mahar", "code": 94});
 }
 
 @test:Config
-isolated function testFromJsonStringWithType13() returns Error? {
+isolated function testParseString13() returns Error? {
     string str = string `{
         "street": "Main",
         "city": "Mahar",
         "house": [94, [1, 3, "4"]]
     }`;
 
-    TestArr3 x = check fromJsonStringWithType(str);
+    TestArr3 x = check parseString(str);
     test:assertEquals(x.length(), 3);
     test:assertEquals(x.street, "Main");
     test:assertEquals(x.city, "Mahar");
@@ -427,7 +427,7 @@ isolated function testFromJsonStringWithType13() returns Error? {
 }
 
 @test:Config
-isolated function testFromJsonStringWithType14() returns Error? {
+isolated function testParseString14() returns Error? {
     string str = string `{
         "id": 12,
         "name": "Anne",
@@ -438,7 +438,7 @@ isolated function testFromJsonStringWithType14() returns Error? {
         }
     }`;
 
-    RN x = check fromJsonStringWithType(str);
+    RN x = check parseString(str);
     test:assertEquals(x.length(), 3);
     test:assertEquals(x.id, 12);
     test:assertEquals(x.name, "Anne");
@@ -449,23 +449,23 @@ isolated function testFromJsonStringWithType14() returns Error? {
 }
 
 @test:Config
-isolated function testFromJsonStringWithType15() returns Error? {
+isolated function testParseString15() returns Error? {
     string str = string `[1, 2, 3]`;
 
-    IntArr x = check fromJsonStringWithType(str);
+    IntArr x = check parseString(str);
     test:assertEquals(x, [1, 2, 3]);
 }
 
 @test:Config
-isolated function testFromJsonStringWithType16() returns Error? {
+isolated function testParseString16() returns Error? {
     string str = string `[1, "abc", [3, 4.0]]`;
 
-    Tuple x = check fromJsonStringWithType(str);
+    Tuple x = check parseString(str);
     test:assertEquals(x, [1, "abc", [3, 4.0]]);
 }
 
 @test:Config
-isolated function testFromJsonStringWithType17() returns Error? {
+isolated function testParseString17() returns Error? {
     string str = string `{
         "street": "Main",
         "city": {
@@ -479,14 +479,14 @@ isolated function testFromJsonStringWithType17() returns Error? {
         "flag": true
     }`;
 
-    TestJson x = check fromJsonStringWithType(str);
+    TestJson x = check parseString(str);
     test:assertEquals(x.length(), 3);
     test:assertEquals(x.street, "Main");
     test:assertEquals(x.city, {"name": "Mahar", "code": 94, "internal": {"id": 12, "agent": "Anne"}});
 }
 
 @test:Config
-isolated function testFromJsonStringWithType18() returns Error? {
+isolated function testParseString18() returns Error? {
     string str = string `{
         "books": [
             {
@@ -504,7 +504,7 @@ isolated function testFromJsonStringWithType18() returns Error? {
         ]
     }`;
 
-    Library x = check fromJsonStringWithType(str);
+    Library x = check parseString(str);
     test:assertEquals(x.books.length(), 2);
     test:assertEquals(x.books[0].title, "The Great Gatsby");
     test:assertEquals(x.books[0].author, "F. Scott Fitzgerald");
@@ -521,7 +521,7 @@ type LibraryC record {|
 |};
 
 @test:Config
-isolated function testFromJsonStringWithType19() returns Error? {
+isolated function testParseString19() returns Error? {
     string str = string `{
         "books": [
             {
@@ -539,14 +539,14 @@ isolated function testFromJsonStringWithType19() returns Error? {
         ]
     }`;
 
-    LibraryB x = check fromJsonStringWithType(str);
+    LibraryB x = check parseString(str);
     test:assertEquals(x.books.length(), 2);
     test:assertEquals(x.books[0].title, "The Great Gatsby");
     test:assertEquals(x.books[0].author, "F. Scott Fitzgerald");
     test:assertEquals(x.books[1].title, "The Grapes of Wrath");
     test:assertEquals(x.books[1].author, "John Steinbeck");
 
-    LibraryC y = check fromJsonStringWithType(str);
+    LibraryC y = check parseString(str);
     test:assertEquals(y.books.length(), 3);
     test:assertEquals(y.books[0].title, "The Great Gatsby");
     test:assertEquals(y.books[0].author, "F. Scott Fitzgerald");
@@ -557,7 +557,7 @@ isolated function testFromJsonStringWithType19() returns Error? {
 }
 
 @test:Config
-isolated function testFromJsonStringWithType20() returns Error? {
+isolated function testParseString20() returns Error? {
     string str1 = string `{
         "a": {
             "c": "world",
@@ -574,7 +574,7 @@ isolated function testFromJsonStringWithType20() returns Error? {
             string c;
             string d;
         |}...;
-    |} val1 = check fromJsonStringWithType(str1);
+    |} val1 = check parseString(str1);
     test:assertEquals(val1.length(), 2);
     test:assertEquals(val1["a"]["c"], "world");
     test:assertEquals(val1["a"]["d"], "2");
@@ -583,7 +583,7 @@ isolated function testFromJsonStringWithType20() returns Error? {
 
     record {|
         map<string>...;
-    |} val2 = check fromJsonStringWithType(str1);
+    |} val2 = check parseString(str1);
     test:assertEquals(val2.length(), 2);
     test:assertEquals(val2["a"]["c"], "world");
     test:assertEquals(val2["a"]["d"], "2");
@@ -606,7 +606,7 @@ isolated function testFromJsonStringWithType20() returns Error? {
             string c;
             string d;
         |}[]...;
-    |} val3 = check fromJsonStringWithType(str3);
+    |} val3 = check parseString(str3);
     test:assertEquals(val3.length(), 2);
     test:assertEquals(val3["a"], [
         {
@@ -623,8 +623,8 @@ isolated function testFromJsonStringWithType20() returns Error? {
 }
 
 @test:Config
-isolated function testUnionTypeAsExpTypeForFromJsonStringWithType() returns Error? {
-    decimal|float val1 = check fromJsonStringWithType("1.0");
+isolated function testUnionTypeAsExpTypeForParseString() returns Error? {
+    decimal|float val1 = check parseString("1.0");
     test:assertEquals(val1, 1.0);
 
     string str2 = string `{
@@ -634,7 +634,7 @@ isolated function testUnionTypeAsExpTypeForFromJsonStringWithType() returns Erro
 
     record {|
         decimal|float b;
-    |} val2 = check fromJsonStringWithType(str2);
+    |} val2 = check parseString(str2);
     test:assertEquals(val2.length(), 1);
     test:assertEquals(val2.b, 1.0);
 
@@ -651,7 +651,7 @@ isolated function testUnionTypeAsExpTypeForFromJsonStringWithType() returns Erro
     record {|
         record {|decimal|int b; record {|string|boolean e;|} d;|} a;
         decimal|float c;
-    |} val3 = check fromJsonStringWithType(str3);
+    |} val3 = check parseString(str3);
     test:assertEquals(val3.length(), 2);
     test:assertEquals(val3.a.length(), 2);
     test:assertEquals(val3.a.b, 1);
@@ -660,9 +660,9 @@ isolated function testUnionTypeAsExpTypeForFromJsonStringWithType() returns Erro
 }
 
 @test:Config
-isolated function testAnydataAsExpTypeForFromJsonStringWithType() returns Error? {
+isolated function testAnydataAsExpTypeForParseString() returns Error? {
     string jsonStr1 = string `1`;
-    anydata val1 = check fromJsonStringWithType(jsonStr1);
+    anydata val1 = check parseString(jsonStr1);
     test:assertEquals(val1, 1);
 
     string jsonStr2 = string `{
@@ -670,7 +670,7 @@ isolated function testAnydataAsExpTypeForFromJsonStringWithType() returns Error?
         "b": 1
     }`;
 
-    anydata val2 = check fromJsonStringWithType(jsonStr2);
+    anydata val2 = check parseString(jsonStr2);
     test:assertEquals(val2, {"a": "hello", "b": 1});
 
     string jsonStr3 = string `{
@@ -683,7 +683,7 @@ isolated function testAnydataAsExpTypeForFromJsonStringWithType() returns Error?
         "c": 2
     }`;
 
-    anydata val3 = check fromJsonStringWithType(jsonStr3);
+    anydata val3 = check parseString(jsonStr3);
     test:assertEquals(val3, {"a": {"b": 1, "d": {"e": "hello"}}, "c": 2});
 
     string jsonStr4 = string `{
@@ -696,18 +696,18 @@ isolated function testAnydataAsExpTypeForFromJsonStringWithType() returns Error?
         "c": 2
     }`;
 
-    anydata val4 = check fromJsonStringWithType(jsonStr4);
+    anydata val4 = check parseString(jsonStr4);
     test:assertEquals(val4, {"a": [{"b": 1, "d": {"e": "hello"}}], "c": 2});
 
     string str5 = string `[[1], 2]`;
-    anydata val5 = check fromJsonStringWithType(str5);
+    anydata val5 = check parseString(str5);
     test:assertEquals(val5, [[1], 2]);
 }
 
 @test:Config
-isolated function testJsonAsExpTypeForFromJsonStringWithType() returns Error? {
+isolated function testJsonAsExpTypeForParseString() returns Error? {
     string jsonStr1 = string `1`;
-    json val1 = check fromJsonStringWithType(jsonStr1);
+    json val1 = check parseString(jsonStr1);
     test:assertEquals(val1, 1);
 
     string jsonStr2 = string `{
@@ -715,7 +715,7 @@ isolated function testJsonAsExpTypeForFromJsonStringWithType() returns Error? {
         "b": 1
     }`;
 
-    json val2 = check fromJsonStringWithType(jsonStr2);
+    json val2 = check parseString(jsonStr2);
     test:assertEquals(val2, {"a": "hello", "b": 1});
 
     string jsonStr3 = string `{
@@ -728,7 +728,7 @@ isolated function testJsonAsExpTypeForFromJsonStringWithType() returns Error? {
         "c": 2
     }`;
 
-    json val3 = check fromJsonStringWithType(jsonStr3);
+    json val3 = check parseString(jsonStr3);
     test:assertEquals(val3, {"a": {"b": 1, "d": {"e": "hello"}}, "c": 2});
 
     string jsonStr4 = string `{
@@ -741,22 +741,22 @@ isolated function testJsonAsExpTypeForFromJsonStringWithType() returns Error? {
         "c": 2
     }`;
 
-    json val4 = check fromJsonStringWithType(jsonStr4);
+    json val4 = check parseString(jsonStr4);
     test:assertEquals(val4, {"a": [{"b": 1, "d": {"e": "hello"}}], "c": 2});
 
     string str5 = string `[[1], 2]`;
-    json val5 = check fromJsonStringWithType(str5);
+    json val5 = check parseString(str5);
     test:assertEquals(val5, [[1], 2]);
 }
 
 @test:Config
-isolated function testMapAsExpTypeForFromJsonStringWithType() returns Error? {
+isolated function testMapAsExpTypeForParseString() returns Error? {
     string jsonStr1 = string `{
         "a": "hello",
         "b": 1
     }`;
 
-    map<string> val1 = check fromJsonStringWithType(jsonStr1);
+    map<string> val1 = check parseString(jsonStr1);
     test:assertEquals(val1, {"a": "hello", "b": "1"});
 
     string jsonStr2 = string `{
@@ -771,7 +771,7 @@ isolated function testMapAsExpTypeForFromJsonStringWithType() returns Error? {
         string a;
         int b;
         map<string> c;
-    |} val2 = check fromJsonStringWithType(jsonStr2);
+    |} val2 = check parseString(jsonStr2);
     test:assertEquals(val2.a, "hello");
     test:assertEquals(val2.b, 1);
     test:assertEquals(val2.c, {"d": "world", "e": "2"});
@@ -787,18 +787,18 @@ isolated function testMapAsExpTypeForFromJsonStringWithType() returns Error? {
         }
     }`;
 
-    map<map<string>> val3 = check fromJsonStringWithType(jsonStr3);
+    map<map<string>> val3 = check parseString(jsonStr3);
     test:assertEquals(val3, {"a": {"c": "world", "d": "2"}, "b": {"c": "world", "d": "2"}});
 
     record {|
         map<string> a;
-    |} val4 = check fromJsonStringWithType(jsonStr3);
+    |} val4 = check parseString(jsonStr3);
     test:assertEquals(val4.a, {"c": "world", "d": "2"});
 
     map<record {|
         string c;
         int d;
-    |}> val5 = check fromJsonStringWithType(jsonStr3);
+    |}> val5 = check parseString(jsonStr3);
     test:assertEquals(val5, {"a": {"c": "world", "d": 2}, "b": {"c": "world", "d": 2}});
 
     string jsonStr6 = string `{
@@ -817,57 +817,57 @@ isolated function testMapAsExpTypeForFromJsonStringWithType() returns Error? {
     record {|
         string a;
         map<map<string>> b;
-    |} val6 = check fromJsonStringWithType(jsonStr6);
+    |} val6 = check parseString(jsonStr6);
     test:assertEquals(val6.a, "Kanth");
     test:assertEquals(val6.b, {"g": {"c": "hello", "d": "1"}, "h": {"c": "world", "d": "2"}});
 }
 
 @test:Config
-isolated function testProjectionInTupleForFromJsonStringWithType() returns Error? {
+isolated function testProjectionInTupleForParseString() returns Error? {
     string str1 = string `[1, 2, 3, 4, 5, 8]`;
-    [string, float] val1 = check fromJsonStringWithType(str1);
+    [string, float] val1 = check parseString(str1);
     test:assertEquals(val1, ["1", 2.0]);
 
     string str2 = string `{
         "a": [1, 2, 3, 4, 5, 8]
     }`;
-    record {|[string, float] a;|} val2 = check fromJsonStringWithType(str2);
+    record {|[string, float] a;|} val2 = check parseString(str2);
     test:assertEquals(val2.a, ["1", 2.0]);
 
     string str3 = string `[1, "4"]`;
-    [float] val3 = check fromJsonStringWithType(str3);
+    [float] val3 = check parseString(str3);
     test:assertEquals(val3, [1.0]);
 
     string str4 = string `["1", {}]`;
-    [float] val4 = check fromJsonStringWithType(str4);
+    [float] val4 = check parseString(str4);
     test:assertEquals(val4, [1.0]);
 
     string str5 = string `["1", [], {"name": 1}]`;
-    [float] val5 = check fromJsonStringWithType(str5);
+    [float] val5 = check parseString(str5);
     test:assertEquals(val5, [1.0]);
 }
 
 @test:Config
-isolated function testProjectionInArrayForFromJsonStringWithType() returns Error? {
+isolated function testProjectionInArrayForParseString() returns Error? {
     string strVal = string `[1, 2, 3, 4, 5]`;
-    int[] val = check fromJsonStringWithType(strVal);
+    int[] val = check parseString(strVal);
     test:assertEquals(val, [1, 2, 3, 4, 5]);
 
     string strVal2 = string `[1, 2, 3, 4, 5]`;
-    int[2] val2 = check fromJsonStringWithType(strVal2);
+    int[2] val2 = check parseString(strVal2);
     test:assertEquals(val2, [1, 2]);
 
     string strVal3 = string `{
         "a": [1, 2, 3, 4, 5]
     }`;
-    record {|int[2] a;|} val3 = check fromJsonStringWithType(strVal3);
+    record {|int[2] a;|} val3 = check parseString(strVal3);
     test:assertEquals(val3, {a: [1, 2]});
 
     string strVal4 = string `{
         "a": [1, 2, 3, 4, 5],
         "b": [1, 2, 3, 4, 5]
     }`;
-    record {|int[2] a; int[3] b;|} val4 = check fromJsonStringWithType(strVal4);
+    record {|int[2] a; int[3] b;|} val4 = check parseString(strVal4);
     test:assertEquals(val4, {a: [1, 2], b: [1, 2, 3]});
 
     string strVal5 = string `{
@@ -880,22 +880,22 @@ isolated function testProjectionInArrayForFromJsonStringWithType() returns Error
             }
         ]
     }`;
-    record {|record {|string name; int age;|}[1] employees;|} val5 = check fromJsonStringWithType(strVal5);
+    record {|record {|string name; int age;|}[1] employees;|} val5 = check parseString(strVal5);
     test:assertEquals(val5, {employees: [{name: "Prakanth", age: 26}]});
 
     string strVal6 = string `["1", 2, 3, { "a" : val_a }]`;
-    int[3] val6 = check fromJsonStringWithType(strVal6);
+    int[3] val6 = check parseString(strVal6);
     test:assertEquals(val6, [1, 2, 3]);
 }
 
 @test:Config
-isolated function testProjectionInRecordForFromJsonStringWithType() returns Error? {
+isolated function testProjectionInRecordForParseString() returns Error? {
     string jsonStr1 = string `{"name": "John", "age": 30, "city": "New York"}`;
-    record {|string name; string city;|} val1 = check fromJsonStringWithType(jsonStr1);
+    record {|string name; string city;|} val1 = check parseString(jsonStr1);
     test:assertEquals(val1, {name: "John", city: "New York"});
 
     string jsonStr2 = string `{"name": John, "age": "30", "city": "New York"}`;
-    record {|string name; string city;|} val2 = check fromJsonStringWithType(jsonStr2);
+    record {|string name; string city;|} val2 = check parseString(jsonStr2);
     test:assertEquals(val2, {name: "John", city: "New York"});
 
     string jsonStr3 = string `{ "name": "John", 
@@ -908,7 +908,7 @@ isolated function testProjectionInRecordForFromJsonStringWithType() returns Erro
                                         }
                                     },
                                 "city": "New York" }`;
-    record {|string name; string city;|} val3 = check fromJsonStringWithType(jsonStr3);
+    record {|string name; string city;|} val3 = check parseString(jsonStr3);
     test:assertEquals(val3, {name: "John", city: "New York"});
 
     string jsonStr4 = string `{ "name": "John", 
@@ -921,7 +921,7 @@ isolated function testProjectionInRecordForFromJsonStringWithType() returns Erro
                                         }
                                     }],
                                 "city": "New York" }`;
-    record {|string name; string city;|} val4 = check fromJsonStringWithType(jsonStr4);
+    record {|string name; string city;|} val4 = check parseString(jsonStr4);
     test:assertEquals(val4, {name: "John", city: "New York"});
 
     string jsonStr5 = string `{ "name": "John", 
@@ -943,82 +943,82 @@ isolated function testProjectionInRecordForFromJsonStringWithType() returns Erro
                                         }
                                     }]
                                 }`;
-    record {|string name; string city;|} val5 = check fromJsonStringWithType(jsonStr5);
+    record {|string name; string city;|} val5 = check parseString(jsonStr5);
     test:assertEquals(val5, {name: "John", city: "New York"});
 }
 
 @test:Config
-isolated function testArrayOrTupleCaseForFromJsonStringWithType() returns Error? {
+isolated function testArrayOrTupleCaseForParseString() returns Error? {
     string jsonStr1 = string `[["1"], 2.0]`;
-    [[int], float] val1 = check fromJsonStringWithType(jsonStr1);
+    [[int], float] val1 = check parseString(jsonStr1);
     test:assertEquals(val1, [[1], 2.0]);
 
     string jsonStr2 = string `[["1", 2], 2.0]`;
-    [[int, float], string] val2 = check fromJsonStringWithType(jsonStr2);
+    [[int, float], string] val2 = check parseString(jsonStr2);
     test:assertEquals(val2, [[1, 2.0], "2.0"]);
 
     string jsonStr3 = string `[["1", 2], [2, "3"]]`;
-    int[][] val3 = check fromJsonStringWithType(jsonStr3);
+    int[][] val3 = check parseString(jsonStr3);
     test:assertEquals(val3, [[1, 2], [2, 3]]);
 
     string jsonStr4 = string `{"val" : [[1, 2], "2.0", 3.0, [5, 6]]}`;
     record {|
         [[int, float], string, float, [string, int]] val;
-    |} val4 = check fromJsonStringWithType(jsonStr4);
+    |} val4 = check parseString(jsonStr4);
     test:assertEquals(val4, {val: [[1, 2.0], "2.0", 3.0, ["5", 6]]});
 
     string jsonStr41 = string `{"val1" : [[1, 2], "2.0", 3.0, [5, 6]], "val2" : [[1, 2], "2.0", 3.0, [5, 6]]}`;
     record {|
         [[int, float], string, float, [string, int]] val1;
         [[float, float], string, float, [string, float]] val2;
-    |} val41 = check fromJsonStringWithType(jsonStr41);
+    |} val41 = check parseString(jsonStr41);
     test:assertEquals(val41, {val1: [[1, 2.0], "2.0", 3.0, ["5", 6]], val2: [[1.0, 2.0], "2.0", 3.0, ["5", 6.0]]});
 
     string jsonStr5 = string `{"val" : [["1", 2], [2, "3"]]}`;
     record {|
         int[][] val;
-    |} val5 = check fromJsonStringWithType(jsonStr5);
+    |} val5 = check parseString(jsonStr5);
     test:assertEquals(val5, {val: [[1, 2], [2, 3]]});
 
     string jsonStr6 = string `[{"val" : [["1", 2], [2, "3"]]}]`;
-    [record {|int[][] val;|}] val6 = check fromJsonStringWithType(jsonStr6);
+    [record {|int[][] val;|}] val6 = check parseString(jsonStr6);
     test:assertEquals(val6, [{val: [[1, 2], [2, 3]]}]);
 }
 
 @test:Config
-isolated function testListFillerValuesWithFromJsonStringWithType() returns Error? {
-    int[2] jsonVal1 = check fromJsonStringWithType("[1]");
+isolated function testListFillerValuesWithParseString() returns Error? {
+    int[2] jsonVal1 = check parseString("[1]");
     test:assertEquals(jsonVal1, [1, 0]);
 
-    [int, float, string, boolean] jsonVal2 = check fromJsonStringWithType("[1]");
+    [int, float, string, boolean] jsonVal2 = check parseString("[1]");
     test:assertEquals(jsonVal2, [1, 0.0, "", false]);
 
     record {|
         float[3] A;
         [int, decimal, float, boolean] B;
-    |} jsonVal3 = check fromJsonStringWithType(string `{"A": [1], "B": [1]}`);
+    |} jsonVal3 = check parseString(string `{"A": [1], "B": [1]}`);
     test:assertEquals(jsonVal3, {A: [1.0, 0.0, 0.0], B: [1, 0d, 0.0, false]});
 }
 
 @test:Config
-isolated function testSingletonAsExpectedTypeForFromJsonStringWithType() returns Error? {
-    "1" val1 = check fromJsonStringWithType("1");
+isolated function testSingletonAsExpectedTypeForParseString() returns Error? {
+    "1" val1 = check parseString("1");
     test:assertEquals(val1, "1");
 
-    Singleton1 val2 = check fromJsonStringWithType("1");
+    Singleton1 val2 = check parseString("1");
     test:assertEquals(val2, 1);
 
-    SingletonUnion val3 = check fromJsonStringWithType("1");
+    SingletonUnion val3 = check parseString("1");
     test:assertEquals(val3, 1);
 
-    () val4 = check fromJsonStringWithType("null");
+    () val4 = check parseString("null");
     test:assertEquals(val4, ());
 
     string str5 = string `{
         "value": "1",
         "id": "3"
     }`;
-    SingletonInRecord val5 = check fromJsonStringWithType(str5);
+    SingletonInRecord val5 = check parseString(str5);
     test:assertEquals(val5.id, "3");
     test:assertEquals(val5.value, 1);
 }
@@ -1034,32 +1034,32 @@ function testDuplicateKeyInTheStringSource() returns Error? {
     record {
         int id;
         string name;
-    } employee = check fromJsonStringWithType(str);
+    } employee = check parseString(str);
     test:assertEquals(employee.length(), 2);
     test:assertEquals(employee.id, 2);
     test:assertEquals(employee.name, "Anne");
 }
 
 @test:Config
-function testNameAnnotationWithFromJsonStringWithType() returns Error? {
+function testNameAnnotationWithParseString() returns Error? {
     string jsonStr = string `{
         "id": 1,
         "title-name": "Harry Potter",
         "author-name": "J.K. Rowling"
     }`;
 
-    Book2 book = check fromJsonStringWithType(jsonStr);
+    Book2 book = check parseString(jsonStr);
     test:assertEquals(book.id, 1);
     test:assertEquals(book.title, "Harry Potter");
     test:assertEquals(book.author, "J.K. Rowling");
 }
 
 @test:Config
-isolated function testByteAsExpectedTypeForFromJsonStringWithType() returns Error? {
-    byte val1 = check fromJsonStringWithType("1");
+isolated function testByteAsExpectedTypeForParseString() returns Error? {
+    byte val1 = check parseString("1");
     test:assertEquals(val1, 1);
 
-    [byte, int] val2 = check fromJsonStringWithType("[255, 2000]");
+    [byte, int] val2 = check parseString("[255, 2000]");
     test:assertEquals(val2, [255, 2000]);
 
     string str4 = string `{
@@ -1080,7 +1080,7 @@ isolated function testByteAsExpectedTypeForFromJsonStringWithType() returns Erro
             string city;
             byte id;
         } address;
-    } val4 = check fromJsonStringWithType(str4);
+    } val4 = check parseString(str4);
     test:assertEquals(val4.length(), 3);
     test:assertEquals(val4.id, 1);
     test:assertEquals(val4.name, "Anne");
@@ -1091,14 +1091,14 @@ isolated function testByteAsExpectedTypeForFromJsonStringWithType() returns Erro
 }
 
 @test:Config
-isolated function testSignedInt8AsExpectedTypeForFromJsonStringWithType() returns Error? {
-    int:Signed8 val1 = check fromJsonStringWithType("-128");
+isolated function testSignedInt8AsExpectedTypeForParseString() returns Error? {
+    int:Signed8 val1 = check parseString("-128");
     test:assertEquals(val1, -128);
 
-    int:Signed8 val2 = check fromJsonStringWithType("127");
+    int:Signed8 val2 = check parseString("127");
     test:assertEquals(val2, 127);
 
-    [int:Signed8, int] val3 = check fromJsonStringWithType("[127, 2000]");
+    [int:Signed8, int] val3 = check parseString("[127, 2000]");
     test:assertEquals(val3, [127, 2000]);
 
     string str4 = string `{
@@ -1119,7 +1119,7 @@ isolated function testSignedInt8AsExpectedTypeForFromJsonStringWithType() return
             string city;
             int:Signed8 id;
         } address;
-    } val4 = check fromJsonStringWithType(str4);
+    } val4 = check parseString(str4);
     test:assertEquals(val4.length(), 3);
     test:assertEquals(val4.id, 100);
     test:assertEquals(val4.name, "Anne");
@@ -1130,14 +1130,14 @@ isolated function testSignedInt8AsExpectedTypeForFromJsonStringWithType() return
 }
 
 @test:Config
-isolated function testSignedInt16AsExpectedTypeForFromJsonStringWithType() returns Error? {
-    int:Signed16 val1 = check fromJsonStringWithType("-32768");
+isolated function testSignedInt16AsExpectedTypeForParseString() returns Error? {
+    int:Signed16 val1 = check parseString("-32768");
     test:assertEquals(val1, -32768);
 
-    int:Signed16 val2 = check fromJsonStringWithType("32767");
+    int:Signed16 val2 = check parseString("32767");
     test:assertEquals(val2, 32767);
 
-    [int:Signed16, int] val3 = check fromJsonStringWithType("[32767, -324234]");
+    [int:Signed16, int] val3 = check parseString("[32767, -324234]");
     test:assertEquals(val3, [32767, -324234]);
 
     string str4 = string `{
@@ -1158,7 +1158,7 @@ isolated function testSignedInt16AsExpectedTypeForFromJsonStringWithType() retur
             string city;
             int:Signed16 id;
         } address;
-    } val4 = check fromJsonStringWithType(str4);
+    } val4 = check parseString(str4);
     test:assertEquals(val4.length(), 3);
     test:assertEquals(val4.id, 100);
     test:assertEquals(val4.name, "Anne");
@@ -1169,14 +1169,14 @@ isolated function testSignedInt16AsExpectedTypeForFromJsonStringWithType() retur
 }
 
 @test:Config
-isolated function testSignedInt32AsExpectedTypeForFromJsonStringWithType() returns Error? {
-    int:Signed32 val1 = check fromJsonStringWithType("-2147483648");
+isolated function testSignedInt32AsExpectedTypeForParseString() returns Error? {
+    int:Signed32 val1 = check parseString("-2147483648");
     test:assertEquals(val1, -2147483648);
 
-    int:Signed32 val2 = check fromJsonStringWithType("2147483647");
+    int:Signed32 val2 = check parseString("2147483647");
     test:assertEquals(val2, 2147483647);
 
-    int:Signed32[] val3 = check fromJsonStringWithType("[2147483647, -2147483648]");
+    int:Signed32[] val3 = check parseString("[2147483647, -2147483648]");
     test:assertEquals(val3, [2147483647, -2147483648]);
 
     string str4 = string `{
@@ -1197,7 +1197,7 @@ isolated function testSignedInt32AsExpectedTypeForFromJsonStringWithType() retur
             string city;
             int:Signed32 id;
         } address;
-    } val4 = check fromJsonStringWithType(str4);
+    } val4 = check parseString(str4);
     test:assertEquals(val4.length(), 3);
     test:assertEquals(val4.id, 2147483647);
     test:assertEquals(val4.name, "Anne");
@@ -1208,14 +1208,14 @@ isolated function testSignedInt32AsExpectedTypeForFromJsonStringWithType() retur
 }
 
 @test:Config
-isolated function testUnSignedInt8AsExpectedTypeForFromJsonStringWithType() returns Error? {
-    int:Unsigned8 val1 = check fromJsonStringWithType("255");
+isolated function testUnSignedInt8AsExpectedTypeForParseString() returns Error? {
+    int:Unsigned8 val1 = check parseString("255");
     test:assertEquals(val1, 255);
 
-    int:Unsigned8 val2 = check fromJsonStringWithType("0");
+    int:Unsigned8 val2 = check parseString("0");
     test:assertEquals(val2, 0);
 
-    int:Unsigned8[] val3 = check fromJsonStringWithType("[0, 255]");
+    int:Unsigned8[] val3 = check parseString("[0, 255]");
     test:assertEquals(val3, [0, 255]);
 
     string str4 = string `{
@@ -1236,7 +1236,7 @@ isolated function testUnSignedInt8AsExpectedTypeForFromJsonStringWithType() retu
             string city;
             int:Unsigned8 id;
         } address;
-    } val4 = check fromJsonStringWithType(str4);
+    } val4 = check parseString(str4);
     test:assertEquals(val4.length(), 3);
     test:assertEquals(val4.id, 0);
     test:assertEquals(val4.name, "Anne");
@@ -1247,14 +1247,14 @@ isolated function testUnSignedInt8AsExpectedTypeForFromJsonStringWithType() retu
 }
 
 @test:Config
-isolated function testUnSignedInt16AsExpectedTypeForFromJsonStringWithType() returns Error? {
-    int:Unsigned16 val1 = check fromJsonStringWithType("65535");
+isolated function testUnSignedInt16AsExpectedTypeForParseString() returns Error? {
+    int:Unsigned16 val1 = check parseString("65535");
     test:assertEquals(val1, 65535);
 
-    int:Unsigned16 val2 = check fromJsonStringWithType("0");
+    int:Unsigned16 val2 = check parseString("0");
     test:assertEquals(val2, 0);
 
-    int:Unsigned16[] val3 = check fromJsonStringWithType("[0, 65535]");
+    int:Unsigned16[] val3 = check parseString("[0, 65535]");
     test:assertEquals(val3, [0, 65535]);
 
     string str4 = string `{
@@ -1275,7 +1275,7 @@ isolated function testUnSignedInt16AsExpectedTypeForFromJsonStringWithType() ret
             string city;
             int:Unsigned16 id;
         } address;
-    } val4 = check fromJsonStringWithType(str4);
+    } val4 = check parseString(str4);
     test:assertEquals(val4.length(), 3);
     test:assertEquals(val4.id, 0);
     test:assertEquals(val4.name, "Anne");
@@ -1286,14 +1286,14 @@ isolated function testUnSignedInt16AsExpectedTypeForFromJsonStringWithType() ret
 }
 
 @test:Config
-isolated function testUnSignedInt32AsExpectedTypeForFromJsonStringWithType() returns Error? {
-    int:Unsigned32 val1 = check fromJsonStringWithType("4294967295");
+isolated function testUnSignedInt32AsExpectedTypeForParseString() returns Error? {
+    int:Unsigned32 val1 = check parseString("4294967295");
     test:assertEquals(val1, 4294967295);
 
-    int:Unsigned32 val2 = check fromJsonStringWithType("0");
+    int:Unsigned32 val2 = check parseString("0");
     test:assertEquals(val2, 0);
 
-    int:Unsigned32[] val3 = check fromJsonStringWithType("[0, 4294967295]");
+    int:Unsigned32[] val3 = check parseString("[0, 4294967295]");
     test:assertEquals(val3, [0, 4294967295]);
 
     string str4 = string `{
@@ -1314,7 +1314,7 @@ isolated function testUnSignedInt32AsExpectedTypeForFromJsonStringWithType() ret
             string city;
             int:Unsigned32 id;
         } address;
-    } val4 = check fromJsonStringWithType(str4);
+    } val4 = check parseString(str4);
     test:assertEquals(val4.length(), 3);
     test:assertEquals(val4.id, 0);
     test:assertEquals(val4.name, "Anne");
@@ -1338,13 +1338,13 @@ ello",
     record {|
         string a;
         int b;
-    |} val = check fromJsonStringWithType(jsonStr);
+    |} val = check parseString(jsonStr);
     test:assertEquals(val.a, "h\nello");
     test:assertEquals(val.b, 1);
 }
 
 @test:Config
-isolated function testFromJsonStringWithTypeNegative1() returns Error? {
+isolated function testParseStringNegative1() returns Error? {
     string str = string `{
         "id": 12,
         "name": "Anne",
@@ -1355,24 +1355,24 @@ isolated function testFromJsonStringWithTypeNegative1() returns Error? {
         }
     }`;
 
-    RN|Error x = fromJsonStringWithType(str);
+    RN|Error x = parseString(str);
     test:assertTrue(x is Error);
     test:assertEquals((<Error>x).message(), "incompatible value 'true' for type 'int' in field 'address.id'");
 }
 
 @test:Config
-isolated function testFromJsonStringWithTypeNegative2() returns Error? {
+isolated function testParseStringNegative2() returns Error? {
     string str = string `{
         "id": 12
     }`;
 
-    RN2|Error x = fromJsonStringWithType(str);
+    RN2|Error x = parseString(str);
     test:assertTrue(x is Error);
     test:assertEquals((<Error>x).message(), "required field 'name' not present in JSON");
 }
 
 @test:Config
-isolated function testFromJsonStringWithTypeNegative3() returns Error? {
+isolated function testParseStringNegative3() returns Error? {
     string str = string `{
         "id": 12,
         "name": "Anne",
@@ -1382,56 +1382,56 @@ isolated function testFromJsonStringWithTypeNegative3() returns Error? {
         }
     }`;
 
-    RN|Error x = fromJsonStringWithType(str);
+    RN|Error x = parseString(str);
     test:assertTrue(x is Error);
     test:assertEquals((<Error>x).message(), "required field 'id' not present in JSON");
 }
 
 @test:Config
-isolated function testFromJsonStringWithTypeNegative4() returns Error? {
+isolated function testParseStringNegative4() returns Error? {
     string str = string `{
         name: "John"
     }`;
 
-    int|Error x = fromJsonStringWithType(str);
+    int|Error x = parseString(str);
     test:assertTrue(x is Error);
     test:assertEquals((<Error>x).message(), "invalid type 'int' expected 'map type'");
 
-    Union|Error y = fromJsonStringWithType(str);
+    Union|Error y = parseString(str);
     test:assertTrue(y is Error);
     test:assertEquals((<Error>y).message(), "unsupported type 'ballerina/data.jsondata:0:Union'");
 
-    table<RN2>|Error z = fromJsonStringWithType(str);
+    table<RN2>|Error z = parseString(str);
     test:assertTrue(z is Error);
     test:assertEquals((<Error>z).message(), "unsupported type 'table<data.jsondata:RN2>'");
 
-    RN2|Error a = fromJsonStringWithType("1");
+    RN2|Error a = parseString("1");
     test:assertTrue(a is Error);
     test:assertEquals((<Error>a).message(), "incompatible expected type 'data.jsondata:RN2' for value '1'");
 }
 
 @test:Config
-isolated function testDuplicateFieldInRecordTypeWithFromJsonStringWithType() returns Error? {
+isolated function testDuplicateFieldInRecordTypeWithParseString() returns Error? {
     string str = string `{
         "title": "Clean Code",
         "author": "Robert C. Martin",
         `;
 
-    BookN|Error x = fromJsonStringWithType(str);
+    BookN|Error x = parseString(str);
     test:assertTrue(x is Error);
     test:assertEquals((<Error>x).message(), "duplicate field 'author'");
 }
 
 @test:Config
-isolated function testProjectionInArrayNegativeForFromJsonStringWithType() {
+isolated function testProjectionInArrayNegativeForParseString() {
     string strVal1 = string `["1", 2, 3, { "a" : val_a }]`;
-    int[]|Error val1 = fromJsonStringWithType(strVal1);
+    int[]|Error val1 = parseString(strVal1);
     test:assertTrue(val1 is Error);
     test:assertEquals((<Error>val1).message(), "invalid type 'int' expected 'map type'");
 }
 
 @test:Config
-isolated function testUnionTypeAsExpTypeForFromJsonStringWithTypeNegative() {
+isolated function testUnionTypeAsExpTypeForParseStringNegative() {
     string str1 = string `[
         123, 
         "Lakshan",
@@ -1445,7 +1445,7 @@ isolated function testUnionTypeAsExpTypeForFromJsonStringWithTypeNegative() {
             "subject": "Bio"
         }
     ]`;
-    (map<anydata>|int|float)[]|Error err1 = fromJsonStringWithType(str1);
+    (map<anydata>|int|float)[]|Error err1 = parseString(str1);
     test:assertTrue(err1 is Error);
     test:assertEquals((<Error>err1).message(), "incompatible expected type '(map<anydata>|int|float)' for value 'Lakshan'");
 
@@ -1460,7 +1460,7 @@ isolated function testUnionTypeAsExpTypeForFromJsonStringWithTypeNegative() {
             "subject": "Bio"
         }
     ]`;
-    (map<anydata>|int|float)[]|Error err2 = fromJsonStringWithType(str2);
+    (map<anydata>|int|float)[]|Error err2 = parseString(str2);
     test:assertTrue(err2 is Error);
     test:assertEquals((<Error>err2).message(), "unsupported type '(map<anydata>|int|float)'");
 
@@ -1472,21 +1472,21 @@ isolated function testUnionTypeAsExpTypeForFromJsonStringWithTypeNegative() {
             "e": 2
         }
     }`;
-    (map<anydata>|int|float)|Error err3 = fromJsonStringWithType(str3);
+    (map<anydata>|int|float)|Error err3 = parseString(str3);
     test:assertTrue(err3 is Error);
     test:assertEquals((<Error>err3).message(), "unsupported type '(map<anydata>|int|float)'");
 }
 
 @test:Config {
-    dataProvider: dataProviderForSubTypeOfIntNegativeTestForFromJsonStringWithType
+    dataProvider: dataProviderForSubTypeOfIntNegativeTestForParseString
 }
 isolated function testSubTypeOfIntAsExptypeNegative(string sourceData, typedesc<anydata> expType, string expectedError) {
-    anydata|Error err = fromJsonStringWithType(sourceData, {}, expType);
+    anydata|Error err = parseString(sourceData, {}, expType);
     test:assertTrue(err is Error);
     test:assertEquals((<Error>err).message(), expectedError);
 }
 
-function dataProviderForSubTypeOfIntNegativeTestForFromJsonStringWithType() returns [string, typedesc<anydata>, string][] {
+function dataProviderForSubTypeOfIntNegativeTestForParseString() returns [string, typedesc<anydata>, string][] {
     string incompatibleStr = "incompatible expected type ";
     return [
         ["256", byte, incompatibleStr + "'byte' for value '256'"],
@@ -1508,13 +1508,13 @@ function dataProviderForSubTypeOfIntNegativeTestForFromJsonStringWithType() retu
 
 @test:Config
 isolated function testEmptyJsonDocumentNegative() {
-    string|Error err = fromJsonStringWithType("");
+    string|Error err = parseString("");
     test:assertTrue(err is Error);
     test:assertEquals((<Error>err).message(), "'empty JSON document' at line: '1' column: '1'");
 }
 
 @test:Config
-isolated function testRecordWithRestAsExpectedTypeForFromJsonStringWithTypeNegative() {
+isolated function testRecordWithRestAsExpectedTypeForParseStringNegative() {
     string personStr = string `
     {
         "id": 1,
@@ -1525,7 +1525,7 @@ isolated function testRecordWithRestAsExpectedTypeForFromJsonStringWithTypeNegat
         }
     }`;
 
-    PersonA|error val = fromJsonStringWithType(personStr);
+    PersonA|error val = parseString(personStr);
     test:assertTrue(val is error);
     test:assertEquals((<error>val).message(), "incompatible expected type 'int' for value '5.5'");
 }
@@ -1542,7 +1542,7 @@ function testComplexTypeAsUnionMemberAsExpTypeNegative() {
                 "p2":true
             }
         ]`;
-    T1|error t1 = fromJsonStringWithType(str1);
+    T1|error t1 = parseString(str1);
     test:assertTrue(t1 is error);
     test:assertEquals((<error>t1).message(), "unsupported type '(map<anydata>|int|boolean)'");
 
@@ -1554,7 +1554,7 @@ function testComplexTypeAsUnionMemberAsExpTypeNegative() {
                 "b": 2
             }
         }`;
-    T2|error t2 = fromJsonStringWithType(str2);
+    T2|error t2 = parseString(str2);
     test:assertTrue(t2 is error);
     test:assertEquals((<error>t2).message(), "unsupported type '(map<anydata>|int)'");
 }

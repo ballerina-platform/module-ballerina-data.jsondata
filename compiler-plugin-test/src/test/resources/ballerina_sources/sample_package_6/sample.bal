@@ -7,7 +7,7 @@ public function main() returns error? {
         }
         string A;
         string B;
-    } _ = check jsondata:fromJsonWithType({
+    } _ = check jsondata:parseAsType({
         "A": "Hello",
         "B": "World"
     });

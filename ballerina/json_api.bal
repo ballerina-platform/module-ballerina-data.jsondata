@@ -22,16 +22,34 @@ import ballerina/jballerina.java;
 # + options - Options to be used for filtering in the projection
 # + t - Target type
 # + return - On success, returns value belonging to the given target type, else returns an `jsondata:Error` value.
-public isolated function fromJsonWithType(json v, Options options = {}, typedesc<anydata> t = <>)
+public isolated function parseAsType(json v, Options options = {}, typedesc<anydata> t = <>)
         returns t|Error = @java:Method {'class: "io.ballerina.lib.data.jsondata.json.Native"} external;
 
-# Converts JSON string, byte[] or byte-block-stream to subtype of anydata.
+# Converts JSON string to subtype of anydata.
 #
 # + s - Source JSON string value or byte[] or byte-block-stream
 # + options - Options to be used for filtering in the projection
 # + t - Target type
 # + return - On success, value belonging to the given target type, else returns an `jsondata:Error` value.
-public isolated function fromJsonStringWithType(string|byte[]|stream<byte[], error?> s, Options options = {}, typedesc<anydata> t = <>)
+public isolated function parseString(string s, Options options = {}, typedesc<anydata> t = <>)
+        returns t|Error = @java:Method {'class: "io.ballerina.lib.data.jsondata.json.Native"} external;
+
+# Converts JSON byte[] to subtype of anydata.
+#
+# + s - Source JSON byte[]
+# + options - Options to be used for filtering in the projection
+# + t - Target type
+# + return - On success, value belonging to the given target type, else returns an `jsondata:Error` value.
+public isolated function parseBytes(byte[] s, Options options = {}, typedesc<anydata> t = <>)
+        returns t|Error = @java:Method {'class: "io.ballerina.lib.data.jsondata.json.Native"} external;
+
+# Converts JSON byte-block-stream to subtype of anydata.
+#
+# + s - Source JSON byte-block-stream
+# + options - Options to be used for filtering in the projection
+# + t - Target type
+# + return - On success, value belonging to the given target type, else returns an `jsondata:Error` value.
+public isolated function parseStream(stream<byte[], error?> s, Options options = {}, typedesc<anydata> t = <>)
         returns t|Error = @java:Method {'class: "io.ballerina.lib.data.jsondata.json.Native"} external;
 
 # Converts a value of type `anydata` to `json`.
@@ -41,7 +59,7 @@ public isolated function fromJsonStringWithType(string|byte[]|stream<byte[], err
 public isolated function toJson(anydata v) 
         returns json|Error = @java:Method {'class: "io.ballerina.lib.data.jsondata.json.Native"} external;
 
-# Represent the options that can be used to modify the behaviour of conversion in `fromJsonStringWithType` and `fromJsonWithType`.
+# Represent the options that can be used to modify the behaviour of the projection.
 #
 # + allowDataProjection - enable or disable projection
 public type Options record {|

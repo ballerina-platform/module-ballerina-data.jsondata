@@ -207,15 +207,15 @@ ExpectedTuple expectedResults = [
 ];
 
 @test:Config {
-    dataProvider: readonlyIntersectionTestDataForFromJsonStringWithType
+    dataProvider: readonlyIntersectionTestDataForParseString
 }
-isolated function testReadOnlyIntersectionTypeAsExpTypForFromJsonStringWithType(string sourceData,
+isolated function testReadOnlyIntersectionTypeAsExpTypForParseString(string sourceData,
         typedesc<anydata> expType, anydata expectedData) returns error? {
-    anydata result = check fromJsonStringWithType(sourceData, {}, expType);
+    anydata result = check parseString(sourceData, {}, expType);
     test:assertEquals(result, expectedData);
 }
 
-function readonlyIntersectionTestDataForFromJsonStringWithType() returns [string, typedesc<anydata>, anydata][] {
+function readonlyIntersectionTestDataForParseString() returns [string, typedesc<anydata>, anydata][] {
     return [
         [string `[1, 2, 3]`, intArrayReadonly, expectedResults[0]],
         ["[12, true, 123.4, \"hello\"]", type1Readonly, expectedResults[1]],
@@ -258,15 +258,15 @@ function readonlyIntersectionTestDataForFromJsonStringWithType() returns [string
 }
 
 @test:Config {
-    dataProvider: readonlyIntersectionTestDataForFromJsonWithType
+    dataProvider: readonlyIntersectionTestDataForParseAsType
 }
-isolated function testReadOnlyIntersectionTypeAsExpTypForFromJsonWithType(json sourceData,
+isolated function testReadOnlyIntersectionTypeAsExpTypForParseAsType(json sourceData,
         typedesc<anydata> expType, anydata expectedData) returns error? {
-    anydata result = check fromJsonWithType(sourceData, {}, expType);
+    anydata result = check parseAsType(sourceData, {}, expType);
     test:assertEquals(result, expectedData);
 }
 
-function readonlyIntersectionTestDataForFromJsonWithType() returns [json, typedesc<anydata>, anydata][] {
+function readonlyIntersectionTestDataForParseAsType() returns [json, typedesc<anydata>, anydata][] {
     return [
         [[1, 2, 3], intArrayReadonly, expectedResults[0]],
         [[12, true, 123.4, "hello"], type1Readonly, expectedResults[1]],

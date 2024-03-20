@@ -24,7 +24,9 @@ package io.ballerina.lib.data.jsondata.compiler;
  * @since 0.1.0
  */
 public class Constants {
-    static final String FROM_JSON_STRING_WITH_TYPE = "fromJsonStringWithType";
+    static final String PARSE_STRING = "parseString";
+    static final String PARSE_BYTES = "parseBytes";
+    static final String PARSE_STREAM = "parseStream";
     static final String NAME = "Name";
     static final String JSONDATA = "jsondata";
 }

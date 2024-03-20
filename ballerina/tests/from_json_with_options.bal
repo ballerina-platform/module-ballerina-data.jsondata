@@ -21,16 +21,16 @@ const options = {
 };
 
 @test:Config
-isolated function testDisableDataProjectionInArrayTypeForFromJsonStringWithType() {
+isolated function testDisableDataProjectionInArrayTypeForParseString() {
     string jsonStr1 = string `[1, 2, 3, 4]`;
-    int[2]|error val1 = fromJsonStringWithType(jsonStr1, options);
+    int[2]|error val1 = parseString(jsonStr1, options);
     test:assertTrue(val1 is error);
     test:assertEquals((<error>val1).message(), "array size is not compatible with the expected size");
 
     string strVal2 = string `{
         "a": [1, 2, 3, 4, 5]
     }`;
-    record {|int[2] a;|}|error val2 = fromJsonStringWithType(strVal2, options);
+    record {|int[2] a;|}|error val2 = parseString(strVal2, options);
     test:assertTrue(val2 is error);
     test:assertEquals((<error>val2).message(), "array size is not compatible with the expected size");
 
@@ -38,7 +38,7 @@ isolated function testDisableDataProjectionInArrayTypeForFromJsonStringWithType(
         "a": [1, 2, 3, 4, 5],
         "b": [1, 2, 3, 4, 5]
     }`;
-    record {|int[2] a; int[3] b;|}|error val3 = fromJsonStringWithType(strVal3, options);
+    record {|int[2] a; int[3] b;|}|error val3 = parseString(strVal3, options);
     test:assertTrue(val3 is error);
     test:assertEquals((<error>val3).message(), "array size is not compatible with the expected size");
 
@@ -52,55 +52,55 @@ isolated function testDisableDataProjectionInArrayTypeForFromJsonStringWithType(
             }
         ]
     }`;
-    record {|record {|string name; int age;|}[1] employees;|}|error val4 = fromJsonStringWithType(strVal4, options);
+    record {|record {|string name; int age;|}[1] employees;|}|error val4 = parseString(strVal4, options);
     test:assertTrue(val4 is error);
     test:assertEquals((<error>val4).message(), "array size is not compatible with the expected size");
 
     string strVal5 = string `["1", 2, 3, { "a" : val_a }]`;
-    int[3]|error val5 = fromJsonStringWithType(strVal5, options);
+    int[3]|error val5 = parseString(strVal5, options);
     test:assertTrue(val5 is error);
     test:assertEquals((<error>val5).message(), "array size is not compatible with the expected size");
 }
 
 @test:Config
-isolated function testDisableDataProjectionInTupleTypeForFromJsonStringWithType() {
+isolated function testDisableDataProjectionInTupleTypeForParseString() {
     string str1 = string `[1, 2, 3, 4, 5, 8]`;
-    [string, float]|error val1 = fromJsonStringWithType(str1, options);
+    [string, float]|error val1 = parseString(str1, options);
     test:assertTrue(val1 is error);
     test:assertEquals((<error>val1).message(), "array size is not compatible with the expected size");
 
     string str2 = string `{
         "a": [1, 2, 3, 4, 5, 8]
     }`;
-    record {|[string, float] a;|}|error val2 = fromJsonStringWithType(str2, options);
+    record {|[string, float] a;|}|error val2 = parseString(str2, options);
     test:assertTrue(val2 is error);
     test:assertEquals((<error>val2).message(), "array size is not compatible with the expected size");
 
     string str3 = string `[1, "4"]`;
-    [float]|error val3 = fromJsonStringWithType(str3, options);
+    [float]|error val3 = parseString(str3, options);
     test:assertTrue(val3 is error);
     test:assertEquals((<error>val3).message(), "array size is not compatible with the expected size");
 
     string str4 = string `["1", {}]`;
-    [float]|error val4 = fromJsonStringWithType(str4, options);
+    [float]|error val4 = parseString(str4, options);
     test:assertTrue(val4 is error);
     test:assertEquals((<error>val4).message(), "array size is not compatible with the expected size");
 
     string str5 = string `["1", [], {"name": 1}]`;
-    [float]|error val5 = fromJsonStringWithType(str5, options);
+    [float]|error val5 = parseString(str5, options);
     test:assertTrue(val5 is error);
     test:assertEquals((<error>val5).message(), "array size is not compatible with the expected size");
 }
 
 @test:Config
-isolated function testDisableDataProjectionInRecordTypeWithFromJsonStringWithType() {
+isolated function testDisableDataProjectionInRecordTypeWithParseString() {
     string jsonStr1 = string `{"name": "John", "age": 30, "city": "New York"}`;
-    record {|string name; string city;|}|error val1 = fromJsonStringWithType(jsonStr1, options);
+    record {|string name; string city;|}|error val1 = parseString(jsonStr1, options);
     test:assertTrue(val1 is error);
     test:assertEquals((<error>val1).message(), "undefined field 'age'");
 
     string jsonStr2 = string `{"name": John, "age": "30", "city": "New York"}`;
-    record {|string name; string city;|}|error val2 = fromJsonStringWithType(jsonStr2, options);
+    record {|string name; string city;|}|error val2 = parseString(jsonStr2, options);
     test:assertTrue(val2 is error);
     test:assertEquals((<error>val2).message(), "undefined field 'age'");
 
@@ -114,7 +114,7 @@ isolated function testDisableDataProjectionInRecordTypeWithFromJsonStringWithTyp
                                         }
                                     },
                                 "city": "New York" }`;
-    record {|string name; string city;|}|error val3 = fromJsonStringWithType(jsonStr3, options);
+    record {|string name; string city;|}|error val3 = parseString(jsonStr3, options);
     test:assertTrue(val3 is error);
     test:assertEquals((<error>val3).message(), "undefined field 'company'");
 
@@ -128,7 +128,7 @@ isolated function testDisableDataProjectionInRecordTypeWithFromJsonStringWithTyp
                                         }
                                     }],
                                 "city": "New York" }`;
-    record {|string name; string city;|}|error val4 = fromJsonStringWithType(jsonStr4, options);
+    record {|string name; string city;|}|error val4 = parseString(jsonStr4, options);
     test:assertTrue(val4 is error);
     test:assertEquals((<error>val4).message(), "undefined field 'company'");
 
@@ -151,22 +151,22 @@ isolated function testDisableDataProjectionInRecordTypeWithFromJsonStringWithTyp
                                         }
                                     }]
                                 }`;
-    record {|string name; string city;|}|error val5 = fromJsonStringWithType(jsonStr5, options);
+    record {|string name; string city;|}|error val5 = parseString(jsonStr5, options);
     test:assertTrue(val5 is error);
     test:assertEquals((<error>val5).message(), "undefined field 'company1'");
 }
 
 @test:Config
-isolated function testDisableDataProjectionInArrayTypeForFromJsonWithType() {
+isolated function testDisableDataProjectionInArrayTypeForParseAsType() {
     json jsonVal1 = [1, 2, 3, 4];
-    int[2]|error val1 = fromJsonWithType(jsonVal1, options);
+    int[2]|error val1 = parseAsType(jsonVal1, options);
     test:assertTrue(val1 is error);
     test:assertEquals((<error>val1).message(), "array size is not compatible with the expected size");
 
     json jsonVal2 = {
         a: [1, 2, 3, 4, 5]
     };
-    record {|int[2] a;|}|error val2 = fromJsonWithType(jsonVal2, options);
+    record {|int[2] a;|}|error val2 = parseAsType(jsonVal2, options);
     test:assertTrue(val2 is error);
     test:assertEquals((<error>val2).message(), "array size is not compatible with the expected size");
 
@@ -174,7 +174,7 @@ isolated function testDisableDataProjectionInArrayTypeForFromJsonWithType() {
         a: [1, 2, 3, 4, 5],
         b: [1, 2, 3, 4, 5]
     };
-    record {|int[2] a; int[3] b;|}|error val3 = fromJsonWithType(jsonVal3, options);
+    record {|int[2] a; int[3] b;|}|error val3 = parseAsType(jsonVal3, options);
     test:assertTrue(val3 is error);
     test:assertEquals((<error>val3).message(), "array size is not compatible with the expected size");
 
@@ -190,50 +190,50 @@ isolated function testDisableDataProjectionInArrayTypeForFromJsonWithType() {
             }
         ]
     };
-    record {|record {|string name; int age;|}[1] employees;|}|error val4 = fromJsonWithType(jsonVal4, options);
+    record {|record {|string name; int age;|}[1] employees;|}|error val4 = parseAsType(jsonVal4, options);
     test:assertTrue(val4 is error);
     test:assertEquals((<error>val4).message(), "array size is not compatible with the expected size");
 
     json jsonVal5 = ["1", 2, 3, {a: "val_a"}];
-    int[3]|error val5 = fromJsonWithType(jsonVal5, options);
+    int[3]|error val5 = parseAsType(jsonVal5, options);
     test:assertTrue(val5 is error);
     test:assertEquals((<error>val5).message(), "array size is not compatible with the expected size");
 }
 
 @test:Config
-isolated function testDisableDataProjectionInTupleTypeForFromJsonWithType() {
+isolated function testDisableDataProjectionInTupleTypeForParseAsType() {
     json jsonVal1 = [1, 2, 3, 4, 5, 8];
-    [int, int]|error val1 = fromJsonWithType(jsonVal1, options);
+    [int, int]|error val1 = parseAsType(jsonVal1, options);
     test:assertTrue(val1 is error);
     test:assertEquals((<error>val1).message(), "array size is not compatible with the expected size");
 
     json jsonVal2 = {
         a: [1, 2, 3, 4, 5, 8]
     };
-    record {|[int, int] a;|}|error val2 = fromJsonWithType(jsonVal2, options);
+    record {|[int, int] a;|}|error val2 = parseAsType(jsonVal2, options);
     test:assertTrue(val2 is error);
     test:assertEquals((<error>val2).message(), "array size is not compatible with the expected size");
 
     json jsonVal3 = [1, "4"];
-    [int]|error val3 = fromJsonWithType(jsonVal3, options);
+    [int]|error val3 = parseAsType(jsonVal3, options);
     test:assertTrue(val3 is error);
     test:assertEquals((<error>val3).message(), "array size is not compatible with the expected size");
 
     json jsonVal4 = ["1", {}];
-    [string]|error val4 = fromJsonWithType(jsonVal4, options);
+    [string]|error val4 = parseAsType(jsonVal4, options);
     test:assertTrue(val4 is error);
     test:assertEquals((<error>val4).message(), "array size is not compatible with the expected size");
 
     json jsonVal5 = ["1", [], {"name": 1}];
-    [string]|error val5 = fromJsonWithType(jsonVal5, options);
+    [string]|error val5 = parseAsType(jsonVal5, options);
     test:assertTrue(val5 is error);
     test:assertEquals((<error>val5).message(), "array size is not compatible with the expected size");
 }
 
 @test:Config
-isolated function testDisableDataProjectionInRecordTypeWithFromJsonWithType() {
+isolated function testDisableDataProjectionInRecordTypeWithParseAsType() {
     json jsonVal1 = {"name": "John", "age": 30, "city": "New York"};
-    record {|string name; string city;|}|error val1 = fromJsonWithType(jsonVal1, options);
+    record {|string name; string city;|}|error val1 = parseAsType(jsonVal1, options);
     test:assertTrue(val1 is error);
     test:assertEquals((<error>val1).message(), "undefined field 'age'");
 
@@ -249,7 +249,7 @@ isolated function testDisableDataProjectionInRecordTypeWithFromJsonWithType() {
         },
         "city": "New York"
     };
-    record {|string name; string city;|}|error val2 = fromJsonWithType(jsonVal2, options);
+    record {|string name; string city;|}|error val2 = parseAsType(jsonVal2, options);
     test:assertTrue(val2 is error);
     test:assertEquals((<error>val2).message(), "undefined field 'company'");
 
@@ -267,7 +267,7 @@ isolated function testDisableDataProjectionInRecordTypeWithFromJsonWithType() {
         ],
         "city": "New York"
     };
-    record {|string name; string city;|}|error val3 = fromJsonWithType(jsonVal3, options);
+    record {|string name; string city;|}|error val3 = parseAsType(jsonVal3, options);
     test:assertTrue(val3 is error);
     test:assertEquals((<error>val3).message(), "undefined field 'company'");
 
@@ -295,7 +295,7 @@ isolated function testDisableDataProjectionInRecordTypeWithFromJsonWithType() {
             }
         ]
     };
-    record {|string name; string city;|}|error val4 = fromJsonWithType(jsonVal4, options);
+    record {|string name; string city;|}|error val4 = parseAsType(jsonVal4, options);
     test:assertTrue(val4 is error);
     test:assertEquals((<error>val4).message(), "undefined field 'company1'");
 }

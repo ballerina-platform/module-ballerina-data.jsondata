@@ -17,7 +17,7 @@ public function main() returns error? {
                 "p2":true
             }
         ]`;
-    T1 _ = check jsondata:fromJsonStringWithType(str1);
+    T1 _ = check jsondata:parseString(str1);
 
     string str2 = string `
         {
@@ -27,5 +27,5 @@ public function main() returns error? {
                 "b": 2
             }
         }`;
-    T2 _ = check jsondata:fromJsonStringWithType(str2);
+    T2 _ = check jsondata:parseString(str2);
 }

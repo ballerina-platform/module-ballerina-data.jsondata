@@ -81,7 +81,7 @@ function createLargeFile() returns error? {
 @test:Config
 function testLargeFileStream() returns error? {
     stream<byte[], error?> dataStream = check io:fileReadBlocksAsStream(LARGE_JSON_FILE);
-    CompanyR1 company = check fromJsonStringWithType(dataStream);
+    CompanyR1 company = check parseStream(dataStream);
     test:assertEquals(company.employees.length(), 1001);
     test:assertEquals(company.customers.length(), 1001);
 
@@ -118,7 +118,7 @@ function testLargeFileStreamWithProjection() returns error? {
     record {|
         EmployeeR2[5] employees;
         CustomerR2[9] customers;
-    |} company = check fromJsonStringWithType(dataStream);
+    |} company = check parseStream(dataStream);
     test:assertEquals(company.employees.length(), 5);
     test:assertEquals(company.customers.length(), 9);
 

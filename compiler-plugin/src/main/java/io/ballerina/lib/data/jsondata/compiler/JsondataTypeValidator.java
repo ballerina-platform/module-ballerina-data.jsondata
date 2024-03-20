@@ -113,7 +113,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
             }
 
             TypeSymbol typeSymbol = ((VariableSymbol) symbol.get()).typeDescriptor();
-            if (!isFromJsonFunctionFromJsondata(initializer.get())) {
+            if (!isParseFunctionOfStringSource(initializer.get())) {
                 if (typeSymbol.typeKind() == TypeDescKind.RECORD) {
                     detectDuplicateFields((RecordTypeSymbol) typeSymbol, ctx);
                 }
@@ -124,7 +124,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
         }
     }
 
-    private boolean isFromJsonFunctionFromJsondata(ExpressionNode expressionNode) {
+    private boolean isParseFunctionOfStringSource(ExpressionNode expressionNode) {
         if (expressionNode.kind() == SyntaxKind.CHECK_EXPRESSION) {
             expressionNode = ((CheckExpressionNode) expressionNode).expression();
         }
@@ -133,7 +133,8 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
             return false;
         }
         String functionName = ((FunctionCallExpressionNode) expressionNode).functionName().toString().trim();
-        return functionName.contains(Constants.FROM_JSON_STRING_WITH_TYPE);
+        return functionName.contains(Constants.PARSE_STRING) || functionName.contains(Constants.PARSE_BYTES)
+                || functionName.contains(Constants.PARSE_STREAM);
     }
 
     private void validateExpectedType(TypeSymbol typeSymbol, SyntaxNodeAnalysisContext ctx) {
@@ -219,7 +220,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
     private void processModuleVariableDeclarationNode(ModuleVariableDeclarationNode moduleVariableDeclarationNode,
                                                       SyntaxNodeAnalysisContext ctx) {
         Optional<ExpressionNode> initializer = moduleVariableDeclarationNode.initializer();
-        if (initializer.isEmpty() || !isFromJsonFunctionFromJsondata(initializer.get())) {
+        if (initializer.isEmpty() || !isParseFunctionOfStringSource(initializer.get())) {
             return;
         }
 

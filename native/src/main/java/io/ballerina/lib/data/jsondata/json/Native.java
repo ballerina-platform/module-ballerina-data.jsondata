@@ -20,11 +20,8 @@ package io.ballerina.lib.data.jsondata.json;
 
 import io.ballerina.lib.data.jsondata.io.DataReaderTask;
 import io.ballerina.lib.data.jsondata.io.DataReaderThreadPool;
-import io.ballerina.lib.data.jsondata.utils.DiagnosticErrorCode;
-import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.Future;
-import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.utils.JsonUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
@@ -45,7 +42,7 @@ import java.io.StringReader;
  */
 public class Native {
 
-    public static Object fromJsonWithType(Object json, BMap<BString, Object> options, BTypedesc typed) {
+    public static Object parseAsType(Object json, BMap<BString, Object> options, BTypedesc typed) {
         try {
             return JsonTraverse.traverse(json, options, typed.getDescribingType());
         } catch (BError e) {
@@ -53,30 +50,30 @@ public class Native {
         }
     }
 
-    public static Object fromJsonStringWithType(Environment env, Object json, BMap<BString, Object> options,
-                                               BTypedesc typed) {
+    public static Object parseString(BString json, BMap<BString, Object> options, BTypedesc typed) {
         try {
-            Type expType = typed.getDescribingType();
-            if (json instanceof BString) {
-                return JsonParser.parse(new StringReader(((BString) json).getValue()), options, expType);
-            } else if (json instanceof BArray) {
-                byte[] bytes = ((BArray) json).getBytes();
-                return JsonParser.parse(new InputStreamReader(new ByteArrayInputStream(bytes)), options,
-                        typed.getDescribingType());
-            } else if (json instanceof BStream) {
-                final BObject iteratorObj = ((BStream) json).getIteratorObj();
-                final Future future = env.markAsync();
-                DataReaderTask task = new DataReaderTask(env, iteratorObj, future, typed, options);
-                DataReaderThreadPool.EXECUTOR_SERVICE.submit(task);
-                return null;
-            } else {
-                return DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, expType);
-            }
+            return JsonParser.parse(new StringReader(json.getValue()), options, typed.getDescribingType());
         } catch (BError e) {
             return e;
-        } catch (Exception e) {
-            return DiagnosticLog.error(DiagnosticErrorCode.JSON_PARSER_EXCEPTION, e.getMessage());
         }
+    }
+
+    public static Object parseBytes(BArray json, BMap<BString, Object> options, BTypedesc typed) {
+        try {
+            byte[] bytes = json.getBytes();
+            return JsonParser.parse(new InputStreamReader(new ByteArrayInputStream(bytes)), options,
+                    typed.getDescribingType());
+        } catch (BError e) {
+            return e;
+        }
+    }
+
+    public static Object parseStream(Environment env, BStream json, BMap<BString, Object> options, BTypedesc typed) {
+        final BObject iteratorObj = json.getIteratorObj();
+        final Future future = env.markAsync();
+        DataReaderTask task = new DataReaderTask(env, iteratorObj, future, typed, options);
+        DataReaderThreadPool.EXECUTOR_SERVICE.submit(task);
+        return null;
     }
 
     public static Object toJson(Object value) {
