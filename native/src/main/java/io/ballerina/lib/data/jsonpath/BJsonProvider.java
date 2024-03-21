@@ -197,9 +197,12 @@ public class BJsonProvider extends AbstractJsonProvider {
     }
 
     public Iterable<?> toIterable(Object obj) {
-        return Arrays.stream(toJsonArray(obj).getValues())
-                .map(this::unwrap)
-                .collect(Collectors.toList());
+        BArray arr = toJsonArray(obj);
+        List<Object> values = new ArrayList<>(arr.size());
+        for (int i = 0; i < arr.size(); i++) {
+            values.add(unwrap(arr.get(i)));
+        }
+        return values;
     }
 
     public Object unwrap(Object obj) {
