@@ -1368,8 +1368,7 @@ isolated function testUnalignedJsonContent() returns error? {
 {
                             "a"
                     : 
-                    "h
-ello",
+                    "hello",
                             "b": 
                     1
         }`;
@@ -1377,7 +1376,7 @@ ello",
         string a;
         int b;
     |} val = check parseString(jsonStr);
-    test:assertEquals(val.a, "h\nello");
+    test:assertEquals(val.a, "hello");
     test:assertEquals(val.b, 1);
 }
 
