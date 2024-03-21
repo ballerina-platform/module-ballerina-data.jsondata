@@ -47,5 +47,5 @@ public class JsonPathRawTemplateImpl {
 # + query - JSON path expression
 # + return - extracted details as JSON value, a jsonpath:Error otherwise
 public isolated function readJson(json 'json, JsonPathRawTemplateImpl query) returns json|Error = @java:Method {
-    'class: "io.ballerina.stdlib.jsonpath.BJsonPath"
+    'class: "io.ballerina.lib.data.jsonpath.BJsonPath"
 } external;

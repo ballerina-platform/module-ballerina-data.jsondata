@@ -16,10 +16,8 @@
  *  under the License.
  */
 
-package io.ballerina.stdlib.jsonpath;
+package io.ballerina.lib.data.jsonpath;
 
-import io.ballerina.runtime.api.Environment;
-import io.ballerina.runtime.api.Module;
 import io.ballerina.runtime.api.creators.ErrorCreator;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BArray;
@@ -27,6 +25,7 @@ import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 
+import static io.ballerina.lib.data.ModuleUtils.getModule;
 import static io.ballerina.runtime.api.utils.StringUtils.fromString;
 
 /**
@@ -36,16 +35,6 @@ import static io.ballerina.runtime.api.utils.StringUtils.fromString;
  */
 public class Utils {
     public static final String ERROR = "Error";
-    private static Module jsonpathModule;
-
-    public static Module getModule() {
-        return jsonpathModule;
-    }
-
-    @SuppressWarnings("unused")
-    public static void setModule(Environment env) {
-        jsonpathModule = env.getCurrentModule();
-    }
 
     public static BError createError(String message, BError cause) {
         return ErrorCreator.createError(getModule(), ERROR, StringUtils.fromString(message), cause, null);

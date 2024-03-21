@@ -6,14 +6,17 @@ authors = ["Ballerina"]
 keywords = ["json", "json path", "json-transform", "json transform", "json to json", "json-convert", "json convert"]
 repository = "https://github.com/ballerina-platform/module-ballerina-data.jsondata"
 license = ["Apache-2.0"]
-distribution = "2201.8.3"
+distribution = "2201.8.4"
 export = ["data.jsondata"]
 
-[[platform.java11.dependency]]
-path = "../native/build/libs/jsonpath-native-@project.version@.jar"
-groupId = "io.ballerina.stdlib"
-artifactId = "jsonpath-native"
+[platform.java17]
+graalvmCompatible = true
+
+[[platform.java17.dependency]]
+groupId = "io.ballerina.lib"
+artifactId = "jsondata-native"
 version = "@toml.version@"
+path = "../native/build/libs/data.jsondata-native-@project.version@.jar"
 
 [[platform.java11.dependency]]
 path = "./lib/json-path-@jsonpath.version@.jar"
@@ -32,18 +35,3 @@ path = "./lib/accessors-smart-@accessors.version@.jar"
 groupId = "net.minidev.json"
 artifactId = "accessors-smart"
 version = "@accessors.version@"
-version = "@toml.version@"
-authors = ["Ballerina"]
-keywords = ["json"]
-repository = "https://github.com/ballerina-platform/module-ballerina.jsondata"
-license = ["Apache-2.0"]
-distribution = "2201.8.4"
-
-[platform.java17]
-graalvmCompatible = true
-
-[[platform.java17.dependency]]
-groupId = "io.ballerina.lib"
-artifactId = "jsondata-native"
-version = "@toml.version@"
-path = "../native/build/libs/data.jsondata-native-@project.version@.jar"

@@ -14,5 +14,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-# Represents any error related to Ballerina JsonPath module
+# Represents the error type of the ballerina/data.jsondata module. This error type represents any error that can occur
+# during the execution of jsondata APIs.
 public type Error distinct error;

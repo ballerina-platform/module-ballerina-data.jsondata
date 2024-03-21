@@ -516,6 +516,8 @@ function testSelectElementByNumericalConditionalExpression() returns error? {
     JsonPathRawTemplate condition7 = `$[?(@.a2 > 1.1)]`;
     JsonPathRawTemplate condition8 = `$[?(@.a1 == 2.34)]`;
     JsonPathRawTemplate condition9 = `$[?(@.a1 == 12.34)]`;
+    JsonPathRawTemplate condition10 = `$[?(@.a1 != 12.34)]`;
+    JsonPathRawTemplate condition11 = `$[?(@.a1 <= ${d1} && @.a1 > ${i1})]`;
 
     json result = check read([decimalJson, floatJson, intJson], condition1);
     test:assertTrue(result is json[]);
@@ -552,6 +554,14 @@ function testSelectElementByNumericalConditionalExpression() returns error? {
     result = check read([decimalJson, floatJson, intJson], condition9);
     test:assertTrue(result is json[]);
     test:assertEquals(result, <json[]>[]);
+
+    result = check read([decimalJson, floatJson, intJson], condition10);
+    test:assertTrue(result is json[]);
+    test:assertEquals(result, [decimalJson, floatJson, intJson]);
+
+    result = check read([decimalJson, floatJson, intJson], condition11);
+    test:assertTrue(result is json[]);
+    test:assertEquals(result, <json[]>[decimalJson, floatJson]);
 }
 
 @test:Config {}
@@ -639,22 +649,6 @@ function testSelectElementByPatternMatchingExpression() returns error? {
 }
 
 @test:Config {}
-function testA() returns error? {
-
-    json result = check read(j4, `$.a2[1][?(@.a2 in ['string', 'string2'])]`);
-    test:assertEquals(result, <json[]>[stringJson]);
-
-    result = check read(j4, `$.a2[1][?(@.a2 nin ['string', 'string2'])]`);
-    test:assertEquals(result, <json[]>[]);
-
-    result = check read(j4, `$.a2[1][?(@.a1 nin ['string', 'string2'])]`);
-    test:assertEquals(result, <json[]>[stringJson]);
-
-    result = check read(j4, `$.a2[1][?(@.a1 in ['string', 'string2'])]`);
-    test:assertEquals(result, <json[]>[]);
-}
-
-@test:Config {}
 function testFunctionExpression() returns error? {
     json result = check read(j4, `$..a1.sum()`);
     test:assertEquals(result, 4.57);
@@ -715,4 +709,29 @@ function testFunctionExpression() returns error? {
 
     result = check read(decimalJson, `$['a1'].keys()`);
     test:assertEquals(result, ());
+}
+
+@test:Config {}
+function testListOperations() returns error? {
+
+    json result = check read(j4, `$.a2[1][?(@.a2 in ['string', 'string2'])]`);
+    test:assertEquals(result, <json[]>[stringJson]);
+
+    result = check read(j4, `$.a2[1][?(@.a2 nin ['string', 'string2'])]`);
+    test:assertEquals(result, <json[]>[]);
+
+    result = check read(j4, `$.a2[1][?(@.a1 nin ['string', 'string2'])]`);
+    test:assertEquals(result, <json[]>[stringJson]);
+
+    result = check read(j4, `$.a2[1][?(@.a1 in ['string', 'string2'])]`);
+    test:assertEquals(result, <json[]>[]);
+}
+
+@test:Config {}
+function testGeneralJsonPathExpresions() returns error? {
+    json result = check read(j5, `$`);
+    test:assertEquals(result, j5);
+
+    result = check read(j5, `@`);
+    test:assertEquals(result, j5);
 }

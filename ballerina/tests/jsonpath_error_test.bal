@@ -53,4 +53,12 @@ function errorTest() {
     result = read(j1, `$.a1[1]`);
     test:assertTrue(result is Error);
     test:assertEquals((<Error> result).message(), "Unable to execute query '$.a1[1]' on the provided JSON value");
+
+    result = read((), `$.a1[1]`);
+    test:assertTrue(result is Error);
+    test:assertEquals((<Error> result).message(), "json object can not be null");
+
+    result = read(j1, ``);
+    test:assertTrue(result is Error);
+    test:assertEquals((<Error> result).message(), "path can not be null or empty");
 }
