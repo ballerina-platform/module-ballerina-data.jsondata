@@ -9,6 +9,15 @@ license = ["Apache-2.0"]
 distribution = "2201.8.4"
 export = ["data.jsondata"]
 
+[platform.java17]
+graalvmCompatible = true
+
+[[platform.java17.dependency]]
+groupId = "io.ballerina.lib"
+artifactId = "jsondata-native"
+version = "0.1.0"
+path = "../native/build/libs/data.jsondata-native-0.1.0-SNAPSHOT.jar"
+
 [[platform.java11.dependency]]
 path = "../native/build/libs/jsonpath-native-0.1.0-SNAPSHOT.jar"
 groupId = "io.ballerina.stdlib"
@@ -32,12 +41,3 @@ path = "./lib/accessors-smart-@accessors.version@.jar"
 groupId = "net.minidev.json"
 artifactId = "accessors-smart"
 version = "@accessors.version@"
-
-[platform.java17]
-graalvmCompatible = true
-
-[[platform.java17.dependency]]
-groupId = "io.ballerina.lib"
-artifactId = "jsondata-native"
-version = "0.1.0"
-path = "../native/build/libs/data.jsondata-native-0.1.0-SNAPSHOT.jar"
