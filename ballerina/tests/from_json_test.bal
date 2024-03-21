@@ -1078,6 +1078,44 @@ isolated function testSingletonAsExpectedTypeForParseAsType() returns Error? {
 }
 
 @test:Config
+isolated function testAnydataArrayAsExpTypeForParseAsType() returns Error? {
+    json jsonVal1 = [[1], 2.0];
+    anydata[] val1 = check parseAsType(jsonVal1);
+    test:assertEquals(val1, [[1], 2.0]);
+
+    json jsonVal2 = [["1", 2], 2.0];
+    anydata[] val2 = check parseAsType(jsonVal2);
+    test:assertEquals(val2, [["1", 2], 2.0]);
+
+    json jsonVal3 = [["1", 2], [2, "3"]];
+    anydata[] val3 = check parseAsType(jsonVal3);
+    test:assertEquals(val3, [["1", 2], [2, "3"]]);
+
+    json jsonVal4 = {val : [[1, 2], "2.0", 3.0, [5, 6]]};
+    record {|
+        anydata[] val;
+    |} val4 = check parseAsType(jsonVal4);
+    test:assertEquals(val4, {val: [[1, 2], "2.0", 3.0, [5, 6]]});
+
+    json jsonVal41 = {val1 : [[1, 2], 2.0, 3.0, [5, 6]], val2 : [[1, 2], "2.0", 3.0, [5, 6]]};
+    record {|
+        anydata[] val1;
+        anydata[] val2;
+    |} val41 = check parseAsType(jsonVal41);
+    test:assertEquals(val41, {val1: [[1, 2], 2.0, 3.0, [5, 6]], val2: [[1, 2], "2.0", 3.0, [5, 6]]});
+
+    json jsonVal5 = {val : [["1", 2], [2, "3"]]};
+    record {|
+        anydata[] val;
+    |} val5 = check parseAsType(jsonVal5);
+    test:assertEquals(val5, {val: [["1", 2], [2, "3"]]});
+
+    json jsonVal6 = [{val : [[1, 2], [2, "James"]]}];
+    [record {|anydata[][] val;|}] val6 = check parseAsType(jsonVal6);
+    test:assertEquals(val6, [{val: [[1, 2], [2, "James"]]}]);
+}
+
+@test:Config
 isolated function testParseAsTypeNegative1() returns Error? {
     json jsonContent = {
         "id": 12,
