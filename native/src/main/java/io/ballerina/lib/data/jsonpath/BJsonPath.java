@@ -46,7 +46,7 @@ public class BJsonPath {
                     .read(convertRawTemplateToString(query));
         } catch (PathNotFoundException e) {
             BError cause = Utils.createError(e.getMessage());
-            return Utils.createError(Utils.getCanNotExecuteQueryErrorMessage(StringUtils.
+            return Utils.createError(Utils.getCannotExecuteQueryErrorMessage(StringUtils.
                 fromString(convertRawTemplateToString(query))), cause);
         } catch (IllegalArgumentException | JsonPathException e) {
             return Utils.createError(e.getMessage());

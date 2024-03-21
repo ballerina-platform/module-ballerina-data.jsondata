@@ -44,19 +44,20 @@ public class Utils {
         return ErrorCreator.createError(getModule(), ERROR, StringUtils.fromString(message), null, null);
     }
 
-    public static String getCanNotExecuteQueryErrorMessage(BString query) {
+    public static String getCannotExecuteQueryErrorMessage(BString query) {
         return "Unable to execute query '" + query.getValue() + "' on the provided JSON value";
     }
 
     public static String convertRawTemplateToString(BObject rawTemplate) {
         BArray insertionsArray = rawTemplate.getArrayValue(fromString("insertions"));
         BArray stringsArray = rawTemplate.getArrayValue(fromString("strings"));
-        if (stringsArray.size() == 0) {
+        int stringArraySize = stringsArray.size();
+        if (stringArraySize == 0) {
             return "";
         } else {
             long insertionLength = insertionsArray.getLength();
             String query = stringsArray.getBString(0).getValue();
-            for (int i = 1; i < stringsArray.size(); i++) {
+            for (int i = 1; i < stringArraySize; i++) {
                 String templatedString = "";
                 if (i - 1 < insertionLength) {
                     templatedString = StringUtils.getStringValue(insertionsArray.get(i - 1));

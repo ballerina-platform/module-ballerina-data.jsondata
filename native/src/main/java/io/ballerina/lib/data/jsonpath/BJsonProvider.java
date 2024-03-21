@@ -34,8 +34,10 @@ import io.ballerina.runtime.api.values.BString;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Provides Ballerina specific function implementations of json-path.
@@ -111,7 +113,7 @@ public class BJsonProvider extends AbstractJsonProvider {
     }
 
     public boolean isArray(Object obj) {
-        return (obj instanceof BArray);
+        return obj instanceof BArray;
     }
 
     public Object getArrayIndex(Object obj, int idx) {
@@ -173,15 +175,13 @@ public class BJsonProvider extends AbstractJsonProvider {
     }
 
     public boolean isMap(Object obj) {
-        return (obj instanceof BMap);
+        return obj instanceof BMap;
     }
 
     public Collection<String> getPropertyKeys(Object obj) {
-        List<String> keys = new ArrayList<>();
-        for (Object entry : toJsonObject(obj).getKeys()) {
-            keys.add(entry.toString());
-        }
-        return keys;
+        return Arrays.stream(toJsonObject(obj).getKeys())
+                .map(Object::toString)
+                .collect(Collectors.toList());
     }
 
     public int length(Object obj) {
@@ -189,22 +189,17 @@ public class BJsonProvider extends AbstractJsonProvider {
             return toJsonArray(obj).size();
         } else if (isMap(obj)) {
             return toJsonObject(obj).entrySet().size();
-        } else {
-            if (isJsonPrimitive(obj)) {
-                return obj.toString().length();
-            }
+        } else if (isJsonPrimitive(obj)) {
+            return obj.toString().length();
         }
         throw new JsonPathException(
-                "length operation can not applied to " + (obj != null ? obj.getClass().getName() : "null"));
+                "length operation cannot be applied to " + (obj != null ? obj.getClass().getName() : "null"));
     }
 
     public Iterable<?> toIterable(Object obj) {
-        BArray arr = toJsonArray(obj);
-        List<Object> values = new ArrayList<>(arr.size());
-        for (int i = 0; i < arr.size(); i++) {
-            values.add(unwrap(arr.get(i)));
-        }
-        return values;
+        return Arrays.stream(toJsonArray(obj).getValues())
+                .map(this::unwrap)
+                .collect(Collectors.toList());
     }
 
     public Object unwrap(Object obj) {
