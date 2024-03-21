@@ -705,6 +705,44 @@ isolated function testAnydataAsExpTypeForParseString() returns Error? {
 }
 
 @test:Config
+isolated function testAnydataArrayAsExpTypeForParseString() returns Error? {
+    string jsonStr1 = string `[["1"], 2.0]`;
+    anydata[] val1 = check parseString(jsonStr1);
+    test:assertEquals(val1, [[1], 2.0]);
+
+    string jsonStr2 = string `[["1", 2], 2.0]`;
+    anydata[] val2 = check parseString(jsonStr2);
+    test:assertEquals(val2, [[1, 2], 2.0]);
+
+    string jsonStr3 = string `[["1", 2], [2, "3"]]`;
+    anydata[] val3 = check parseString(jsonStr3);
+    test:assertEquals(val3, [[1, 2], [2, 3]]);
+
+    string jsonStr4 = string `{"val" : [[1, 2], "2.0", 3.0, [5, 6]]}`;
+    record {|
+        anydata[] val;
+    |} val4 = check parseString(jsonStr4);
+    test:assertEquals(val4, {val: [[1, 2], 2.0, 3.0, [5, 6]]});
+
+    string jsonStr41 = string `{"val1" : [[1, 2], "2.0", 3.0, [5, 6]], "val2" : [[1, 2], "2.0", 3.0, [5, 6]]}`;
+    record {|
+        anydata[] val1;
+        anydata[] val2;
+    |} val41 = check parseString(jsonStr41);
+    test:assertEquals(val41, {val1: [[1, 2], 2.0, 3.0, [5, 6]], val2: [[1, 2], 2.0, 3.0, [5, 6]]});
+
+    string jsonStr5 = string `{"val" : [["1", 2], [2, "3"]]}`;
+    record {|
+        anydata[] val;
+    |} val5 = check parseString(jsonStr5);
+    test:assertEquals(val5, {val: [[1, 2], [2, 3]]});
+
+    string jsonStr6 = string `[{"val" : [["1", 2], [2, "3"]]}]`;
+    [record {|anydata[][] val;|}] val6 = check parseString(jsonStr6);
+    test:assertEquals(val6, [{val: [[1, 2], [2, 3]]}]);
+}
+
+@test:Config
 isolated function testJsonAsExpTypeForParseString() returns Error? {
     string jsonStr1 = string `1`;
     json val1 = check parseString(jsonStr1);
