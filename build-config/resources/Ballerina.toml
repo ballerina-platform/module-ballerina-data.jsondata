@@ -32,3 +32,18 @@ path = "./lib/accessors-smart-@accessors.version@.jar"
 groupId = "net.minidev.json"
 artifactId = "accessors-smart"
 version = "@accessors.version@"
+version = "@toml.version@"
+authors = ["Ballerina"]
+keywords = ["json"]
+repository = "https://github.com/ballerina-platform/module-ballerina.jsondata"
+license = ["Apache-2.0"]
+distribution = "2201.8.4"
+
+[platform.java17]
+graalvmCompatible = true
+
+[[platform.java17.dependency]]
+groupId = "io.ballerina.lib"
+artifactId = "jsondata-native"
+version = "@toml.version@"
+path = "../native/build/libs/data.jsondata-native-@project.version@.jar"

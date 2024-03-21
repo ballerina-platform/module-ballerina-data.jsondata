@@ -5,17 +5,15 @@
 
 [ballerina]
 dependencies-toml-version = "2"
-distribution-version = "2201.8.3"
+distribution-version = "2201.8.4"
 
 [[package]]
 org = "ballerina"
 name = "data.jsondata"
 version = "0.1.0"
 dependencies = [
+	{org = "ballerina", name = "io"},
 	{org = "ballerina", name = "jballerina.java"},
-	{org = "ballerina", name = "lang.float"},
-	{org = "ballerina", name = "lang.int"},
-	{org = "ballerina", name = "lang.object"},
 	{org = "ballerina", name = "test"}
 ]
 modules = [
@@ -24,20 +22,23 @@ modules = [
 
 [[package]]
 org = "ballerina"
-name = "jballerina.java"
-version = "0.0.0"
+name = "io"
+version = "1.6.0"
+scope = "testOnly"
+dependencies = [
+	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "lang.value"}
+]
 modules = [
-	{org = "ballerina", packageName = "jballerina.java", moduleName = "jballerina.java"}
+	{org = "ballerina", packageName = "io", moduleName = "io"}
 ]
 
 [[package]]
 org = "ballerina"
-name = "lang.__internal"
+name = "jballerina.java"
 version = "0.0.0"
-scope = "testOnly"
-dependencies = [
-	{org = "ballerina", name = "jballerina.java"},
-	{org = "ballerina", name = "lang.object"}
+modules = [
+	{org = "ballerina", packageName = "jballerina.java", moduleName = "jballerina.java"}
 ]
 
 [[package]]
@@ -51,36 +52,11 @@ dependencies = [
 
 [[package]]
 org = "ballerina"
-name = "lang.float"
+name = "lang.value"
 version = "0.0.0"
 scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"}
-]
-modules = [
-	{org = "ballerina", packageName = "lang.float", moduleName = "lang.float"}
-]
-
-[[package]]
-org = "ballerina"
-name = "lang.int"
-version = "0.0.0"
-scope = "testOnly"
-dependencies = [
-	{org = "ballerina", name = "jballerina.java"},
-	{org = "ballerina", name = "lang.__internal"},
-	{org = "ballerina", name = "lang.object"}
-]
-modules = [
-	{org = "ballerina", packageName = "lang.int", moduleName = "lang.int"}
-]
-
-[[package]]
-org = "ballerina"
-name = "lang.object"
-version = "0.0.0"
-modules = [
-	{org = "ballerina", packageName = "lang.object", moduleName = "lang.object"}
 ]
 
 [[package]]
@@ -95,4 +71,3 @@ dependencies = [
 modules = [
 	{org = "ballerina", packageName = "test", moduleName = "test"}
 ]
-

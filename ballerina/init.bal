@@ -16,10 +16,10 @@
 
 import ballerina/jballerina.java;
 
-function init() {
+isolated function init() {
     setModule();
 }
 
-function setModule() = @java:Method {
-    'class: "io.ballerina.stdlib.jsonpath.Utils"
+isolated function setModule() = @java:Method {
+    'class: "io.ballerina.lib.data.jsondata.utils.ModuleUtils"
 } external;
