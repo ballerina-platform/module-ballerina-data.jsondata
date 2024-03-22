@@ -26,6 +26,11 @@ public type JsonPathRawTemplate object {
 };
 
 # Extract details from the given JSON value using the provided query template expression
+#
+# ```ballerina
+# read({id: 1, "name": "John Doe"}, `$.name`) => "John Doe"
+# ```
+#
 # + 'json - JSON value
 # + query - JSON path expression
 # + return - extracted details as JSON value, a jsonpath:Error otherwise
@@ -33,10 +38,10 @@ public isolated function read(json 'json, JsonPathRawTemplate query) returns jso
     return readJson('json, new JsonPathRawTemplateImpl(query));
 }
 
-public class JsonPathRawTemplateImpl {
+class JsonPathRawTemplateImpl {
     *JsonPathRawTemplate;
 
-    public isolated function init(JsonPathRawTemplate jsonPathRawTemplate) {
+    isolated function init(JsonPathRawTemplate jsonPathRawTemplate) {
         self.strings = jsonPathRawTemplate.strings;
         self.insertions = jsonPathRawTemplate.insertions;
     }
@@ -46,6 +51,6 @@ public class JsonPathRawTemplateImpl {
 # + 'json - JSON value
 # + query - JSON path expression
 # + return - extracted details as JSON value, a jsonpath:Error otherwise
-public isolated function readJson(json 'json, JsonPathRawTemplateImpl query) returns json|Error = @java:Method {
+isolated function readJson(json 'json, JsonPathRawTemplateImpl query) returns json|Error = @java:Method {
     'class: "io.ballerina.lib.data.jsonpath.BJsonPath"
 } external;

@@ -484,3 +484,9 @@ function testQuery9() returns error? {
   19.95
 ]);
 }
+
+@test:Config {}
+function testQuery10() returns error? {
+    json result = check read({id: 1, "name": "John Doe"}, `$.name`);
+    test:assertEquals(result, "John Doe");
+}
