@@ -18,19 +18,19 @@ artifactId = "jsondata-native"
 version = "0.1.0"
 path = "../native/build/libs/data.jsondata-native-0.1.0-SNAPSHOT.jar"
 
-[[platform.java11.dependency]]
+[[platform.java17.dependency]]
 path = "./lib/json-path-2.9.0.jar"
 groupId = "com.jayway.jsonpath"
 artifactId = "json-path"
 version = "2.9.0"
 
-[[platform.java11.dependency]]
+[[platform.java17.dependency]]
 path = "./lib/json-smart-2.4.7.jar"
 groupId = "net.minidev.json"
 artifactId = "json-smart"
 version = "2.4.7"
 
-[[platform.java11.dependency]]
+[[platform.java17.dependency]]
 path = "./lib/accessors-smart-2.4.7.jar"
 groupId = "net.minidev.json"
 artifactId = "accessors-smart"
