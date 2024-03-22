@@ -30,3 +30,8 @@ groupId = "net.minidev.json"
 artifactId = "json-smart"
 version = "2.4.7"
 
+[[platform.java11.dependency]]
+path = "./lib/accessors-smart-2.4.7.jar"
+groupId = "net.minidev.json"
+artifactId = "accessors-smart"
+version = "2.4.7"
