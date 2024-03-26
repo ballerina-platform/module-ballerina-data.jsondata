@@ -25,6 +25,7 @@ import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
 import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.flags.SymbolFlags;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.Field;
 import io.ballerina.runtime.api.types.IntersectionType;
@@ -187,6 +188,11 @@ public class JsonCreator {
 
     static Object convertAndUpdateCurrentJsonNode(JsonParser.StateMachine sm, BString value, Type type) {
         Object currentJson = sm.currentJsonNode;
+        if (sm.nilAsOptionalField && value.equals(Constants.NULL_VALUE)
+                && sm.currentField != null && SymbolFlags.isFlagOn(sm.currentField.getFlags(), SymbolFlags.OPTIONAL)) {
+                return null;
+        }
+
         Object convertedValue = convertToExpectedType(value, type);
         if (convertedValue instanceof BError) {
             if (sm.currentField != null) {
@@ -198,29 +204,31 @@ public class JsonCreator {
 
         Type currentJsonNodeType = TypeUtils.getType(currentJson);
         switch (currentJsonNodeType.getTag()) {
-            case TypeTags.MAP_TAG, TypeTags.RECORD_TYPE_TAG -> {
+            case TypeTags.MAP_TAG, TypeTags.RECORD_TYPE_TAG ->
                 ((BMap<BString, Object>) currentJson).put(StringUtils.fromString(sm.fieldNameHierarchy.peek().pop()),
                         convertedValue);
-                return currentJson;
-            }
             case TypeTags.ARRAY_TAG -> {
                 // Handle projection in array.
                 ArrayType arrayType = (ArrayType) currentJsonNodeType;
-                if (arrayType.getState() == ArrayType.ArrayState.CLOSED &&
-                        arrayType.getSize() <= sm.arrayIndexes.peek()) {
-                    return currentJson;
+                if (arrayType.getState() != ArrayType.ArrayState.CLOSED ||
+                        arrayType.getSize() > sm.arrayIndexes.peek()) {
+                    ((BArray) currentJson).add(sm.arrayIndexes.peek(), convertedValue);
                 }
-                ((BArray) currentJson).add(sm.arrayIndexes.peek(), convertedValue);
-                return currentJson;
             }
-            case TypeTags.TUPLE_TAG -> {
+            case TypeTags.TUPLE_TAG ->
                 ((BArray) currentJson).add(sm.arrayIndexes.peek(), convertedValue);
-                return currentJson;
-            }
             default -> {
                 return convertedValue;
             }
         }
+        return currentJson;
+    }
+
+    static void checkNullAndUpdateCurrentJson(JsonParser.StateMachine sm, Object value) {
+        if (value == null) {
+            return;
+        }
+        sm.currentJsonNode = value;
     }
 
     private static Object convertToExpectedType(BString value, Type type) {
@@ -228,13 +236,6 @@ public class JsonCreator {
             return FromString.fromStringWithType(value, PredefinedTypes.TYPE_JSON);
         }
         return FromString.fromStringWithType(value, type);
-    }
-
-    static void updateRecordFieldValue(BString fieldName, Object parent, Object currentJson) {
-        int typeTag = TypeUtils.getType(parent).getTag();
-        if (typeTag == TypeTags.MAP_TAG || typeTag == TypeTags.RECORD_TYPE_TAG) {
-            ((BMap<BString, Object>) parent).put(fieldName, currentJson);
-        }
     }
 
     static Type getMemberType(Type expectedType, int index, boolean allowDataProjection) {

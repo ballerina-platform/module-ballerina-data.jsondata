@@ -16,9 +16,7 @@
 
 import ballerina/test;
 
-const options = {
-    allowDataProjection: false
-};
+const options = false;
 
 @test:Config
 isolated function testDisableDataProjectionInArrayTypeForParseString() {
