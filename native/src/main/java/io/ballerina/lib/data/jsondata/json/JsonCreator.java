@@ -100,7 +100,7 @@ public class JsonCreator {
             case TypeTags.RECORD_TYPE_TAG -> {
                 RecordType recordType = (RecordType) currentType;
                 nextMapValue = ValueCreator.createRecordValue(expType.getPackage(), expType.getName());
-                sm.updateExpectedType(recordType.getFields(), recordType.getRestFieldType());
+                sm.updateExpectedType(getAllFieldsInRecord(recordType), recordType.getRestFieldType());
             }
             case TypeTags.MAP_TAG -> {
                 nextMapValue = ValueCreator.createMapValue((MapType) currentType);
