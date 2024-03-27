@@ -335,7 +335,7 @@ public class JsonParser {
             fieldNameHierarchy.pop();
             restType.pop();
             for (Field field : remainingFields.values()) {
-                if (field.getFieldType().isNilable() && absentAsNilableType) {
+                if (absentAsNilableType && field.getFieldType().isNilable()) {
                     continue;
                 }
 

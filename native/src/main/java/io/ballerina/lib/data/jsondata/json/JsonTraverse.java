@@ -198,7 +198,7 @@ public class JsonTraverse {
                 int currentFieldTypeTag = currentFieldType.getTag();
                 Object mapValue = map.get(key);
 
-                if (nilAsOptionalField && mapValue == null
+                if (nilAsOptionalField && !currentFieldType.isNilable() && mapValue == null
                         && SymbolFlags.isFlagOn(currentField.getFlags(), SymbolFlags.OPTIONAL)) {
                     continue;
                 }

@@ -188,7 +188,7 @@ public class JsonCreator {
 
     static Object convertAndUpdateCurrentJsonNode(JsonParser.StateMachine sm, BString value, Type type) {
         Object currentJson = sm.currentJsonNode;
-        if (sm.nilAsOptionalField && value.equals(Constants.NULL_VALUE)
+        if (sm.nilAsOptionalField && !type.isNilable() && value.equals(Constants.NULL_VALUE)
                 && sm.currentField != null && SymbolFlags.isFlagOn(sm.currentField.getFlags(), SymbolFlags.OPTIONAL)) {
                 return null;
         }
