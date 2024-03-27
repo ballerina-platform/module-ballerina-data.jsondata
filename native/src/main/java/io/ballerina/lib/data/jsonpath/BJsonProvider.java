@@ -215,7 +215,6 @@ public class BJsonProvider extends AbstractJsonProvider {
         } else if (isArray(obj)) {
             targetType = PredefinedTypes.TYPE_JSON_ARRAY;
         } else if (obj instanceof BString) {
-            obj = StringUtils.getStringValue(obj);
             targetType = PredefinedTypes.TYPE_STRING;
         } else if (obj instanceof BDecimal) {
             targetType = PredefinedTypes.TYPE_FLOAT;
@@ -235,7 +234,13 @@ public class BJsonProvider extends AbstractJsonProvider {
         } else {
             targetType = PredefinedTypes.TYPE_ANY;
         }
-        return JsonUtils.convertJSON(obj, targetType);
+        Object jsonValue = JsonUtils.convertJSON(obj, targetType);
+        if (jsonValue instanceof BString) {
+            return StringUtils.getStringValue(jsonValue);
+        } else if (jsonValue instanceof BDecimal) {
+            return ((BDecimal) jsonValue).decimalValue();
+        }
+        return jsonValue;
     }
 
     private boolean isJsonPrimitive(Object obj) {

@@ -725,6 +725,84 @@ function testListOperations() returns error? {
 
     result = check read(j4, `$.a2[1][?(@.a1 in ['string', 'string2'])]`);
     test:assertEquals(result, <json[]>[]);
+
+    result = check read(j4, `$.a1[0][?(@.a1 in [${d1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[decimalJson]);
+
+    result = check read(j4, `$.a1[0][?(@.a2 in [${d1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[]);
+
+    result = check read(j4, `$.a1[0][?(@.a1 nin [${d1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[]);
+
+    result = check read(j4, `$.a1[0][?(@.a2 nin [${d1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[decimalJson]);
+
+    result = check read(j4, `$.a1[1][?(@.a1 in [${i1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[intJson]);
+
+    result = check read(j4, `$.a1[1][?(@.a2 in [${i1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[]);
+
+    result = check read(j4, `$.a1[1][?(@.a1 nin [${i1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[]);
+
+    result = check read(j4, `$.a1[1][?(@.a2 nin [${i1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[intJson]);
+
+    result = check read(j4, `$.a1[2][?(@.a1 in [${f1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[floatJson]);
+
+    result = check read(j4, `$.a1[2][?(@.a2 in [${f1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[]);
+
+    result = check read(j4, `$.a1[2][?(@.a1 nin [${f1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[]);
+
+    result = check read(j4, `$.a1[2][?(@.a2 nin [${f1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[floatJson]);
+
+    result = check read(j4, `$.a2[0][?(@.a1 in [1.12, null])]`);
+    test:assertEquals(result, <json[]>[nilJson]);
+
+    result = check read(j4, `$.a2[0][?(@.a4 in [12.25, null, 3.21])]`);
+    test:assertEquals(result, <json[]>[]);
+
+    result = check read(j4, `$.a2[0][?(@.a1 nin [3.21, null])]`);
+    test:assertEquals(result, <json[]>[]);
+
+    result = check read(j4, `$.a2[0][?(@.a2 nin [1.2, 3.21])]`);
+    test:assertEquals(result, <json[]>[nilJson]);
+
+    result = check read(j4, `$.a2[0][?(@.a2 nin [])]`);
+    test:assertEquals(result, <json[]>[nilJson]);
+
+    result = check read(j4, `$.a2[0][?(@.a2 nin [])]`);
+    test:assertEquals(result, <json[]>[nilJson]);
+
+    result = check read(j4, `$.a2[1][?(@.a1 in [1.12, '${s1}'])]`);
+    test:assertEquals(result, <json[]>[stringJson]);
+
+    result = check read(j4, `$.a2[1][?(@.a2 in [12.25, ${s1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[]);
+
+    result = check read(j4, `$.a2[1][?(@.a1 nin [3.21, '${s1}'])]`);
+    test:assertEquals(result, <json[]>[]);
+
+    result = check read(j4, `$.a2[1][?(@.a2 nin ['${s1}', 3.21])]`);
+    test:assertEquals(result, <json[]>[stringJson]);
+
+    result = check read(j4, `$.a2[2][?(@.a1 in [1.12, ${b1}])]`);
+    test:assertEquals(result, <json[]>[booleanJson]);
+
+    result = check read(j4, `$.a2[2][?(@.a2 in [12.25, ${b1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[]);
+
+    result = check read(j4, `$.a2[2][?(@.a1 nin [3.21, ${b1}])]`);
+    test:assertEquals(result, <json[]>[]);
+
+    result = check read(j4, `$.a2[2][?(@.a2 nin [${b1}, 3.21])]`);
+    test:assertEquals(result, <json[]>[booleanJson]);
 }
 
 @test:Config {}

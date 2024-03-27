@@ -6,7 +6,7 @@ authors = ["Ballerina"]
 keywords = ["json", "json path", "json-transform", "json transform", "json to json", "json-convert", "json convert"]
 repository = "https://github.com/ballerina-platform/module-ballerina-data.jsondata"
 license = ["Apache-2.0"]
-distribution = "2201.8.4"
+distribution = "2201.9.0-20240326-110600-aca0cc0c"
 export = ["data.jsondata"]
 
 [platform.java17]
