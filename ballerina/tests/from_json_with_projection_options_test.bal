@@ -104,7 +104,8 @@ isolated function testNilAsOptionalFieldForParseString() returns error? {
 isolated function testNilAsOptionalFieldForParseStringNegative() returns error? {
     string jsonData = check io:fileReadString(PATH + "sales.json");
     Sales|Error err = parseString(jsonData, options4);
-    io:println(err);
+    test:assertTrue(err is Error);
+    test:assertEquals((<Error>err).message(), "incompatible value 'null' for type 'string' in field 'salesData.totalPrice'");
 }
 
 @test:Config {
@@ -372,38 +373,13 @@ isolated function testAbsentAsNilableTypeAndAbsentAsNilableTypeForParseAsString(
 }
 isolated function testDisableOptionsOfProjectionTypeForParseString1() returns error? {
     string jsonData = check io:fileReadString(PATH + "sales.json");
-    Sales sales = check parseString(jsonData, options4);
-    test:assertEquals(sales.salesData[0].length(), 6);
-    test:assertEquals(sales.salesData[0].transactionId, "TXN001");
-    test:assertEquals(sales.salesData[0].date, "2024-03-25");
-    test:assertEquals(sales.salesData[0].customerName, "ABC Corporation");
-    test:assertEquals(sales.salesData[0].product, "InnovateX");
-    test:assertEquals(sales.salesData[0].unitPrice, "$499");
-    test:assertEquals(sales.salesData[0].totalPrice, "null");
-
-    test:assertEquals(sales.salesData[1].length(), 6);
-    test:assertEquals(sales.salesData[1].transactionId, "TXN002");
-    test:assertEquals(sales.salesData[1].date, "2024-03-25");
-    test:assertEquals(sales.salesData[1].customerName, "XYZ Enterprises");
-    test:assertEquals(sales.salesData[1].product, "SecureTech");
-    test:assertEquals(sales.salesData[1].unitPrice, "$999");
-    test:assertEquals(sales.salesData[1].totalPrice, "$4995");
-
-    test:assertEquals(sales.salesData[2].length(), 6);
-    test:assertEquals(sales.salesData[2].transactionId, "TXN003");
-    test:assertEquals(sales.salesData[2].date, "2024-03-26");
-    test:assertEquals(sales.salesData[2].customerName, "123 Inc.");
-    test:assertEquals(sales.salesData[2].product, "InnovateX");
-    test:assertEquals(sales.salesData[2].unitPrice, "$499");
-    test:assertEquals(sales.salesData[2].totalPrice, "null");
-
-    test:assertEquals(sales.totalSales.length(), 2);
-    test:assertEquals(sales.totalSales.totalRevenue, "$21462");
-    test:assertEquals(sales.totalSales.dataRange, "null");
+    Sales|Error err = parseString(jsonData, options4);
+    test:assertTrue(err is Error);
+    test:assertEquals((<Error>err).message(), "incompatible value 'null' for type 'string' in field 'salesData.totalPrice'");
 }
 
 @test:Config {
-    groups: ["options2"]
+    groups: ["options"]
 }
 isolated function testDisableOptionsOfProjectionTypeForParseAsType1() returns error? {
     string jsonData = check io:fileReadString(PATH + "sales.json");

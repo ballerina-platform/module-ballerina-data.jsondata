@@ -62,13 +62,13 @@ isolated function testDisableDataProjectionInArrayTypeForParseString() {
 
 @test:Config
 isolated function testDisableDataProjectionInTupleTypeForParseString() {
-    string str1 = string `[1, 2, 3, 4, 5, 8]`;
+    string str1 = string `["1", "2", 3, 4, "5", 8]`;
     [string, float]|error val1 = parseString(str1, options);
     test:assertTrue(val1 is error);
     test:assertEquals((<error>val1).message(), "array size is not compatible with the expected size");
 
     string str2 = string `{
-        "a": [1, 2, 3, 4, 5, 8]
+        "a": ["1", "2", 3, 4, "5", 8]
     }`;
     record {|[string, float] a;|}|error val2 = parseString(str2, options);
     test:assertTrue(val2 is error);
@@ -97,7 +97,7 @@ isolated function testDisableDataProjectionInRecordTypeWithParseString() {
     test:assertTrue(val1 is error);
     test:assertEquals((<error>val1).message(), "undefined field 'age'");
 
-    string jsonStr2 = string `{"name": John, "age": "30", "city": "New York"}`;
+    string jsonStr2 = string `{"name": "John", "age": "30", "city": "New York"}`;
     record {|string name; string city;|}|error val2 = parseString(jsonStr2, options);
     test:assertTrue(val2 is error);
     test:assertEquals((<error>val2).message(), "undefined field 'age'");

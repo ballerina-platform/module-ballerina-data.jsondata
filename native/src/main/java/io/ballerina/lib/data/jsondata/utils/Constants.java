@@ -38,5 +38,7 @@ public class Constants {
     public static final String NAME = "Name";
     public static final BString NIL_AS_OPTIONAL_FIELD = StringUtils.fromString("nilAsOptionalField");
     public static final BString ABSENT_AS_NILABLE_TYPE = StringUtils.fromString("absentAsNilableType");
-    public static final BString NULL_VALUE = StringUtils.fromString("null");
+    public static final String NULL_VALUE = "null";
+    public static final String TRUE = "true";
+    public static final String FALSE = "false";
 }

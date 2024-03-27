@@ -24,15 +24,18 @@ import io.ballerina.lib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
 import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
+import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.flags.SymbolFlags;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.Field;
+import io.ballerina.runtime.api.types.FiniteType;
 import io.ballerina.runtime.api.types.IntersectionType;
 import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.TupleType;
 import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BArray;
@@ -41,6 +44,7 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 import org.ballerinalang.langlib.value.CloneReadOnly;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -54,6 +58,16 @@ import java.util.Stack;
  * @since 0.1.0
  */
 public class JsonCreator {
+
+    private static final List<Type> BASIC_TYPE_MEMBER_TYPES = List.of(
+            PredefinedTypes.TYPE_NULL,
+            PredefinedTypes.TYPE_BOOLEAN,
+            PredefinedTypes.TYPE_INT,
+            PredefinedTypes.TYPE_FLOAT,
+            PredefinedTypes.TYPE_DECIMAL
+    );
+    private static final UnionType UNION_OF_BASIC_TYPE_WITHOUT_STRING =
+            TypeCreator.createUnionType(BASIC_TYPE_MEMBER_TYPES);
 
     static BMap<BString, Object> initRootMapValue(Type expectedType) {
         return switch (expectedType.getTag()) {
@@ -186,14 +200,18 @@ public class JsonCreator {
         return result.toString();
     }
 
-    static Object convertAndUpdateCurrentJsonNode(JsonParser.StateMachine sm, BString value, Type type) {
+    @SuppressWarnings("unchecked")
+    static Object convertAndUpdateCurrentJsonNode(JsonParser.StateMachine sm, String value, Type type,
+                                                  boolean isStringElement) {
         Object currentJson = sm.currentJsonNode;
         if (sm.nilAsOptionalField && !type.isNilable() && value.equals(Constants.NULL_VALUE)
                 && sm.currentField != null && SymbolFlags.isFlagOn(sm.currentField.getFlags(), SymbolFlags.OPTIONAL)) {
                 return null;
         }
 
-        Object convertedValue = convertToExpectedType(value, type);
+
+        Object convertedValue = isStringElement ? convertStringToExpectedType(StringUtils.fromString(value), type) :
+                validateNonStringValueAndConvertToExpectedType(value, type);
         if (convertedValue instanceof BError) {
             if (sm.currentField != null) {
                 throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_VALUE_FOR_FIELD, value, type,
@@ -231,11 +249,81 @@ public class JsonCreator {
         sm.currentJsonNode = value;
     }
 
-    private static Object convertToExpectedType(BString value, Type type) {
+    private static Object convertStringToExpectedType(BString value, Type type) {
         if (type.getTag() == TypeTags.ANYDATA_TAG) {
             return FromString.fromStringWithType(value, PredefinedTypes.TYPE_JSON);
         }
         return FromString.fromStringWithType(value, type);
+    }
+
+    private static Object validateNonStringValueAndConvertToExpectedType(String value, Type type) {
+        char ch = value.charAt(0);
+        if (ch == 't') {
+            if (!Constants.TRUE.equals(value)) {
+                throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+            }
+        } else if (ch == 'f') {
+            if (!Constants.FALSE.equals(value)) {
+                throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+            }
+        } else if (ch == 'n') {
+            if (!Constants.NULL_VALUE.equals(value)) {
+                throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+            }
+        } else if (!(Character.isDigit(ch) || ch == '-' || ch == '+')) {
+            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+        }
+
+        return convertNonStringToExpectedType(StringUtils.fromString(value), type);
+    }
+
+    private static Object convertNonStringToExpectedType(BString value, Type type) {
+        switch (type.getTag()) {
+            case TypeTags.ANYDATA_TAG, TypeTags.JSON_TAG -> {
+                return FromString.fromStringWithType(value, UNION_OF_BASIC_TYPE_WITHOUT_STRING);
+            }
+            case TypeTags.STRING_TAG, TypeTags.CHAR_STRING_TAG -> {
+                return DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+            }
+            case TypeTags.FINITE_TYPE_TAG -> {
+                return ((FiniteType) type).getValueSpace().stream()
+                        .filter(finiteValue -> !(convertToSingletonValue(value.getValue(),
+                                finiteValue) instanceof BError))
+                        .findFirst()
+                        .orElseGet(() -> DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value));
+            }
+            case TypeTags.UNION_TAG -> {
+                List<Type> newMembers = new ArrayList<>();
+                for (Type memberType : ((UnionType) type).getMemberTypes()) {
+                    int typeTag = memberType.getTag();
+                    if (typeTag == TypeTags.STRING_TAG) {
+                        continue;
+                    }
+
+                    if (typeTag == TypeTags.JSON_TAG || typeTag == TypeTags.ANYDATA_TAG) {
+                        newMembers.add(UNION_OF_BASIC_TYPE_WITHOUT_STRING);
+                    } else {
+                        newMembers.add(memberType);
+                    }
+                }
+                return FromString.fromStringWithType(value, TypeCreator.createUnionType(newMembers));
+            }
+            case TypeTags.TYPE_REFERENCED_TYPE_TAG -> {
+                return convertNonStringToExpectedType(value, TypeUtils.getReferredType(type));
+            }
+            default -> {
+                return FromString.fromStringWithType(value, type);
+            }
+        }
+    }
+
+    private static Object convertToSingletonValue(String str, Object singletonValue) {
+        String singletonStr = String.valueOf(singletonValue);
+        if (str.equals(singletonStr)) {
+            return convertNonStringToExpectedType(StringUtils.fromString(str), TypeUtils.getType(singletonValue));
+        } else {
+            return DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, singletonValue, str);
+        }
     }
 
     static Type getMemberType(Type expectedType, int index, boolean allowDataProjection) {
@@ -269,6 +357,7 @@ public class JsonCreator {
         return expectedType;
     }
 
+    @SuppressWarnings("unchecked")
     static Map<String, Field> getAllFieldsInRecord(RecordType recordType) {
         BMap<BString, Object> annotations = recordType.getAnnotations();
         Map<String, String> modifiedNames = new HashMap<>();
@@ -294,6 +383,7 @@ public class JsonCreator {
         return fields;
     }
 
+    @SuppressWarnings("unchecked")
     static String getModifiedName(Map<BString, Object> fieldAnnotation, String fieldName) {
         for (BString key : fieldAnnotation.keySet()) {
             if (key.getValue().endsWith(Constants.NAME)) {

@@ -146,10 +146,11 @@ public class FromString {
     }
 
     private static Object convertToSingletonValue(String str, Object singletonValue) {
-        if (str.equals(singletonValue.toString())) {
+        String singletonStr = String.valueOf(singletonValue);
+        if (str.equals(singletonStr)) {
             return fromStringWithType(StringUtils.fromString(str), TypeUtils.getType(singletonValue));
         } else {
-            return returnError(str, singletonValue.toString());
+            return returnError(str, singletonStr);
         }
     }
 

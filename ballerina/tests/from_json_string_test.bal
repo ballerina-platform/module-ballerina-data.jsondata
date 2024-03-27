@@ -30,7 +30,7 @@ function basicTypeDataProviderForParseString() returns [string, typedesc<anydata
         ["5", int, 5],
         ["5.5", float, 5.5],
         ["5.5", decimal, 5.5d],
-        ["hello", string, "hello"],
+        ["\"hello\"", string, "hello"],
         ["true", boolean, true]
     ];
 }
@@ -219,7 +219,7 @@ isolated function testParseString3() returns Error? {
             "name": "J. B. Lippincott & Co.",
             "year": 1960,
             "location": "Philadelphia",
-            "month": 4
+            "month": "4"
         }
     }`;
 
@@ -791,7 +791,7 @@ isolated function testJsonAsExpTypeForParseString() returns Error? {
 isolated function testMapAsExpTypeForParseString() returns Error? {
     string jsonStr1 = string `{
         "a": "hello",
-        "b": 1
+        "b": "1"
     }`;
 
     map<string> val1 = check parseString(jsonStr1);
@@ -802,7 +802,7 @@ isolated function testMapAsExpTypeForParseString() returns Error? {
         "b": 1,
         "c": {
             "d": "world",
-            "e": 2
+            "e": "2"
         }
     }`;
     record {|
@@ -817,11 +817,11 @@ isolated function testMapAsExpTypeForParseString() returns Error? {
     string jsonStr3 = string `{
         "a": {
             "c": "world",
-            "d": 2
+            "d": "2"
         },
         "b": {
             "c": "world",
-            "d": 2
+            "d": "2"
         }
     }`;
 
@@ -840,15 +840,15 @@ isolated function testMapAsExpTypeForParseString() returns Error? {
     test:assertEquals(val5, {"a": {"c": "world", "d": 2}, "b": {"c": "world", "d": 2}});
 
     string jsonStr6 = string `{
-        "a": Kanth,
+        "a": "Kanth",
         "b": {
             "g": {
                 "c": "hello",
-                "d": 1
+                "d": "1"
             },
             "h": {
                 "c": "world",
-                "d": 2
+                "d": "2"
             }
         }
     }`;
@@ -862,12 +862,12 @@ isolated function testMapAsExpTypeForParseString() returns Error? {
 
 @test:Config
 isolated function testProjectionInTupleForParseString() returns Error? {
-    string str1 = string `[1, 2, 3, 4, 5, 8]`;
+    string str1 = string `["1", 2, "3", 4, 5, 8]`;
     [string, float] val1 = check parseString(str1);
     test:assertEquals(val1, ["1", 2.0]);
 
     string str2 = string `{
-        "a": [1, 2, 3, 4, 5, 8]
+        "a": ["1", "2", 3, "4", 5, 8]
     }`;
     record {|[string, float] a;|} val2 = check parseString(str2);
     test:assertEquals(val2.a, ["1", 2.0]);
@@ -932,7 +932,7 @@ isolated function testProjectionInRecordForParseString() returns Error? {
     record {|string name; string city;|} val1 = check parseString(jsonStr1);
     test:assertEquals(val1, {name: "John", city: "New York"});
 
-    string jsonStr2 = string `{"name": John, "age": "30", "city": "New York"}`;
+    string jsonStr2 = string `{"name": "John", "age": "30", "city": "New York"}`;
     record {|string name; string city;|} val2 = check parseString(jsonStr2);
     test:assertEquals(val2, {name: "John", city: "New York"});
 
@@ -991,7 +991,7 @@ isolated function testArrayOrTupleCaseForParseString() returns Error? {
     [[int], float] val1 = check parseString(jsonStr1);
     test:assertEquals(val1, [[1], 2.0]);
 
-    string jsonStr2 = string `[["1", 2], 2.0]`;
+    string jsonStr2 = string `[["1", 2], "2.0"]`;
     [[int, float], string] val2 = check parseString(jsonStr2);
     test:assertEquals(val2, [[1, 2.0], "2.0"]);
 
@@ -999,13 +999,13 @@ isolated function testArrayOrTupleCaseForParseString() returns Error? {
     int[][] val3 = check parseString(jsonStr3);
     test:assertEquals(val3, [[1, 2], [2, 3]]);
 
-    string jsonStr4 = string `{"val" : [[1, 2], "2.0", 3.0, [5, 6]]}`;
+    string jsonStr4 = string `{"val" : [[1, 2], "2.0", 3.0, ["5", 6]]}`;
     record {|
         [[int, float], string, float, [string, int]] val;
     |} val4 = check parseString(jsonStr4);
     test:assertEquals(val4, {val: [[1, 2.0], "2.0", 3.0, ["5", 6]]});
 
-    string jsonStr41 = string `{"val1" : [[1, 2], "2.0", 3.0, [5, 6]], "val2" : [[1, 2], "2.0", 3.0, [5, 6]]}`;
+    string jsonStr41 = string `{"val1" : [[1, 2], "2.0", 3.0, ["5", 6]], "val2" : [[1, 2], "2.0", 3.0, ["5", 6]]}`;
     record {|
         [[int, float], string, float, [string, int]] val1;
         [[float, float], string, float, [string, float]] val2;
@@ -1040,7 +1040,7 @@ isolated function testListFillerValuesWithParseString() returns Error? {
 
 @test:Config
 isolated function testSingletonAsExpectedTypeForParseString() returns Error? {
-    "1" val1 = check parseString("1");
+    "1" val1 = check parseString("\"1\"");
     test:assertEquals(val1, "1");
 
     Singleton1 val2 = check parseString("1");
@@ -1568,7 +1568,7 @@ isolated function testRecordWithRestAsExpectedTypeForParseStringNegative() {
 }
 
 @test:Config
-function testComplexTypeAsUnionMemberAsExpTypeNegative() {
+isolated function testComplexTypeAsUnionMemberAsExpTypeNegative() {
     string str1 = string `[
             {
                 "p1":"v1",
@@ -1594,4 +1594,27 @@ function testComplexTypeAsUnionMemberAsExpTypeNegative() {
     T2|error t2 = parseString(str2);
     test:assertTrue(t2 is error);
     test:assertEquals((<error>t2).message(), "unsupported type '(map<anydata>|int)'");
+}
+
+@test:Config
+isolated function testConvertNonStringValueNegative() {
+    string|Error err1 = parseString("null");
+    test:assertTrue(err1 is Error);
+    test:assertEquals((<Error>err1).message(), "incompatible expected type 'string' for value 'null'");
+
+    string|Error err2 = parseString("true");
+    test:assertTrue(err2 is Error);
+    test:assertEquals((<Error>err2).message(), "incompatible expected type 'string' for value 'true'");
+
+    boolean|Error err3 = parseString("True");
+    test:assertTrue(err3 is Error);
+    test:assertEquals((<Error>err3).message(), "incompatible expected type 'boolean' for value 'True'");
+
+    boolean|Error err4 = parseString("False");
+    test:assertTrue(err4 is Error);
+    test:assertEquals((<Error>err4).message(), "incompatible expected type 'boolean' for value 'False'");
+
+    ()|Error err5 = parseString("Null");
+    test:assertTrue(err5 is Error);
+    test:assertEquals((<Error>err5).message(), "incompatible expected type '()' for value 'Null'");
 }
