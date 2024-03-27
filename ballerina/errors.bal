@@ -10,16 +10,10 @@
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
 // "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the License for the
+// KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/jballerina.java;
-
-isolated function init() {
-    setModule();
-}
-
-isolated function setModule() = @java:Method {
-    'class: "io.ballerina.lib.data.ModuleUtils"
-} external;
+# Represents the error type of the ballerina/data.jsondata module. This error type represents any error that can occur
+# during the execution of jsondata APIs.
+public type Error distinct error;

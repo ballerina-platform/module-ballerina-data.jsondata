@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package io.ballerina.lib.data.jsondata.utils;
+package io.ballerina.lib.data;
 
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.Module;
@@ -31,7 +31,7 @@ public class ModuleUtils {
     /**
      * Time standard library package ID.
      */
-    private static Module module = null;
+    private static Module module;
 
     private ModuleUtils() {
     }
