@@ -70,25 +70,59 @@ public class JsonCreator {
             TypeCreator.createUnionType(BASIC_TYPE_MEMBER_TYPES);
 
     static BMap<BString, Object> initRootMapValue(Type expectedType) {
-        return switch (expectedType.getTag()) {
-            case TypeTags.RECORD_TYPE_TAG ->
-                    ValueCreator.createRecordValue(expectedType.getPackage(), expectedType.getName());
-            case TypeTags.MAP_TAG -> ValueCreator.createMapValue((MapType) expectedType);
-            case TypeTags.JSON_TAG -> ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
-            case TypeTags.ANYDATA_TAG -> ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
-            case TypeTags.UNION_TAG -> throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, expectedType);
+        switch (expectedType.getTag()) {
+            case TypeTags.RECORD_TYPE_TAG -> {
+                return ValueCreator.createRecordValue(expectedType.getPackage(), expectedType.getName());
+            }
+            case TypeTags.MAP_TAG -> {
+                return ValueCreator.createMapValue((MapType) expectedType);
+            }
+            case TypeTags.JSON_TAG -> {
+                return ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
+            }
+            case TypeTags.ANYDATA_TAG -> {
+                return ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
+            }
+            case TypeTags.UNION_TAG -> {
+                // Only handle T? cases.
+                // TODO: Support all union cases.
+                List<Type> filteredMembers = (((UnionType) expectedType).getMemberTypes()).stream().filter(
+                        memType -> memType.getTag() != TypeTags.NULL_TAG).toList();
+                if (filteredMembers.size() == 1) {
+                    return initRootMapValue(filteredMembers.get(0));
+                }
+                throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, expectedType);
+            }
             default -> throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, expectedType, "map type");
-        };
+        }
     }
 
     static BArray initArrayValue(Type expectedType) {
-        return switch (expectedType.getTag()) {
-            case TypeTags.TUPLE_TAG -> ValueCreator.createTupleValue((TupleType) expectedType);
-            case TypeTags.ARRAY_TAG -> ValueCreator.createArrayValue((ArrayType) expectedType);
-            case TypeTags.JSON_TAG -> ValueCreator.createArrayValue(PredefinedTypes.TYPE_JSON_ARRAY);
-            case TypeTags.ANYDATA_TAG -> ValueCreator.createArrayValue(PredefinedTypes.TYPE_ANYDATA_ARRAY);
+        switch (expectedType.getTag()) {
+            case TypeTags.TUPLE_TAG -> {
+                return ValueCreator.createTupleValue((TupleType) expectedType);
+            }
+            case TypeTags.ARRAY_TAG -> {
+                return ValueCreator.createArrayValue((ArrayType) expectedType);
+            }
+            case TypeTags.JSON_TAG -> {
+                return ValueCreator.createArrayValue(PredefinedTypes.TYPE_JSON_ARRAY);
+            }
+            case TypeTags.ANYDATA_TAG -> {
+                return ValueCreator.createArrayValue(PredefinedTypes.TYPE_ANYDATA_ARRAY);
+            }
+            case TypeTags.UNION_TAG -> {
+                // Only handle T? cases.
+                // TODO: Support all union cases.
+                List<Type> filteredMembers = (((UnionType) expectedType).getMemberTypes()).stream().filter(
+                        memType -> memType.getTag() != TypeTags.NULL_TAG).toList();
+                if (filteredMembers.size() == 1) {
+                    return initArrayValue(filteredMembers.get(0));
+                }
+                throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, expectedType);
+            }
             default -> throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, expectedType, "list type");
-        };
+        }
     }
 
     static Optional<BMap<BString, Object>> initNewMapValue(JsonParser.StateMachine sm) {
@@ -136,7 +170,16 @@ public class JsonCreator {
                 }
                 return checkTypeAndCreateMappingValue(sm, mutableType.get(), parentContext);
             }
-            case TypeTags.UNION_TAG -> throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, currentType);
+            case TypeTags.UNION_TAG -> {
+                // Only handle T? cases.
+                // TODO: Support all union cases.
+                List<Type> filteredMembers = (((UnionType) currentType).getMemberTypes()).stream().filter(
+                        memType -> memType.getTag() != TypeTags.NULL_TAG).toList();
+                if (filteredMembers.size() == 1) {
+                    return checkTypeAndCreateMappingValue(sm, filteredMembers.get(0), parentContext);
+                }
+                throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, currentType);
+            }
             default -> {
                 if (parentContext == JsonParser.StateMachine.ParserContext.ARRAY) {
                     throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, currentType, "map type");

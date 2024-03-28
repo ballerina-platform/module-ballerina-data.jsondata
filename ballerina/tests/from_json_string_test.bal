@@ -13,13 +13,12 @@
 // KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations
 // under the License.
-
 import ballerina/test;
 
 @test:Config {
     dataProvider: basicTypeDataProviderForParseString
 }
-isolated function testJsonStringToBasicTypes(string sourceData, typedesc<anydata> expType, 
+isolated function testJsonStringToBasicTypes(string sourceData, typedesc<anydata> expType,
         anydata expectedData) returns Error? {
     anydata val1 = check parseString(sourceData, {}, expType);
     test:assertEquals(val1, expectedData);
@@ -38,7 +37,7 @@ function basicTypeDataProviderForParseString() returns [string, typedesc<anydata
 @test:Config
 isolated function testNilAsExpectedTypeWithParseString() returns error? {
     () val = check parseString("null");
-    test:assertEquals(val, null);
+    test:assertEquals(val, ());
 }
 
 @test:Config
@@ -125,7 +124,7 @@ isolated function testJsonStringToRecordWithOptionalFields() returns Error? {
     record {|string a; int b?;|} recA = check parseString(str);
     test:assertEquals(recA.length(), 1);
     test:assertEquals(recA.a, "hello");
-    test:assertEquals(recA.b, null);
+    test:assertEquals(recA.b, ());
 }
 
 @test:Config
@@ -312,7 +311,7 @@ isolated function testParseString6() returns Error? {
     test:assertEquals(x.teacher.length(), 2);
     test:assertEquals(x.teacher.id, 3);
     test:assertEquals(x.teacher.name, "Jane Smith");
-    test:assertEquals(x.monitor, null);
+    test:assertEquals(x.monitor, ());
 }
 
 @test:Config
@@ -1381,6 +1380,104 @@ isolated function testUnalignedJsonContent() returns error? {
 }
 
 @test:Config
+isolated function testNilableTypeAsFieldTypeForParseString() returns error? {
+    string jsonStr1 = string `
+    {
+        "id": 0,
+        "name": "Anne",
+        "address": {
+            "street": "Main",
+            "city": "94",
+            "id": 4294967295
+        }
+    }
+    `;
+    record {|
+        int? id;
+        string? name;
+        anydata? address;
+    |} val1 = check parseString(jsonStr1);
+    test:assertEquals(val1.id, 0);
+    test:assertEquals(val1.name, "Anne");
+    test:assertEquals(val1.address, {street: "Main", city: 94, id: 4294967295});
+
+    string jsonStr2 = string `{
+        "company": "wso2",
+        "employees": [
+            { 
+                "name": "Walter White",
+                "age": 55
+            },
+            { 
+                "name": "Jesse Pinkman",
+                "age": 25
+            }
+        ]
+    }`;
+    record {|
+        anydata? company;
+        record {|
+            string name;
+            int age;
+        |}?[] employees;
+    |} val2 = check parseString(jsonStr2);
+    test:assertEquals(val2.company, "wso2");
+    test:assertEquals(val2.employees[0]?.name, "Walter White");
+    test:assertEquals(val2.employees[0]?.age, 55);
+    test:assertEquals(val2.employees[1]?.name, "Jesse Pinkman");
+    test:assertEquals(val2.employees[1]?.age, 25);
+
+
+}
+
+@test:Config
+isolated function testNilableTypeAsFieldTypeForParseAsType() returns error? {
+    json jsonVal1 = {
+        "id": 0,
+        "name": "Anne",
+        "address": {
+            "street": "Main",
+            "city": 94,
+            "id": 4294967295
+        }
+    };
+    record {|
+        int? id;
+        string? name;
+        anydata? address;
+    |} val1 = check parseAsType(jsonVal1);
+    test:assertEquals(val1.id, 0);
+    test:assertEquals(val1.name, "Anne");
+    test:assertEquals(val1.address, {street: "Main", city: 94, id: 4294967295});
+
+    json jsonVal2 = {
+        "company": "wso2",
+        "employees": [
+            { 
+                "name": "Walter White",
+                "age": 55
+            },
+            { 
+                "name": "Jesse Pinkman",
+                "age": 25
+            }
+        ]
+    };
+    record {|
+        anydata? company;
+        record {|
+            string name;
+            int age;
+        |}?[] employees;
+    |} val2 = check parseAsType(jsonVal2);
+    test:assertEquals(val2.company, "wso2");
+    test:assertEquals(val2.employees[0]?.name, "Walter White");
+    test:assertEquals(val2.employees[0]?.age, 55);
+    test:assertEquals(val2.employees[1]?.name, "Jesse Pinkman");
+    test:assertEquals(val2.employees[1]?.age, 25);
+}
+
+@test:Config
 isolated function testParseStringNegative1() returns Error? {
     string str = string `{
         "id": 12,
@@ -1617,4 +1714,8 @@ isolated function testConvertNonStringValueNegative() {
     ()|Error err5 = parseString("Null");
     test:assertTrue(err5 is Error);
     test:assertEquals((<Error>err5).message(), "incompatible expected type '()' for value 'Null'");
+
+    ()|Error err6 = parseString("()");
+    test:assertTrue(err6 is Error);
+    test:assertEquals((<Error>err6).message(), "incompatible expected type '()' for value '()'");
 }

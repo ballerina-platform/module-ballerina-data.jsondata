@@ -309,7 +309,7 @@ isolated function testAbsentAsNilableTypeAndAbsentAsNilableTypeForParseString() 
 @test:Config {
     groups: ["options"]
 }
-isolated function testAbsentAsNilableTypeAndAbsentAsNilableTypeForParseAsString() returns error? {
+isolated function testAbsentAsNilableTypeAndAbsentAsNilableTypeForParseString2() returns error? {
     string jsonData = check io:fileReadString(PATH + "product_list_response.json");
     json productJson = check value:fromJsonString(jsonData);
     ResponseEcom response = check parseAsType(productJson, options3);
@@ -409,4 +409,94 @@ isolated function testDisableOptionsOfProjectionTypeForParseAsType2() returns er
     Response|Error err = parseAsType(salesJson, options4);
     test:assertTrue(err is Error);
     test:assertEquals((<Error>err).message(), "required field 'email' not present in JSON");
+}
+
+@test:Config
+isolated function testAbsentAsNilableTypeAndAbsentAsNilableTypeForParseString3() returns error? {
+    record {|
+        string name;
+    |}|Error val1 = parseString(string `{"name": null}`, options3);
+    test:assertTrue(val1 is Error);
+    test:assertEquals((<Error>val1).message(), "incompatible value 'null' for type 'string' in field 'name'");
+
+    record {|
+        string? name;
+    |} val2 = check parseString(string `{"name": null}`, options3);
+    test:assertEquals(val2.name, ());
+
+    record {|
+        string name?;
+    |} val3 = check parseString(string `{"name": null}`, options3);
+    test:assertEquals(val3, {});
+
+    record {|
+        string? name?;
+    |} val4 = check parseString(string `{"name": null}`, options3);
+    test:assertEquals(val4?.name, ());
+
+    record {|
+        string name;
+    |}|Error val5 = parseString(string `{}`, options3);
+    test:assertTrue(val5 is Error);
+    test:assertEquals((<Error>val5).message(), "required field 'name' not present in JSON");
+
+    record {|
+        string? name;
+    |} val6 = check parseString(string `{}`, options3);
+    test:assertEquals(val6.name, ());
+
+    record {|
+        string name?;
+    |} val7 = check parseString(string `{}`, options3);
+    test:assertEquals(val7, {});
+
+    record {|
+        string? name?;
+    |} val8 = check parseString(string `{}`, options3);
+    test:assertEquals(val8?.name, ());
+}
+
+@test:Config
+isolated function testAbsentAsNilableTypeAndAbsentAsNilableTypeForParseAsType2() returns error? {
+    record {|
+        string name;
+    |}|Error val1 = parseAsType({name: null}, options3);
+    test:assertTrue(val1 is Error);
+    test:assertEquals((<Error>val1).message(), "incompatible value 'null' for type 'string' in field 'name'");
+
+    record {|
+        string? name;
+    |} val2 = check parseAsType({name: null}, options3);
+    test:assertEquals(val2.name, ());
+
+    record {|
+        string name?;
+    |} val3 = check parseAsType({name: null}, options3);
+    test:assertEquals(val3, {});
+
+    record {|
+        string? name?;
+    |} val4 = check parseAsType({name: null}, options3);
+    test:assertEquals(val4?.name, ());
+
+    record {|
+        string name;
+    |}|Error val5 = parseAsType({}, options3);
+    test:assertTrue(val5 is Error);
+    test:assertEquals((<Error>val5).message(), "required field 'name' not present in JSON");
+
+    record {|
+        string? name;
+    |} val6 = check parseAsType({}, options3);
+    test:assertEquals(val6.name, ());
+
+    record {|
+        string name?;
+    |} val7 = check parseAsType({}, options3);
+    test:assertEquals(val7, {});
+
+    record {|
+        string? name?;
+    |} val8 = check parseAsType({}, options3);
+    test:assertEquals(val8?.name, ());
 }
