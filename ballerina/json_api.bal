@@ -62,9 +62,10 @@ public isolated function toJson(anydata v)
 # Represent the options that can be used to modify the behaviour of the projection.
 #
 # + allowDataProjection - enable or disable projection
-public type Options record {|
-    boolean allowDataProjection = true;
-|};
+public type Options record {
+    boolean nilAsOptionalField = false;
+    boolean absentAsNilableType = false;
+}|false;
 
 # Represents the error type of the ballerina/data.jsondata module. This error type represents any error that can occur
 # during the execution of jsondata APIs.

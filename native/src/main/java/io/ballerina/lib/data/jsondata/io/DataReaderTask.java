@@ -24,9 +24,7 @@ import io.ballerina.runtime.api.Future;
 import io.ballerina.runtime.api.types.MethodType;
 import io.ballerina.runtime.api.types.ObjectType;
 import io.ballerina.runtime.api.utils.TypeUtils;
-import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
-import io.ballerina.runtime.api.values.BString;
 import io.ballerina.runtime.api.values.BTypedesc;
 
 import java.io.InputStreamReader;
@@ -46,10 +44,9 @@ public class DataReaderTask implements Runnable {
     private final BObject iteratorObj;
     private final Future future;
     private final BTypedesc typed;
-    private final BMap<BString, Object> options;
+    private final Object options;
 
-    public DataReaderTask(Environment env, BObject iteratorObj, Future future, BTypedesc typed, BMap<BString,
-            Object> options) {
+    public DataReaderTask(Environment env, BObject iteratorObj, Future future, BTypedesc typed, Object options) {
         this.env = env;
         this.iteratorObj = iteratorObj;
         this.future = future;

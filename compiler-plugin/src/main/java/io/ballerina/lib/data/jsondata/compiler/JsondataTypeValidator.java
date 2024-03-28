@@ -176,12 +176,22 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
     private void validateUnionType(UnionTypeSymbol unionTypeSymbol, Optional<Location> location,
                                    SyntaxNodeAnalysisContext ctx) {
         int nonPrimitiveMemberCount = 0;
+        boolean isNilOrErrorPresent = false;
         List<TypeSymbol> memberTypeSymbols = unionTypeSymbol.memberTypeDescriptors();
         for (TypeSymbol memberTypeSymbol : memberTypeSymbols) {
-            if (isSupportedUnionMemberType(memberTypeSymbol)) {
+            TypeSymbol referredSymbol = getReferredSymbol(memberTypeSymbol);
+            if (referredSymbol.typeKind() == TypeDescKind.NIL || referredSymbol.typeKind() == TypeDescKind.ERROR) {
+                isNilOrErrorPresent = true;
+                continue;
+            }
+            if (isSupportedUnionMemberType(referredSymbol)) {
                 continue;
             }
             nonPrimitiveMemberCount++;
+        }
+
+        if (isNilOrErrorPresent && memberTypeSymbols.size() == 2) {
+            return;
         }
 
         if (nonPrimitiveMemberCount >= 1) {
@@ -203,6 +213,11 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
                 return false;
             }
         }
+    }
+
+    private TypeSymbol getReferredSymbol(TypeSymbol typeSymbol) {
+        return typeSymbol.typeKind() == TypeDescKind.TYPE_REFERENCE ?
+                ((TypeReferenceTypeSymbol) typeSymbol).typeDescriptor() : typeSymbol;
     }
 
     private void reportDiagnosticInfo(SyntaxNodeAnalysisContext ctx, Optional<Location> location,

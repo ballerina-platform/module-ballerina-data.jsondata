@@ -1,0 +1,36 @@
+{
+    "sales_data": [
+        {
+            "transaction_id": "TXN001",
+            "date": "2024-03-25",
+            "customer_name": "ABC Corporation",
+            "product": "InnovateX",
+            "quantity": 10,
+            "unit_price": "$499",
+            "total_price": null
+        },
+        {
+            "transaction_id": "TXN002",
+            "date": "2024-03-25",
+            "customer_name": "XYZ Enterprises",
+            "product": "SecureTech",
+            "quantity": 5,
+            "unit_price": "$999",
+            "total_price": "$4995"
+        },
+        {
+            "transaction_id": "TXN003",
+            "date": "2024-03-26",
+            "customer_name": "123 Inc.",
+            "product": "InnovateX",
+            "quantity": 8,
+            "unit_price": "$499",
+            "total_price": null
+        }
+    ],
+    "total_sales": {
+        "date_range": null,
+        "total_transactions": 4,
+        "total_revenue": "$21462"
+    }
+}
