@@ -60,6 +60,7 @@ def stripBallerinaExtensionVersion(String extVersion) {
 apply plugin: 'io.ballerina.plugin'
 
 ballerina {
+    testCoverageParam = "--code-coverage --coverage-format=xml --includes=io.ballerina.lib.data.*:ballerina.*"
     packageOrganization = packageOrg
     module = packageName
     langVersion = ballerinaLangVersion

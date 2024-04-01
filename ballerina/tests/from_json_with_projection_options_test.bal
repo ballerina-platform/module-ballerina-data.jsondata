@@ -173,7 +173,7 @@ isolated function testAbsentAsNilableTypeForParseString() returns error? {
     test:assertEquals(response.data.user.length(), 3);
     test:assertEquals(response.data.user.id, 123);
     test:assertEquals(response.data.user.username, "example_user");
-    test:assertEquals(response.data.user.email, null);
+    test:assertEquals(response.data.user.email, ());
 
     test:assertEquals(response.data.user.length(), 3);
     test:assertEquals(response.data.posts[0].id, 1);
@@ -183,7 +183,7 @@ isolated function testAbsentAsNilableTypeForParseString() returns error? {
     test:assertEquals(response.data.user.length(), 3);
     test:assertEquals(response.data.posts[1].id, 2);
     test:assertEquals(response.data.posts[1].title, "Second Post");
-    test:assertEquals(response.data.posts[1].content, null);
+    test:assertEquals(response.data.posts[1].content, ());
 }
 
 @test:Config {
@@ -198,7 +198,7 @@ isolated function testAbsentAsNilableTypeForParseAsType() returns error? {
     test:assertEquals(response.data.user.length(), 3);
     test:assertEquals(response.data.user.id, 123);
     test:assertEquals(response.data.user.username, "example_user");
-    test:assertEquals(response.data.user.email, null);
+    test:assertEquals(response.data.user.email, ());
 
     test:assertEquals(response.data.user.length(), 3);
     test:assertEquals(response.data.posts[0].id, 1);
@@ -208,7 +208,7 @@ isolated function testAbsentAsNilableTypeForParseAsType() returns error? {
     test:assertEquals(response.data.user.length(), 3);
     test:assertEquals(response.data.posts[1].id, 2);
     test:assertEquals(response.data.posts[1].title, "Second Post");
-    test:assertEquals(response.data.posts[1].content, null);
+    test:assertEquals(response.data.posts[1].content, ());
 }
 
 type Specifications record {
@@ -264,23 +264,23 @@ isolated function testAbsentAsNilableTypeAndAbsentAsNilableTypeForParseString() 
     test:assertEquals(response.data.products[0].specifications?.processor, "Intel Core i7");
     test:assertEquals(response.data.products[0].specifications?.ram, "16GB DDR4");
     test:assertEquals(response.data.products[0].specifications?.graphics, "NVIDIA GeForce GTX 1650");
-    test:assertEquals(response.data.products[0].specifications?.camera, null);
-    test:assertEquals(response.data.products[0].specifications?.battery, null);
-    test:assertEquals(response.data.products[0].specifications?.color, null);
+    test:assertEquals(response.data.products[0].specifications?.camera, ());
+    test:assertEquals(response.data.products[0].specifications?.battery, ());
+    test:assertEquals(response.data.products[0].specifications?.color, ());
 
     test:assertEquals(response.data.products[1].length(), 5);
     test:assertEquals(response.data.products[1].id, 2);
     test:assertEquals(response.data.products[1].name, "Smartphone");
     test:assertEquals(response.data.products[1].price, 699.99d);
-    test:assertEquals(response.data.products[1].description, null);
+    test:assertEquals(response.data.products[1].description, ());
     test:assertEquals(response.data.products[1].specifications?.storage, "256GB");
     test:assertEquals(response.data.products[1].specifications?.display, "6.5-inch AMOLED");
-    test:assertEquals(response.data.products[1].specifications?.processor, null);
-    test:assertEquals(response.data.products[1].specifications?.ram, null);
-    test:assertEquals(response.data.products[1].specifications?.graphics, null);
+    test:assertEquals(response.data.products[1].specifications?.processor, ());
+    test:assertEquals(response.data.products[1].specifications?.ram, ());
+    test:assertEquals(response.data.products[1].specifications?.graphics, ());
     test:assertEquals(response.data.products[1].specifications?.camera, "Quad-camera setup");
     test:assertEquals(response.data.products[1].specifications?.battery, "4000mAh");
-    test:assertEquals(response.data.products[1].specifications?.color, null);
+    test:assertEquals(response.data.products[1].specifications?.color, ());
 
     test:assertEquals(response.data.products[2].length(), 6);
     test:assertEquals(response.data.products[2].id, 3);
@@ -288,11 +288,11 @@ isolated function testAbsentAsNilableTypeAndAbsentAsNilableTypeForParseString() 
     test:assertEquals(response.data.products[2].brand, "AudioTech");
     test:assertEquals(response.data.products[2].price, 149.99d);
     test:assertEquals(response.data.products[2].description, "Immerse yourself in high-quality sound with these headphones.");
-    test:assertEquals(response.data.products[2].specifications?.processor, null);
-    test:assertEquals(response.data.products[2].specifications?.ram, null);
-    test:assertEquals(response.data.products[2].specifications?.graphics, null);
-    test:assertEquals(response.data.products[2].specifications?.camera, null);
-    test:assertEquals(response.data.products[2].specifications?.battery, null);
+    test:assertEquals(response.data.products[2].specifications?.processor, ());
+    test:assertEquals(response.data.products[2].specifications?.ram, ());
+    test:assertEquals(response.data.products[2].specifications?.graphics, ());
+    test:assertEquals(response.data.products[2].specifications?.camera, ());
+    test:assertEquals(response.data.products[2].specifications?.battery, ());
     test:assertEquals(response.data.products[2].specifications?.'type, "Over-ear");
     test:assertEquals(response.data.products[2].specifications?.wireless, true);
     test:assertEquals(response.data.products[2].specifications?.noise_cancellation, true);
@@ -326,23 +326,23 @@ isolated function testAbsentAsNilableTypeAndAbsentAsNilableTypeForParseString2()
     test:assertEquals(response.data.products[0].specifications?.processor, "Intel Core i7");
     test:assertEquals(response.data.products[0].specifications?.ram, "16GB DDR4");
     test:assertEquals(response.data.products[0].specifications?.graphics, "NVIDIA GeForce GTX 1650");
-    test:assertEquals(response.data.products[0].specifications?.camera, null);
-    test:assertEquals(response.data.products[0].specifications?.battery, null);
-    test:assertEquals(response.data.products[0].specifications?.color, null);
+    test:assertEquals(response.data.products[0].specifications?.camera, ());
+    test:assertEquals(response.data.products[0].specifications?.battery, ());
+    test:assertEquals(response.data.products[0].specifications?.color, ());
 
     test:assertEquals(response.data.products[1].length(), 5);
     test:assertEquals(response.data.products[1].id, 2);
     test:assertEquals(response.data.products[1].name, "Smartphone");
     test:assertEquals(response.data.products[1].price, 699.99d);
-    test:assertEquals(response.data.products[1].description, null);
+    test:assertEquals(response.data.products[1].description, ());
     test:assertEquals(response.data.products[1].specifications?.storage, "256GB");
     test:assertEquals(response.data.products[1].specifications?.display, "6.5-inch AMOLED");
-    test:assertEquals(response.data.products[1].specifications?.processor, null);
-    test:assertEquals(response.data.products[1].specifications?.ram, null);
-    test:assertEquals(response.data.products[1].specifications?.graphics, null);
+    test:assertEquals(response.data.products[1].specifications?.processor, ());
+    test:assertEquals(response.data.products[1].specifications?.ram, ());
+    test:assertEquals(response.data.products[1].specifications?.graphics, ());
     test:assertEquals(response.data.products[1].specifications?.camera, "Quad-camera setup");
     test:assertEquals(response.data.products[1].specifications?.battery, "4000mAh");
-    test:assertEquals(response.data.products[1].specifications?.color, null);
+    test:assertEquals(response.data.products[1].specifications?.color, ());
 
     test:assertEquals(response.data.products[2].length(), 6);
     test:assertEquals(response.data.products[2].id, 3);
@@ -350,11 +350,11 @@ isolated function testAbsentAsNilableTypeAndAbsentAsNilableTypeForParseString2()
     test:assertEquals(response.data.products[2].brand, "AudioTech");
     test:assertEquals(response.data.products[2].price, 149.99d);
     test:assertEquals(response.data.products[2].description, "Immerse yourself in high-quality sound with these headphones.");
-    test:assertEquals(response.data.products[2].specifications?.processor, null);
-    test:assertEquals(response.data.products[2].specifications?.ram, null);
-    test:assertEquals(response.data.products[2].specifications?.graphics, null);
-    test:assertEquals(response.data.products[2].specifications?.camera, null);
-    test:assertEquals(response.data.products[2].specifications?.battery, null);
+    test:assertEquals(response.data.products[2].specifications?.processor, ());
+    test:assertEquals(response.data.products[2].specifications?.ram, ());
+    test:assertEquals(response.data.products[2].specifications?.graphics, ());
+    test:assertEquals(response.data.products[2].specifications?.camera, ());
+    test:assertEquals(response.data.products[2].specifications?.battery, ());
     test:assertEquals(response.data.products[2].specifications?.'type, "Over-ear");
     test:assertEquals(response.data.products[2].specifications?.wireless, true);
     test:assertEquals(response.data.products[2].specifications?.noise_cancellation, true);
