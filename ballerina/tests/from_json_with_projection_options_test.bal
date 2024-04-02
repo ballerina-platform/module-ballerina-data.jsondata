@@ -15,15 +15,38 @@
 // under the License.
 
 import ballerina/io;
-import ballerina/test;
 import ballerina/lang.value;
+import ballerina/test;
 
 const PATH = "tests/resources/";
 
-const options1 = {nilAsOptionalField: true, absentAsNilableType: false};
-const options2 = {nilAsOptionalField: false, absentAsNilableType: true};
-const options3 = {nilAsOptionalField: true, absentAsNilableType: true};
-const options4 = {nilAsOptionalField: false, absentAsNilableType: false};
+const options1 = {
+    allowDataProjection: {
+        nilAsOptionalField: true,
+        absentAsNilableType: false
+    }
+};
+
+const options2 = {
+    allowDataProjection: {
+        nilAsOptionalField: false,
+        absentAsNilableType: true
+    }
+};
+
+const options3 = {
+    allowDataProjection: {
+        nilAsOptionalField: true,
+        absentAsNilableType: true
+    }
+};
+
+const options4 = {
+    allowDataProjection: {
+        nilAsOptionalField: false,
+        absentAsNilableType: false
+    }
+};
 
 type Sales record {|
     @Name {
@@ -251,7 +274,7 @@ type ResponseEcom record {
 isolated function testAbsentAsNilableTypeAndAbsentAsNilableTypeForParseString() returns error? {
     string jsonData = check io:fileReadString(PATH + "product_list_response.json");
     ResponseEcom response = check parseString(jsonData, options3);
-    
+
     test:assertEquals(response.status, "success");
     test:assertEquals(response.data.products[0].length(), 6);
     test:assertEquals(response.data.products[0].id, 1);
@@ -313,7 +336,7 @@ isolated function testAbsentAsNilableTypeAndAbsentAsNilableTypeForParseString2()
     string jsonData = check io:fileReadString(PATH + "product_list_response.json");
     json productJson = check value:fromJsonString(jsonData);
     ResponseEcom response = check parseAsType(productJson, options3);
-    
+
     test:assertEquals(response.status, "success");
     test:assertEquals(response.data.products[0].length(), 6);
     test:assertEquals(response.data.products[0].id, 1);

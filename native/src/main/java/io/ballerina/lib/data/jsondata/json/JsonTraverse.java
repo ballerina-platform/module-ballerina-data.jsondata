@@ -57,13 +57,18 @@ public class JsonTraverse {
 
     private static final ThreadLocal<JsonTree> tlJsonTree = ThreadLocal.withInitial(JsonTree::new);
 
-    public static Object traverse(Object json, Object options, Type type) {
+    public static Object traverse(Object json, BMap<BString, Object> options, Type type) {
         JsonTree jsonTree = tlJsonTree.get();
         try {
-            if (options instanceof BMap) {
+            Object allowDataProjection = options.get(Constants.ALLOW_DATA_PROJECTION);
+            if (allowDataProjection instanceof Boolean) {
+                jsonTree.allowDataProjection = false;
+            } else if (allowDataProjection instanceof BMap<?, ?>) {
                 jsonTree.allowDataProjection = true;
-                jsonTree.absentAsNilableType = (Boolean) ((BMap<?, ?>) options).get(Constants.ABSENT_AS_NILABLE_TYPE);
-                jsonTree.nilAsOptionalField = (Boolean) ((BMap<?, ?>) options).get(Constants.NIL_AS_OPTIONAL_FIELD);
+                jsonTree.absentAsNilableType =
+                        (Boolean) ((BMap<?, ?>) allowDataProjection).get(Constants.ABSENT_AS_NILABLE_TYPE);
+                jsonTree.nilAsOptionalField =
+                        (Boolean) ((BMap<?, ?>) allowDataProjection).get(Constants.NIL_AS_OPTIONAL_FIELD);
             }
             return jsonTree.traverseJson(json, type);
         } catch (BError e) {

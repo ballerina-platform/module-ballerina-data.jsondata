@@ -13,7 +13,6 @@
 // KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations
 // under the License.
-
 import ballerina/jballerina.java;
 
 # Convert value of type `json` to subtype of `anydata`.
@@ -56,16 +55,20 @@ public isolated function parseStream(stream<byte[], error?> s, Options options =
 #
 # + v - Source anydata value
 # + return - representation of `v` as value of type json
-public isolated function toJson(anydata v) 
+public isolated function toJson(anydata v)
         returns json|Error = @java:Method {'class: "io.ballerina.lib.data.jsondata.json.Native"} external;
 
 # Represent the options that can be used to modify the behaviour of the projection.
 #
-# + allowDataProjection - enable or disable projection
+# + allowDataProjection - Enable or disable projection.
 public type Options record {
-    boolean nilAsOptionalField = false;
-    boolean absentAsNilableType = false;
-}|false;
+    record {
+        # If true, nil values will be considered as optional fields in the projection.
+        boolean nilAsOptionalField = false;
+        # If true, absent fields will be considered as nilable types in the projection.
+        boolean absentAsNilableType = false;
+    }|false allowDataProjection = {};
+};
 
 # Represents the error type of the ballerina/data.jsondata module. This error type represents any error that can occur
 # during the execution of jsondata APIs.

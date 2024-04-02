@@ -25,6 +25,7 @@ import io.ballerina.runtime.api.Future;
 import io.ballerina.runtime.api.utils.JsonUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
+import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BStream;
 import io.ballerina.runtime.api.values.BString;
@@ -41,7 +42,7 @@ import java.io.StringReader;
  */
 public class Native {
 
-    public static Object parseAsType(Object json, Object options, BTypedesc typed) {
+    public static Object parseAsType(Object json, BMap<BString, Object> options, BTypedesc typed) {
         try {
             return JsonTraverse.traverse(json, options, typed.getDescribingType());
         } catch (BError e) {
@@ -49,7 +50,7 @@ public class Native {
         }
     }
 
-    public static Object parseString(BString json, Object options, BTypedesc typed) {
+    public static Object parseString(BString json, BMap<BString, Object> options, BTypedesc typed) {
         try {
             return JsonParser.parse(new StringReader(json.getValue()), options, typed.getDescribingType());
         } catch (BError e) {
@@ -57,7 +58,7 @@ public class Native {
         }
     }
 
-    public static Object parseBytes(BArray json, Object options, BTypedesc typed) {
+    public static Object parseBytes(BArray json, BMap<BString, Object> options, BTypedesc typed) {
         try {
             byte[] bytes = json.getBytes();
             return JsonParser.parse(new InputStreamReader(new ByteArrayInputStream(bytes)), options,
@@ -67,7 +68,7 @@ public class Native {
         }
     }
 
-    public static Object parseStream(Environment env, BStream json, Object options, BTypedesc typed) {
+    public static Object parseStream(Environment env, BStream json, BMap<BString, Object> options, BTypedesc typed) {
         final BObject iteratorObj = json.getIteratorObj();
         final Future future = env.markAsync();
         DataReaderTask task = new DataReaderTask(env, iteratorObj, future, typed, options);

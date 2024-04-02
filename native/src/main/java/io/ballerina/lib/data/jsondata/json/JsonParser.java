@@ -66,7 +66,7 @@ public class JsonParser {
      * @return JSON structure
      * @throws BError for any parsing error
      */
-    public static Object parse(Reader reader, Object options, Type type)
+    public static Object parse(Reader reader, BMap<BString, Object> options, Type type)
             throws BError {
         StateMachine sm = tlStateMachine.get();
         try {
@@ -197,9 +197,8 @@ public class JsonParser {
             }
         }
 
-        public Object execute(Reader reader, Object options, Type type) throws BError {
+        public Object execute(Reader reader, BMap<BString, Object> options, Type type) throws BError {
             switch (type.getTag()) {
-                // TODO: Handle readonly and singleton type as expType.
                 case TypeTags.RECORD_TYPE_TAG -> {
                     RecordType recordType = (RecordType) type;
                     expectedTypes.push(recordType);
@@ -249,10 +248,15 @@ public class JsonParser {
                 default -> throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
             }
 
-            if (options instanceof BMap<?, ?>) {
-                allowDataProjection = true;
-                absentAsNilableType = (Boolean) ((BMap<?, ?>) options).get(Constants.ABSENT_AS_NILABLE_TYPE);
-                nilAsOptionalField = (Boolean) ((BMap<?, ?>) options).get(Constants.NIL_AS_OPTIONAL_FIELD);
+            Object allowDataProjection = options.get(Constants.ALLOW_DATA_PROJECTION);
+            if (allowDataProjection instanceof Boolean) {
+                this.allowDataProjection = false;
+            } else if (allowDataProjection instanceof BMap<?, ?>) {
+                this.allowDataProjection = true;
+                this.absentAsNilableType =
+                        (Boolean) ((BMap<?, ?>) allowDataProjection).get(Constants.ABSENT_AS_NILABLE_TYPE);
+                this.nilAsOptionalField =
+                        (Boolean) ((BMap<?, ?>) allowDataProjection).get(Constants.NIL_AS_OPTIONAL_FIELD);
             }
 
             State currentState = DOC_START_STATE;
