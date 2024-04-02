@@ -22,6 +22,7 @@ import io.ballerina.compiler.api.SemanticModel;
 import io.ballerina.compiler.api.symbols.AnnotationAttachmentSymbol;
 import io.ballerina.compiler.api.symbols.AnnotationSymbol;
 import io.ballerina.compiler.api.symbols.ArrayTypeSymbol;
+import io.ballerina.compiler.api.symbols.IntersectionTypeSymbol;
 import io.ballerina.compiler.api.symbols.ModuleSymbol;
 import io.ballerina.compiler.api.symbols.RecordFieldSymbol;
 import io.ballerina.compiler.api.symbols.RecordTypeSymbol;
@@ -145,6 +146,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
             case ARRAY -> validateExpectedType(((ArrayTypeSymbol) typeSymbol).memberTypeDescriptor(), ctx);
             case TUPLE -> validateTupleType((TupleTypeSymbol) typeSymbol, ctx);
             case TYPE_REFERENCE -> validateExpectedType(((TypeReferenceTypeSymbol) typeSymbol).typeDescriptor(), ctx);
+            case INTERSECTION -> validateExpectedType(getRawType(typeSymbol), ctx);
         }
     }
 
@@ -179,7 +181,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
         boolean isNilOrErrorPresent = false;
         List<TypeSymbol> memberTypeSymbols = unionTypeSymbol.memberTypeDescriptors();
         for (TypeSymbol memberTypeSymbol : memberTypeSymbols) {
-            TypeSymbol referredSymbol = getReferredSymbol(memberTypeSymbol);
+            TypeSymbol referredSymbol = getRawType(memberTypeSymbol);
             if (referredSymbol.typeKind() == TypeDescKind.NIL || referredSymbol.typeKind() == TypeDescKind.ERROR) {
                 isNilOrErrorPresent = true;
                 continue;
@@ -215,9 +217,22 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
         }
     }
 
-    private TypeSymbol getReferredSymbol(TypeSymbol typeSymbol) {
-        return typeSymbol.typeKind() == TypeDescKind.TYPE_REFERENCE ?
-                ((TypeReferenceTypeSymbol) typeSymbol).typeDescriptor() : typeSymbol;
+    public static TypeSymbol getRawType(TypeSymbol typeDescriptor) {
+        if (typeDescriptor.typeKind() == TypeDescKind.INTERSECTION) {
+            return getRawType(((IntersectionTypeSymbol) typeDescriptor).effectiveTypeDescriptor());
+        }
+        if (typeDescriptor.typeKind() == TypeDescKind.TYPE_REFERENCE) {
+            TypeReferenceTypeSymbol typeRef = (TypeReferenceTypeSymbol) typeDescriptor;
+            if (typeRef.typeDescriptor().typeKind() == TypeDescKind.INTERSECTION) {
+                return getRawType(((IntersectionTypeSymbol) typeRef.typeDescriptor()).effectiveTypeDescriptor());
+            }
+            TypeSymbol rawType = typeRef.typeDescriptor();
+            if (rawType.typeKind() == TypeDescKind.TYPE_REFERENCE) {
+                return getRawType(rawType);
+            }
+            return rawType;
+        }
+        return typeDescriptor;
     }
 
     private void reportDiagnosticInfo(SyntaxNodeAnalysisContext ctx, Optional<Location> location,
