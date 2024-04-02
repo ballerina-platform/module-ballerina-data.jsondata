@@ -415,7 +415,7 @@ isolated function testParseString13() returns Error? {
     string str = string `{
         "street": "Main",
         "city": "Mahar",
-        "house": [94, [1, 3, "4"]]
+        "house": [94, [1, 3, 4]]
     }`;
 
     TestArr3 x = check parseString(str);
@@ -641,7 +641,7 @@ isolated function testUnionTypeAsExpTypeForParseString() returns Error? {
         "a": {
             "b": 1,
             "d": {
-                "e": "false"
+                "e": false
             }
         },
         "c": 2
@@ -707,38 +707,38 @@ isolated function testAnydataAsExpTypeForParseString() returns Error? {
 isolated function testAnydataArrayAsExpTypeForParseString() returns Error? {
     string jsonStr1 = string `[["1"], 2.0]`;
     anydata[] val1 = check parseString(jsonStr1);
-    test:assertEquals(val1, [[1], 2.0]);
+    test:assertEquals(val1, [["1"], 2.0]);
 
     string jsonStr2 = string `[["1", 2], 2.0]`;
     anydata[] val2 = check parseString(jsonStr2);
-    test:assertEquals(val2, [[1, 2], 2.0]);
+    test:assertEquals(val2, [["1", 2], 2.0]);
 
     string jsonStr3 = string `[["1", 2], [2, "3"]]`;
     anydata[] val3 = check parseString(jsonStr3);
-    test:assertEquals(val3, [[1, 2], [2, 3]]);
+    test:assertEquals(val3, [["1", 2], [2, "3"]]);
 
     string jsonStr4 = string `{"val" : [[1, 2], "2.0", 3.0, [5, 6]]}`;
     record {|
         anydata[] val;
     |} val4 = check parseString(jsonStr4);
-    test:assertEquals(val4, {val: [[1, 2], 2.0, 3.0, [5, 6]]});
+    test:assertEquals(val4, {val: [[1, 2], "2.0", 3.0, [5, 6]]});
 
     string jsonStr41 = string `{"val1" : [[1, 2], "2.0", 3.0, [5, 6]], "val2" : [[1, 2], "2.0", 3.0, [5, 6]]}`;
     record {|
         anydata[] val1;
         anydata[] val2;
     |} val41 = check parseString(jsonStr41);
-    test:assertEquals(val41, {val1: [[1, 2], 2.0, 3.0, [5, 6]], val2: [[1, 2], 2.0, 3.0, [5, 6]]});
+    test:assertEquals(val41, {val1: [[1, 2], "2.0", 3.0, [5, 6]], val2: [[1, 2], "2.0", 3.0, [5, 6]]});
 
     string jsonStr5 = string `{"val" : [["1", 2], [2, "3"]]}`;
     record {|
         anydata[] val;
     |} val5 = check parseString(jsonStr5);
-    test:assertEquals(val5, {val: [[1, 2], [2, 3]]});
+    test:assertEquals(val5, {val: [["1", 2], [2, "3"]]});
 
     string jsonStr6 = string `[{"val" : [["1", 2], [2, "3"]]}]`;
     [record {|anydata[][] val;|}] val6 = check parseString(jsonStr6);
-    test:assertEquals(val6, [{val: [[1, 2], [2, 3]]}]);
+    test:assertEquals(val6, [{val: [["1", 2], [2, "3"]]}]);
 }
 
 @test:Config
@@ -834,9 +834,9 @@ isolated function testMapAsExpTypeForParseString() returns Error? {
 
     map<record {|
         string c;
-        int d;
+        string d;
     |}> val5 = check parseString(jsonStr3);
-    test:assertEquals(val5, {"a": {"c": "world", "d": 2}, "b": {"c": "world", "d": 2}});
+    test:assertEquals(val5, {"a": {"c": "world", "d": "2"}, "b": {"c": "world", "d": "2"}});
 
     string jsonStr6 = string `{
         "a": "Kanth",
@@ -868,18 +868,18 @@ isolated function testProjectionInTupleForParseString() returns Error? {
     string str2 = string `{
         "a": ["1", "2", 3, "4", 5, 8]
     }`;
-    record {|[string, float] a;|} val2 = check parseString(str2);
-    test:assertEquals(val2.a, ["1", 2.0]);
+    record {|[string, string] a;|} val2 = check parseString(str2);
+    test:assertEquals(val2.a, ["1", "2"]);
 
     string str3 = string `[1, "4"]`;
     [float] val3 = check parseString(str3);
     test:assertEquals(val3, [1.0]);
 
     string str4 = string `["1", {}]`;
-    [float] val4 = check parseString(str4);
-    test:assertEquals(val4, [1.0]);
+    [string] val4 = check parseString(str4);
+    test:assertEquals(val4, ["1"]);
 
-    string str5 = string `["1", [], {"name": 1}]`;
+    string str5 = string `[1, [], {"name": 1}]`;
     [float] val5 = check parseString(str5);
     test:assertEquals(val5, [1.0]);
 }
@@ -920,7 +920,7 @@ isolated function testProjectionInArrayForParseString() returns Error? {
     record {|record {|string name; int age;|}[1] employees;|} val5 = check parseString(strVal5);
     test:assertEquals(val5, {employees: [{name: "Prakanth", age: 26}]});
 
-    string strVal6 = string `["1", 2, 3, { "a" : val_a }]`;
+    string strVal6 = string `[1, 2, 3, { "a" : val_a }]`;
     int[3] val6 = check parseString(strVal6);
     test:assertEquals(val6, [1, 2, 3]);
 }
@@ -987,14 +987,14 @@ isolated function testProjectionInRecordForParseString() returns Error? {
 @test:Config
 isolated function testArrayOrTupleCaseForParseString() returns Error? {
     string jsonStr1 = string `[["1"], 2.0]`;
-    [[int], float] val1 = check parseString(jsonStr1);
-    test:assertEquals(val1, [[1], 2.0]);
+    [[string], float] val1 = check parseString(jsonStr1);
+    test:assertEquals(val1, [["1"], 2.0]);
 
     string jsonStr2 = string `[["1", 2], "2.0"]`;
-    [[int, float], string] val2 = check parseString(jsonStr2);
-    test:assertEquals(val2, [[1, 2.0], "2.0"]);
+    [[string, float], string] val2 = check parseString(jsonStr2);
+    test:assertEquals(val2, [["1", 2.0], "2.0"]);
 
-    string jsonStr3 = string `[["1", 2], [2, "3"]]`;
+    string jsonStr3 = string `[[1, 2], [2, 3]]`;
     int[][] val3 = check parseString(jsonStr3);
     test:assertEquals(val3, [[1, 2], [2, 3]]);
 
@@ -1011,13 +1011,13 @@ isolated function testArrayOrTupleCaseForParseString() returns Error? {
     |} val41 = check parseString(jsonStr41);
     test:assertEquals(val41, {val1: [[1, 2.0], "2.0", 3.0, ["5", 6]], val2: [[1.0, 2.0], "2.0", 3.0, ["5", 6.0]]});
 
-    string jsonStr5 = string `{"val" : [["1", 2], [2, "3"]]}`;
+    string jsonStr5 = string `{"val" : [[1, 2], [2, 3]]}`;
     record {|
         int[][] val;
     |} val5 = check parseString(jsonStr5);
     test:assertEquals(val5, {val: [[1, 2], [2, 3]]});
 
-    string jsonStr6 = string `[{"val" : [["1", 2], [2, "3"]]}]`;
+    string jsonStr6 = string `[{"val" : [[1, 2], [2, 3]]}]`;
     [record {|int[][] val;|}] val6 = check parseString(jsonStr6);
     test:assertEquals(val6, [{val: [[1, 2], [2, 3]]}]);
 }
@@ -1052,7 +1052,7 @@ isolated function testSingletonAsExpectedTypeForParseString() returns Error? {
     test:assertEquals(val4, ());
 
     string str5 = string `{
-        "value": "1",
+        "value": 1,
         "id": "3"
     }`;
     SingletonInRecord val5 = check parseString(str5);
@@ -1399,7 +1399,7 @@ isolated function testNilableTypeAsFieldTypeForParseString() returns error? {
     |} val1 = check parseString(jsonStr1);
     test:assertEquals(val1.id, 0);
     test:assertEquals(val1.name, "Anne");
-    test:assertEquals(val1.address, {street: "Main", city: 94, id: 4294967295});
+    test:assertEquals(val1.address, {street: "Main", city: "94", id: 4294967295});
 
     string jsonStr2 = string `{
         "company": "wso2",
@@ -1426,8 +1426,6 @@ isolated function testNilableTypeAsFieldTypeForParseString() returns error? {
     test:assertEquals(val2.employees[0]?.age, 55);
     test:assertEquals(val2.employees[1]?.name, "Jesse Pinkman");
     test:assertEquals(val2.employees[1]?.age, 25);
-
-
 }
 
 @test:Config
@@ -1558,7 +1556,7 @@ isolated function testDuplicateFieldInRecordTypeWithParseString() returns Error?
 
 @test:Config
 isolated function testProjectionInArrayNegativeForParseString() {
-    string strVal1 = string `["1", 2, 3, { "a" : val_a }]`;
+    string strVal1 = string `[1, 2, 3, { "a" : val_a }]`;
     int[]|Error val1 = parseString(strVal1);
     test:assertTrue(val1 is Error);
     test:assertEquals((<Error>val1).message(), "invalid type 'int' expected 'map type'");

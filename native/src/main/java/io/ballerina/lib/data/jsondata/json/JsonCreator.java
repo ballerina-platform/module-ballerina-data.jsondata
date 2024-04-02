@@ -293,10 +293,39 @@ public class JsonCreator {
     }
 
     private static Object convertStringToExpectedType(BString value, Type type) {
-        if (type.getTag() == TypeTags.ANYDATA_TAG) {
-            return FromString.fromStringWithType(value, PredefinedTypes.TYPE_JSON);
+        switch (type.getTag()) {
+            case TypeTags.STRING_TAG, TypeTags.ANYDATA_TAG, TypeTags.JSON_TAG -> {
+                return value;
+            }
+            case TypeTags.CHAR_STRING_TAG -> {
+                if (value.length() != 1) {
+                    return DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+                }
+                return value;
+            }
+            case TypeTags.FINITE_TYPE_TAG -> {
+                return ((FiniteType) type).getValueSpace().stream()
+                        .filter(finiteValue -> !(convertToSingletonValue(value.getValue(), finiteValue, true)
+                                instanceof BError))
+                        .findFirst()
+                        .orElseGet(() -> DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value));
+            }
+            case TypeTags.UNION_TAG -> {
+                for (Type memberType : ((UnionType) type).getMemberTypes()) {
+                    Object convertedValue = convertStringToExpectedType(value, memberType);
+                    if (!(convertedValue instanceof BError)) {
+                        return convertedValue;
+                    }
+                }
+                return DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+            }
+            case TypeTags.TYPE_REFERENCED_TYPE_TAG -> {
+                return convertStringToExpectedType(value, TypeUtils.getReferredType(type));
+            }
+            default -> {
+                return DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+            }
         }
-        return FromString.fromStringWithType(value, type);
     }
 
     private static Object validateNonStringValueAndConvertToExpectedType(String value, Type type) {
@@ -331,7 +360,7 @@ public class JsonCreator {
             case TypeTags.FINITE_TYPE_TAG -> {
                 return ((FiniteType) type).getValueSpace().stream()
                         .filter(finiteValue -> !(convertToSingletonValue(value.getValue(),
-                                finiteValue) instanceof BError))
+                                finiteValue, false) instanceof BError))
                         .findFirst()
                         .orElseGet(() -> DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value));
             }
@@ -360,10 +389,13 @@ public class JsonCreator {
         }
     }
 
-    private static Object convertToSingletonValue(String str, Object singletonValue) {
+    private static Object convertToSingletonValue(String str, Object singletonValue, boolean isStringElement) {
         String singletonStr = String.valueOf(singletonValue);
         if (str.equals(singletonStr)) {
-            return convertNonStringToExpectedType(StringUtils.fromString(str), TypeUtils.getType(singletonValue));
+            BString value = StringUtils.fromString(str);
+            Type expType = TypeUtils.getType(singletonValue);
+            return isStringElement ?
+                    convertStringToExpectedType(value, expType) : convertNonStringToExpectedType(value, expType);
         } else {
             return DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, singletonValue, str);
         }

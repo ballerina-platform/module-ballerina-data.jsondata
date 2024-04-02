@@ -54,7 +54,7 @@ isolated function testDisableDataProjectionInArrayTypeForParseString() {
     test:assertTrue(val4 is error);
     test:assertEquals((<error>val4).message(), "array size is not compatible with the expected size");
 
-    string strVal5 = string `["1", 2, 3, { "a" : val_a }]`;
+    string strVal5 = string `[1, 2, 3, { "a" : val_a }]`;
     int[3]|error val5 = parseString(strVal5, options);
     test:assertTrue(val5 is error);
     test:assertEquals((<error>val5).message(), "array size is not compatible with the expected size");
@@ -62,13 +62,13 @@ isolated function testDisableDataProjectionInArrayTypeForParseString() {
 
 @test:Config
 isolated function testDisableDataProjectionInTupleTypeForParseString() {
-    string str1 = string `["1", "2", 3, 4, "5", 8]`;
+    string str1 = string `["1", 2, 3, 4, "5", 8]`;
     [string, float]|error val1 = parseString(str1, options);
     test:assertTrue(val1 is error);
     test:assertEquals((<error>val1).message(), "array size is not compatible with the expected size");
 
     string str2 = string `{
-        "a": ["1", "2", 3, 4, "5", 8]
+        "a": ["1", 2, 3, 4, "5", 8]
     }`;
     record {|[string, float] a;|}|error val2 = parseString(str2, options);
     test:assertTrue(val2 is error);
@@ -79,13 +79,13 @@ isolated function testDisableDataProjectionInTupleTypeForParseString() {
     test:assertTrue(val3 is error);
     test:assertEquals((<error>val3).message(), "array size is not compatible with the expected size");
 
-    string str4 = string `["1", {}]`;
+    string str4 = string `[1, {}]`;
     [float]|error val4 = parseString(str4, options);
     test:assertTrue(val4 is error);
     test:assertEquals((<error>val4).message(), "array size is not compatible with the expected size");
 
     string str5 = string `["1", [], {"name": 1}]`;
-    [float]|error val5 = parseString(str5, options);
+    [string]|error val5 = parseString(str5, options);
     test:assertTrue(val5 is error);
     test:assertEquals((<error>val5).message(), "array size is not compatible with the expected size");
 }
