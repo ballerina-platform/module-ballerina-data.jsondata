@@ -24,14 +24,18 @@ import io.ballerina.lib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
 import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
+import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.flags.SymbolFlags;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.Field;
+import io.ballerina.runtime.api.types.FiniteType;
 import io.ballerina.runtime.api.types.IntersectionType;
 import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.TupleType;
 import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BArray;
@@ -40,6 +44,7 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 import org.ballerinalang.langlib.value.CloneReadOnly;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -54,26 +59,70 @@ import java.util.Stack;
  */
 public class JsonCreator {
 
+    private static final List<Type> BASIC_TYPE_MEMBER_TYPES = List.of(
+            PredefinedTypes.TYPE_NULL,
+            PredefinedTypes.TYPE_BOOLEAN,
+            PredefinedTypes.TYPE_INT,
+            PredefinedTypes.TYPE_FLOAT,
+            PredefinedTypes.TYPE_DECIMAL
+    );
+    private static final UnionType UNION_OF_BASIC_TYPE_WITHOUT_STRING =
+            TypeCreator.createUnionType(BASIC_TYPE_MEMBER_TYPES);
+
     static BMap<BString, Object> initRootMapValue(Type expectedType) {
-        return switch (expectedType.getTag()) {
-            case TypeTags.RECORD_TYPE_TAG ->
-                    ValueCreator.createRecordValue(expectedType.getPackage(), expectedType.getName());
-            case TypeTags.MAP_TAG -> ValueCreator.createMapValue((MapType) expectedType);
-            case TypeTags.JSON_TAG -> ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
-            case TypeTags.ANYDATA_TAG -> ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
-            case TypeTags.UNION_TAG -> throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, expectedType);
+        switch (expectedType.getTag()) {
+            case TypeTags.RECORD_TYPE_TAG -> {
+                return ValueCreator.createRecordValue(expectedType.getPackage(), expectedType.getName());
+            }
+            case TypeTags.MAP_TAG -> {
+                return ValueCreator.createMapValue((MapType) expectedType);
+            }
+            case TypeTags.JSON_TAG -> {
+                return ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
+            }
+            case TypeTags.ANYDATA_TAG -> {
+                return ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
+            }
+            case TypeTags.UNION_TAG -> {
+                // Only handle T? cases.
+                // TODO: Support all union cases.
+                List<Type> filteredMembers = (((UnionType) expectedType).getMemberTypes()).stream().filter(
+                        memType -> memType.getTag() != TypeTags.NULL_TAG).toList();
+                if (filteredMembers.size() == 1) {
+                    return initRootMapValue(filteredMembers.get(0));
+                }
+                throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, expectedType);
+            }
             default -> throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, expectedType, "map type");
-        };
+        }
     }
 
     static BArray initArrayValue(Type expectedType) {
-        return switch (expectedType.getTag()) {
-            case TypeTags.TUPLE_TAG -> ValueCreator.createTupleValue((TupleType) expectedType);
-            case TypeTags.ARRAY_TAG -> ValueCreator.createArrayValue((ArrayType) expectedType);
-            case TypeTags.JSON_TAG -> ValueCreator.createArrayValue(PredefinedTypes.TYPE_JSON_ARRAY);
-            case TypeTags.ANYDATA_TAG -> ValueCreator.createArrayValue(PredefinedTypes.TYPE_ANYDATA_ARRAY);
+        switch (expectedType.getTag()) {
+            case TypeTags.TUPLE_TAG -> {
+                return ValueCreator.createTupleValue((TupleType) expectedType);
+            }
+            case TypeTags.ARRAY_TAG -> {
+                return ValueCreator.createArrayValue((ArrayType) expectedType);
+            }
+            case TypeTags.JSON_TAG -> {
+                return ValueCreator.createArrayValue(PredefinedTypes.TYPE_JSON_ARRAY);
+            }
+            case TypeTags.ANYDATA_TAG -> {
+                return ValueCreator.createArrayValue(PredefinedTypes.TYPE_ANYDATA_ARRAY);
+            }
+            case TypeTags.UNION_TAG -> {
+                // Only handle T? cases.
+                // TODO: Support all union cases.
+                List<Type> filteredMembers = (((UnionType) expectedType).getMemberTypes()).stream().filter(
+                        memType -> memType.getTag() != TypeTags.NULL_TAG).toList();
+                if (filteredMembers.size() == 1) {
+                    return initArrayValue(filteredMembers.get(0));
+                }
+                throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, expectedType);
+            }
             default -> throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, expectedType, "list type");
-        };
+        }
     }
 
     static Optional<BMap<BString, Object>> initNewMapValue(JsonParser.StateMachine sm) {
@@ -100,7 +149,7 @@ public class JsonCreator {
             case TypeTags.RECORD_TYPE_TAG -> {
                 RecordType recordType = (RecordType) currentType;
                 nextMapValue = ValueCreator.createRecordValue(expType.getPackage(), expType.getName());
-                sm.updateExpectedType(recordType.getFields(), recordType.getRestFieldType());
+                sm.updateExpectedType(getAllFieldsInRecord(recordType), recordType.getRestFieldType());
             }
             case TypeTags.MAP_TAG -> {
                 nextMapValue = ValueCreator.createMapValue((MapType) currentType);
@@ -121,7 +170,16 @@ public class JsonCreator {
                 }
                 return checkTypeAndCreateMappingValue(sm, mutableType.get(), parentContext);
             }
-            case TypeTags.UNION_TAG -> throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, currentType);
+            case TypeTags.UNION_TAG -> {
+                // Only handle T? cases.
+                // TODO: Support all union cases.
+                List<Type> filteredMembers = (((UnionType) currentType).getMemberTypes()).stream().filter(
+                        memType -> memType.getTag() != TypeTags.NULL_TAG).toList();
+                if (filteredMembers.size() == 1) {
+                    return checkTypeAndCreateMappingValue(sm, filteredMembers.get(0), parentContext);
+                }
+                throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, currentType);
+            }
             default -> {
                 if (parentContext == JsonParser.StateMachine.ParserContext.ARRAY) {
                     throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, currentType, "map type");
@@ -185,9 +243,18 @@ public class JsonCreator {
         return result.toString();
     }
 
-    static Object convertAndUpdateCurrentJsonNode(JsonParser.StateMachine sm, BString value, Type type) {
+    @SuppressWarnings("unchecked")
+    static Object convertAndUpdateCurrentJsonNode(JsonParser.StateMachine sm, String value, Type type,
+                                                  boolean isStringElement) {
         Object currentJson = sm.currentJsonNode;
-        Object convertedValue = convertToExpectedType(value, type);
+        if (sm.nilAsOptionalField && !type.isNilable() && value.equals(Constants.NULL_VALUE)
+                && sm.currentField != null && SymbolFlags.isFlagOn(sm.currentField.getFlags(), SymbolFlags.OPTIONAL)) {
+                return null;
+        }
+
+
+        Object convertedValue = isStringElement ? convertStringToExpectedType(StringUtils.fromString(value), type) :
+                validateNonStringValueAndConvertToExpectedType(value, type);
         if (convertedValue instanceof BError) {
             if (sm.currentField != null) {
                 throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_VALUE_FOR_FIELD, value, type,
@@ -198,42 +265,139 @@ public class JsonCreator {
 
         Type currentJsonNodeType = TypeUtils.getType(currentJson);
         switch (currentJsonNodeType.getTag()) {
-            case TypeTags.MAP_TAG, TypeTags.RECORD_TYPE_TAG -> {
+            case TypeTags.MAP_TAG, TypeTags.RECORD_TYPE_TAG ->
                 ((BMap<BString, Object>) currentJson).put(StringUtils.fromString(sm.fieldNameHierarchy.peek().pop()),
                         convertedValue);
-                return currentJson;
-            }
             case TypeTags.ARRAY_TAG -> {
                 // Handle projection in array.
                 ArrayType arrayType = (ArrayType) currentJsonNodeType;
-                if (arrayType.getState() == ArrayType.ArrayState.CLOSED &&
-                        arrayType.getSize() <= sm.arrayIndexes.peek()) {
-                    return currentJson;
+                if (arrayType.getState() != ArrayType.ArrayState.CLOSED ||
+                        arrayType.getSize() > sm.arrayIndexes.peek()) {
+                    ((BArray) currentJson).add(sm.arrayIndexes.peek(), convertedValue);
                 }
-                ((BArray) currentJson).add(sm.arrayIndexes.peek(), convertedValue);
-                return currentJson;
             }
-            case TypeTags.TUPLE_TAG -> {
+            case TypeTags.TUPLE_TAG ->
                 ((BArray) currentJson).add(sm.arrayIndexes.peek(), convertedValue);
-                return currentJson;
-            }
             default -> {
                 return convertedValue;
             }
         }
+        return currentJson;
     }
 
-    private static Object convertToExpectedType(BString value, Type type) {
-        if (type.getTag() == TypeTags.ANYDATA_TAG) {
-            return FromString.fromStringWithType(value, PredefinedTypes.TYPE_JSON);
+    static void checkNullAndUpdateCurrentJson(JsonParser.StateMachine sm, Object value) {
+        if (value == null) {
+            return;
         }
-        return FromString.fromStringWithType(value, type);
+        sm.currentJsonNode = value;
     }
 
-    static void updateRecordFieldValue(BString fieldName, Object parent, Object currentJson) {
-        int typeTag = TypeUtils.getType(parent).getTag();
-        if (typeTag == TypeTags.MAP_TAG || typeTag == TypeTags.RECORD_TYPE_TAG) {
-            ((BMap<BString, Object>) parent).put(fieldName, currentJson);
+    private static Object convertStringToExpectedType(BString value, Type type) {
+        switch (type.getTag()) {
+            case TypeTags.STRING_TAG, TypeTags.ANYDATA_TAG, TypeTags.JSON_TAG -> {
+                return value;
+            }
+            case TypeTags.CHAR_STRING_TAG -> {
+                if (value.length() != 1) {
+                    return DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+                }
+                return value;
+            }
+            case TypeTags.FINITE_TYPE_TAG -> {
+                return ((FiniteType) type).getValueSpace().stream()
+                        .filter(finiteValue -> !(convertToSingletonValue(value.getValue(), finiteValue, true)
+                                instanceof BError))
+                        .findFirst()
+                        .orElseGet(() -> DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value));
+            }
+            case TypeTags.UNION_TAG -> {
+                for (Type memberType : ((UnionType) type).getMemberTypes()) {
+                    Object convertedValue = convertStringToExpectedType(value, memberType);
+                    if (!(convertedValue instanceof BError)) {
+                        return convertedValue;
+                    }
+                }
+                return DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+            }
+            case TypeTags.TYPE_REFERENCED_TYPE_TAG -> {
+                return convertStringToExpectedType(value, TypeUtils.getReferredType(type));
+            }
+            default -> {
+                return DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+            }
+        }
+    }
+
+    private static Object validateNonStringValueAndConvertToExpectedType(String value, Type type) {
+        char ch = value.charAt(0);
+        if (ch == 't') {
+            if (!Constants.TRUE.equals(value)) {
+                throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+            }
+        } else if (ch == 'f') {
+            if (!Constants.FALSE.equals(value)) {
+                throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+            }
+        } else if (ch == 'n') {
+            if (!Constants.NULL_VALUE.equals(value)) {
+                throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+            }
+        } else if (!(Character.isDigit(ch) || ch == '-' || ch == '+')) {
+            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+        }
+
+        return convertNonStringToExpectedType(StringUtils.fromString(value), type);
+    }
+
+    private static Object convertNonStringToExpectedType(BString value, Type type) {
+        switch (type.getTag()) {
+            case TypeTags.ANYDATA_TAG, TypeTags.JSON_TAG -> {
+                return FromString.fromStringWithType(value, UNION_OF_BASIC_TYPE_WITHOUT_STRING);
+            }
+            case TypeTags.STRING_TAG, TypeTags.CHAR_STRING_TAG -> {
+                return DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value);
+            }
+            case TypeTags.FINITE_TYPE_TAG -> {
+                return ((FiniteType) type).getValueSpace().stream()
+                        .filter(finiteValue -> !(convertToSingletonValue(value.getValue(),
+                                finiteValue, false) instanceof BError))
+                        .findFirst()
+                        .orElseGet(() -> DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, value));
+            }
+            case TypeTags.UNION_TAG -> {
+                List<Type> newMembers = new ArrayList<>();
+                for (Type memberType : ((UnionType) type).getMemberTypes()) {
+                    int typeTag = memberType.getTag();
+                    if (typeTag == TypeTags.STRING_TAG) {
+                        continue;
+                    }
+
+                    if (typeTag == TypeTags.JSON_TAG || typeTag == TypeTags.ANYDATA_TAG) {
+                        newMembers.add(UNION_OF_BASIC_TYPE_WITHOUT_STRING);
+                    } else {
+                        newMembers.add(memberType);
+                    }
+                }
+                return FromString.fromStringWithType(value, TypeCreator.createUnionType(newMembers));
+            }
+            case TypeTags.TYPE_REFERENCED_TYPE_TAG -> {
+                return convertNonStringToExpectedType(value, TypeUtils.getReferredType(type));
+            }
+            default -> {
+                return FromString.fromStringWithType(value, type);
+            }
+        }
+    }
+
+    private static Object convertToSingletonValue(String str, Object singletonValue, boolean isStringElement) {
+        String singletonStr = String.valueOf(singletonValue);
+        if (str.equals(singletonStr)) {
+            BString value = StringUtils.fromString(str);
+            Type expType = TypeUtils.getType(singletonValue);
+            return isStringElement ?
+                    convertStringToExpectedType(value, expType) : convertNonStringToExpectedType(value, expType);
+        } else {
+            return DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, singletonValue, str);
         }
     }
 
@@ -268,6 +432,7 @@ public class JsonCreator {
         return expectedType;
     }
 
+    @SuppressWarnings("unchecked")
     static Map<String, Field> getAllFieldsInRecord(RecordType recordType) {
         BMap<BString, Object> annotations = recordType.getAnnotations();
         Map<String, String> modifiedNames = new HashMap<>();
@@ -293,6 +458,7 @@ public class JsonCreator {
         return fields;
     }
 
+    @SuppressWarnings("unchecked")
     static String getModifiedName(Map<BString, Object> fieldAnnotation, String fieldName) {
         for (BString key : fieldAnnotation.keySet()) {
             if (key.getValue().endsWith(Constants.NAME)) {

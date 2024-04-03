@@ -125,6 +125,7 @@ public class FromString {
                 case TypeTags.UNION_TAG:
                     return stringToUnion(string, (UnionType) expType);
                 case TypeTags.JSON_TAG:
+                case TypeTags.ANYDATA_TAG:
                     return stringToUnion(string, JSON_TYPE_WITH_BASIC_TYPES);
                 case TypeTags.TYPE_REFERENCED_TYPE_TAG:
                     return fromStringWithType(string, ((ReferenceType) expType).getReferredType());
@@ -146,10 +147,11 @@ public class FromString {
     }
 
     private static Object convertToSingletonValue(String str, Object singletonValue) {
-        if (str.equals(singletonValue.toString())) {
+        String singletonStr = String.valueOf(singletonValue);
+        if (str.equals(singletonStr)) {
             return fromStringWithType(StringUtils.fromString(str), TypeUtils.getType(singletonValue));
         } else {
-            return returnError(str, singletonValue.toString());
+            return returnError(str, singletonStr);
         }
     }
 

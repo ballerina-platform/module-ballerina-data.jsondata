@@ -143,7 +143,9 @@ public class JsonParser {
         private int line;
         private int column;
         private char currentQuoteChar;
-        boolean allowDataProjection;
+        boolean allowDataProjection = false;
+        boolean nilAsOptionalField = false;
+        boolean absentAsNilableType = false;
         Field currentField;
         Stack<Map<String, Field>> fieldHierarchy = new Stack<>();
         Stack<Map<String, Field>> visitedFieldHierarchy = new Stack<>();
@@ -166,11 +168,16 @@ public class JsonParser {
             nodesStack = new ArrayDeque<>();
             fieldNameHierarchy.clear();
             fieldHierarchy.clear();
+            visitedFieldHierarchy.clear();
             currentField = null;
             restType.clear();
             expectedTypes.clear();
             jsonFieldDepth = 0;
             arrayIndexes.clear();
+            parserContexts.clear();
+            allowDataProjection = false;
+            nilAsOptionalField = false;
+            absentAsNilableType = false;
         }
 
         private static boolean isWhitespace(char ch) {
@@ -192,7 +199,6 @@ public class JsonParser {
 
         public Object execute(Reader reader, BMap<BString, Object> options, Type type) throws BError {
             switch (type.getTag()) {
-                // TODO: Handle readonly and singleton type as expType.
                 case TypeTags.RECORD_TYPE_TAG -> {
                     RecordType recordType = (RecordType) type;
                     expectedTypes.push(recordType);
@@ -242,7 +248,16 @@ public class JsonParser {
                 default -> throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
             }
 
-            allowDataProjection = (boolean) options.get(Constants.ALLOW_DATA_PROJECTION);
+            Object allowDataProjection = options.get(Constants.ALLOW_DATA_PROJECTION);
+            if (allowDataProjection instanceof Boolean) {
+                this.allowDataProjection = false;
+            } else if (allowDataProjection instanceof BMap<?, ?>) {
+                this.allowDataProjection = true;
+                this.absentAsNilableType =
+                        (Boolean) ((BMap<?, ?>) allowDataProjection).get(Constants.ABSENT_AS_NILABLE_TYPE);
+                this.nilAsOptionalField =
+                        (Boolean) ((BMap<?, ?>) allowDataProjection).get(Constants.NIL_AS_OPTIONAL_FIELD);
+            }
 
             State currentState = DOC_START_STATE;
             try {
@@ -324,6 +339,10 @@ public class JsonParser {
             fieldNameHierarchy.pop();
             restType.pop();
             for (Field field : remainingFields.values()) {
+                if (absentAsNilableType && field.getFieldType().isNilable()) {
+                    continue;
+                }
+
                 if (SymbolFlags.isFlagOn(field.getFlags(), SymbolFlags.REQUIRED)) {
                     throw DiagnosticLog.error(DiagnosticErrorCode.REQUIRED_FIELD_NOT_PRESENT, field.getFieldName());
                 }
@@ -331,6 +350,7 @@ public class JsonParser {
             return finalizeObject();
         }
 
+        @SuppressWarnings("Unchecked")
         private State finalizeObject() {
             // Skip the value and continue to next state.
             parserContexts.pop();
@@ -806,11 +826,11 @@ public class JsonParser {
                         }
 
                         if (sm.jsonFieldDepth > 0) {
-                            sm.currentJsonNode = JsonCreator.convertAndUpdateCurrentJsonNode(sm,
-                                    StringUtils.fromString(s), expType);
+                            JsonCreator.checkNullAndUpdateCurrentJson(sm,
+                                    JsonCreator.convertAndUpdateCurrentJsonNode(sm, s, expType, true));
                         } else if (sm.currentField != null || sm.restType.peek() != null) {
-                            sm.currentJsonNode = JsonCreator.convertAndUpdateCurrentJsonNode(sm,
-                                    StringUtils.fromString(s), expType);
+                            JsonCreator.checkNullAndUpdateCurrentJson(sm,
+                                    JsonCreator.convertAndUpdateCurrentJsonNode(sm, s, expType, true));
                         }
                         state = FIELD_END_STATE;
                     } else if (ch == REV_SOL) {
@@ -842,7 +862,7 @@ public class JsonParser {
                     ch = buff[i];
                     sm.processLocation(ch);
                     if (ch == sm.currentQuoteChar) {
-                        sm.processValue();
+                        sm.processValue(true);
                         state = ARRAY_ELEMENT_END_STATE;
                     } else if (ch == REV_SOL) {
                         state = STRING_AE_ESC_CHAR_PROCESSING_STATE;
@@ -879,16 +899,16 @@ public class JsonParser {
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                         sm.updateNextArrayValue();
                     } else if (ch == '}') {
-                        sm.processValue();
+                        sm.processValue(false);
                         state = sm.finalizeNonArrayObjectAndRemoveExpectedType();
                     } else if (ch == ']') {
-                        sm.processValue();
+                        sm.processValue(false);
                         state = sm.finalizeArrayObject();
                     } else if (ch == ',') {
-                        sm.processValue();
+                        sm.processValue(false);
                         state = NON_FIRST_FIELD_READY_STATE;
                     } else if (StateMachine.isWhitespace(ch)) {
-                        sm.processValue();
+                        sm.processValue(false);
                         state = FIELD_END_STATE;
                     } else if (ch == EOF) {
                         throw new JsonParserException("unexpected end of JSON document");
@@ -923,14 +943,14 @@ public class JsonParser {
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                         sm.updateNextArrayValue();
                     } else if (ch == ']') {
-                        sm.processValue();
+                        sm.processValue(false);
                         state = sm.finalizeArrayObject();
                     } else if (ch == ',') {
-                        sm.processValue();
+                        sm.processValue(false);
                         state = NON_FIRST_ARRAY_ELEMENT_READY_STATE;
                         sm.updateIndexOfArrayElement();
                     } else if (StateMachine.isWhitespace(ch)) {
-                        sm.processValue();
+                        sm.processValue(false);
                         state = ARRAY_ELEMENT_END_STATE;
                     } else if (ch == EOF) {
                         throw new JsonParserException("unexpected end of JSON document");
@@ -959,8 +979,8 @@ public class JsonParser {
                     ch = buff[i];
                     sm.processLocation(ch);
                     if (ch == sm.currentQuoteChar) {
-                        sm.currentJsonNode = JsonCreator.convertAndUpdateCurrentJsonNode(sm,
-                                StringUtils.fromString(sm.value()), sm.expectedTypes.peek());
+                        JsonCreator.checkNullAndUpdateCurrentJson(sm, JsonCreator.convertAndUpdateCurrentJsonNode(sm,
+                                sm.value(), sm.expectedTypes.peek(), true));
                         state = DOC_END_STATE;
                     } else if (ch == REV_SOL) {
                         state = STRING_VAL_ESC_CHAR_PROCESSING_STATE;
@@ -978,13 +998,15 @@ public class JsonParser {
             }
         }
 
-        private void processValue() {
+        private void processValue(boolean isStringElement) {
             Type expType = expectedTypes.pop();
-            BString value = StringUtils.fromString(value());
+            // This will clear the buffer
+            String value = value();
             if (expType == null) {
                 return;
             }
-            currentJsonNode = JsonCreator.convertAndUpdateCurrentJsonNode(this, value, expType);
+            JsonCreator.checkNullAndUpdateCurrentJson(this,
+                    JsonCreator.convertAndUpdateCurrentJsonNode(this, value, expType, isStringElement));
         }
 
         /**
@@ -1001,7 +1023,7 @@ public class JsonParser {
                     sm.processLocation(ch);
                     if (StateMachine.isWhitespace(ch) || ch == EOF) {
                         sm.currentJsonNode = null;
-                        sm.processValue();
+                        sm.processValue(false);
                         state = DOC_END_STATE;
                     } else {
                         sm.append(ch);

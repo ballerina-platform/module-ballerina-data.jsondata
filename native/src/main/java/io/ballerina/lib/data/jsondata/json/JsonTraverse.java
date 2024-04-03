@@ -60,7 +60,16 @@ public class JsonTraverse {
     public static Object traverse(Object json, BMap<BString, Object> options, Type type) {
         JsonTree jsonTree = tlJsonTree.get();
         try {
-            jsonTree.allowDataProjection = (boolean) options.get(Constants.ALLOW_DATA_PROJECTION);
+            Object allowDataProjection = options.get(Constants.ALLOW_DATA_PROJECTION);
+            if (allowDataProjection instanceof Boolean) {
+                jsonTree.allowDataProjection = false;
+            } else if (allowDataProjection instanceof BMap<?, ?>) {
+                jsonTree.allowDataProjection = true;
+                jsonTree.absentAsNilableType =
+                        (Boolean) ((BMap<?, ?>) allowDataProjection).get(Constants.ABSENT_AS_NILABLE_TYPE);
+                jsonTree.nilAsOptionalField =
+                        (Boolean) ((BMap<?, ?>) allowDataProjection).get(Constants.NIL_AS_OPTIONAL_FIELD);
+            }
             return jsonTree.traverseJson(json, type);
         } catch (BError e) {
             return e;
@@ -75,7 +84,9 @@ public class JsonTraverse {
         Stack<Type> restType = new Stack<>();
         Deque<String> fieldNames = new ArrayDeque<>();
         Type rootArray;
-        boolean allowDataProjection;
+        boolean allowDataProjection = false;
+        boolean nilAsOptionalField = false;
+        boolean absentAsNilableType = false;
 
         void reset() {
             currentField = null;
@@ -83,6 +94,9 @@ public class JsonTraverse {
             restType.clear();
             fieldNames.clear();
             rootArray = null;
+            allowDataProjection = false;
+            nilAsOptionalField = false;
+            absentAsNilableType = false;
         }
 
         public Object traverseJson(Object json, Type type) {
@@ -189,6 +203,11 @@ public class JsonTraverse {
                 int currentFieldTypeTag = currentFieldType.getTag();
                 Object mapValue = map.get(key);
 
+                if (nilAsOptionalField && !currentFieldType.isNilable() && mapValue == null
+                        && SymbolFlags.isFlagOn(currentField.getFlags(), SymbolFlags.OPTIONAL)) {
+                    continue;
+                }
+
                 switch (currentFieldTypeTag) {
                     case TypeTags.NULL_TAG, TypeTags.BOOLEAN_TAG, TypeTags.INT_TAG, TypeTags.FLOAT_TAG,
                             TypeTags.DECIMAL_TAG, TypeTags.STRING_TAG -> {
@@ -270,6 +289,9 @@ public class JsonTraverse {
 
         private void checkOptionalFieldsAndLogError(Map<String, Field> currentField) {
             currentField.values().forEach(field -> {
+                if (field.getFieldType().isNilable() && absentAsNilableType) {
+                    return;
+                }
                 if (SymbolFlags.isFlagOn(field.getFlags(), SymbolFlags.REQUIRED)) {
                     throw DiagnosticLog.error(DiagnosticErrorCode.REQUIRED_FIELD_NOT_PRESENT, field.getFieldName());
                 }
@@ -281,10 +303,10 @@ public class JsonTraverse {
                 return ValueUtils.convert(json, targetType);
             } catch (BError e) {
                 if (fieldNames.isEmpty()) {
-                    throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, targetType, json.toString());
+                    throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, targetType, String.valueOf(json));
                 }
-                throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_VALUE_FOR_FIELD, json.toString(), targetType,
-                        getCurrentFieldPath());
+                throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_VALUE_FOR_FIELD, String.valueOf(json),
+                        targetType, getCurrentFieldPath());
             }
         }
 

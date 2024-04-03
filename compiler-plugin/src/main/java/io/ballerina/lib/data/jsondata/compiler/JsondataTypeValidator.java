@@ -22,6 +22,7 @@ import io.ballerina.compiler.api.SemanticModel;
 import io.ballerina.compiler.api.symbols.AnnotationAttachmentSymbol;
 import io.ballerina.compiler.api.symbols.AnnotationSymbol;
 import io.ballerina.compiler.api.symbols.ArrayTypeSymbol;
+import io.ballerina.compiler.api.symbols.IntersectionTypeSymbol;
 import io.ballerina.compiler.api.symbols.ModuleSymbol;
 import io.ballerina.compiler.api.symbols.RecordFieldSymbol;
 import io.ballerina.compiler.api.symbols.RecordTypeSymbol;
@@ -145,6 +146,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
             case ARRAY -> validateExpectedType(((ArrayTypeSymbol) typeSymbol).memberTypeDescriptor(), ctx);
             case TUPLE -> validateTupleType((TupleTypeSymbol) typeSymbol, ctx);
             case TYPE_REFERENCE -> validateExpectedType(((TypeReferenceTypeSymbol) typeSymbol).typeDescriptor(), ctx);
+            case INTERSECTION -> validateExpectedType(getRawType(typeSymbol), ctx);
         }
     }
 
@@ -176,12 +178,22 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
     private void validateUnionType(UnionTypeSymbol unionTypeSymbol, Optional<Location> location,
                                    SyntaxNodeAnalysisContext ctx) {
         int nonPrimitiveMemberCount = 0;
+        boolean isNilOrErrorPresent = false;
         List<TypeSymbol> memberTypeSymbols = unionTypeSymbol.memberTypeDescriptors();
         for (TypeSymbol memberTypeSymbol : memberTypeSymbols) {
-            if (isSupportedUnionMemberType(memberTypeSymbol)) {
+            TypeSymbol referredSymbol = getRawType(memberTypeSymbol);
+            if (referredSymbol.typeKind() == TypeDescKind.NIL || referredSymbol.typeKind() == TypeDescKind.ERROR) {
+                isNilOrErrorPresent = true;
+                continue;
+            }
+            if (isSupportedUnionMemberType(referredSymbol)) {
                 continue;
             }
             nonPrimitiveMemberCount++;
+        }
+
+        if (isNilOrErrorPresent && memberTypeSymbols.size() == 2) {
+            return;
         }
 
         if (nonPrimitiveMemberCount >= 1) {
@@ -203,6 +215,24 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
                 return false;
             }
         }
+    }
+
+    public static TypeSymbol getRawType(TypeSymbol typeDescriptor) {
+        if (typeDescriptor.typeKind() == TypeDescKind.INTERSECTION) {
+            return getRawType(((IntersectionTypeSymbol) typeDescriptor).effectiveTypeDescriptor());
+        }
+        if (typeDescriptor.typeKind() == TypeDescKind.TYPE_REFERENCE) {
+            TypeReferenceTypeSymbol typeRef = (TypeReferenceTypeSymbol) typeDescriptor;
+            if (typeRef.typeDescriptor().typeKind() == TypeDescKind.INTERSECTION) {
+                return getRawType(((IntersectionTypeSymbol) typeRef.typeDescriptor()).effectiveTypeDescriptor());
+            }
+            TypeSymbol rawType = typeRef.typeDescriptor();
+            if (rawType.typeKind() == TypeDescKind.TYPE_REFERENCE) {
+                return getRawType(rawType);
+            }
+            return rawType;
+        }
+        return typeDescriptor;
     }
 
     private void reportDiagnosticInfo(SyntaxNodeAnalysisContext ctx, Optional<Location> location,

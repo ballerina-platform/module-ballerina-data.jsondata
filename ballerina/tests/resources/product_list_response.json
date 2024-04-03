@@ -1,0 +1,56 @@
+{
+    "status": "success",
+    "data": {
+        "products": [
+            {
+                "id": 1,
+                "name": "Laptop",
+                "brand": "ExampleBrand",
+                "price": 999.99,
+                "description": "A powerful laptop for all your computing needs.",
+                "specifications": {
+                    "processor": "Intel Core i7",
+                    "ram": "16GB DDR4",
+                    "storage": "512GB SSD",
+                    "display": "15.6-inch FHD",
+                    "graphics": "NVIDIA GeForce GTX 1650"
+                }
+            },
+            {
+                "id": 2,
+                "name": "Smartphone",
+                "brand": null,
+                "price": 699.99,
+                "specifications": {
+                    "display": "6.5-inch AMOLED",
+                    "camera": "Quad-camera setup",
+                    "storage": "256GB",
+                    "battery": "4000mAh",
+                    "os": null
+                }
+            },
+            {
+                "id": 3,
+                "name": "Headphones",
+                "brand": "AudioTech",
+                "price": 149.99,
+                "description": "Immerse yourself in high-quality sound with these headphones.",
+                "specifications": {
+                    "type": "Over-ear",
+                    "wireless": true,
+                    "battery_life": null,
+                    "noise_cancellation": true,
+                    "color": "Black"
+                }
+            },
+            {
+                "id": 4,
+                "name": "Wireless Earbuds",
+                "brand": "SoundMaster",
+                "price": 99.99,
+                "description": "Enjoy freedom of movement with these wireless earbuds.",
+                "specifications": null
+            }
+        ]
+    }
+}

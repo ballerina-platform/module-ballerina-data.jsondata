@@ -13,13 +13,12 @@
 // KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations
 // under the License.
-
 import ballerina/test;
 
 @test:Config {
     dataProvider: basicTypeDataProviderForParseString
 }
-isolated function testJsonStringToBasicTypes(string sourceData, typedesc<anydata> expType, 
+isolated function testJsonStringToBasicTypes(string sourceData, typedesc<anydata> expType,
         anydata expectedData) returns Error? {
     anydata val1 = check parseString(sourceData, {}, expType);
     test:assertEquals(val1, expectedData);
@@ -30,7 +29,7 @@ function basicTypeDataProviderForParseString() returns [string, typedesc<anydata
         ["5", int, 5],
         ["5.5", float, 5.5],
         ["5.5", decimal, 5.5d],
-        ["hello", string, "hello"],
+        ["\"hello\"", string, "hello"],
         ["true", boolean, true]
     ];
 }
@@ -38,7 +37,7 @@ function basicTypeDataProviderForParseString() returns [string, typedesc<anydata
 @test:Config
 isolated function testNilAsExpectedTypeWithParseString() returns error? {
     () val = check parseString("null");
-    test:assertEquals(val, null);
+    test:assertEquals(val, ());
 }
 
 @test:Config
@@ -125,7 +124,7 @@ isolated function testJsonStringToRecordWithOptionalFields() returns Error? {
     record {|string a; int b?;|} recA = check parseString(str);
     test:assertEquals(recA.length(), 1);
     test:assertEquals(recA.a, "hello");
-    test:assertEquals(recA.b, null);
+    test:assertEquals(recA.b, ());
 }
 
 @test:Config
@@ -219,7 +218,7 @@ isolated function testParseString3() returns Error? {
             "name": "J. B. Lippincott & Co.",
             "year": 1960,
             "location": "Philadelphia",
-            "month": 4
+            "month": "4"
         }
     }`;
 
@@ -312,7 +311,7 @@ isolated function testParseString6() returns Error? {
     test:assertEquals(x.teacher.length(), 2);
     test:assertEquals(x.teacher.id, 3);
     test:assertEquals(x.teacher.name, "Jane Smith");
-    test:assertEquals(x.monitor, null);
+    test:assertEquals(x.monitor, ());
 }
 
 @test:Config
@@ -416,7 +415,7 @@ isolated function testParseString13() returns Error? {
     string str = string `{
         "street": "Main",
         "city": "Mahar",
-        "house": [94, [1, 3, "4"]]
+        "house": [94, [1, 3, 4]]
     }`;
 
     TestArr3 x = check parseString(str);
@@ -642,7 +641,7 @@ isolated function testUnionTypeAsExpTypeForParseString() returns Error? {
         "a": {
             "b": 1,
             "d": {
-                "e": "false"
+                "e": false
             }
         },
         "c": 2
@@ -708,38 +707,38 @@ isolated function testAnydataAsExpTypeForParseString() returns Error? {
 isolated function testAnydataArrayAsExpTypeForParseString() returns Error? {
     string jsonStr1 = string `[["1"], 2.0]`;
     anydata[] val1 = check parseString(jsonStr1);
-    test:assertEquals(val1, [[1], 2.0]);
+    test:assertEquals(val1, [["1"], 2.0]);
 
     string jsonStr2 = string `[["1", 2], 2.0]`;
     anydata[] val2 = check parseString(jsonStr2);
-    test:assertEquals(val2, [[1, 2], 2.0]);
+    test:assertEquals(val2, [["1", 2], 2.0]);
 
     string jsonStr3 = string `[["1", 2], [2, "3"]]`;
     anydata[] val3 = check parseString(jsonStr3);
-    test:assertEquals(val3, [[1, 2], [2, 3]]);
+    test:assertEquals(val3, [["1", 2], [2, "3"]]);
 
     string jsonStr4 = string `{"val" : [[1, 2], "2.0", 3.0, [5, 6]]}`;
     record {|
         anydata[] val;
     |} val4 = check parseString(jsonStr4);
-    test:assertEquals(val4, {val: [[1, 2], 2.0, 3.0, [5, 6]]});
+    test:assertEquals(val4, {val: [[1, 2], "2.0", 3.0, [5, 6]]});
 
     string jsonStr41 = string `{"val1" : [[1, 2], "2.0", 3.0, [5, 6]], "val2" : [[1, 2], "2.0", 3.0, [5, 6]]}`;
     record {|
         anydata[] val1;
         anydata[] val2;
     |} val41 = check parseString(jsonStr41);
-    test:assertEquals(val41, {val1: [[1, 2], 2.0, 3.0, [5, 6]], val2: [[1, 2], 2.0, 3.0, [5, 6]]});
+    test:assertEquals(val41, {val1: [[1, 2], "2.0", 3.0, [5, 6]], val2: [[1, 2], "2.0", 3.0, [5, 6]]});
 
     string jsonStr5 = string `{"val" : [["1", 2], [2, "3"]]}`;
     record {|
         anydata[] val;
     |} val5 = check parseString(jsonStr5);
-    test:assertEquals(val5, {val: [[1, 2], [2, 3]]});
+    test:assertEquals(val5, {val: [["1", 2], [2, "3"]]});
 
     string jsonStr6 = string `[{"val" : [["1", 2], [2, "3"]]}]`;
     [record {|anydata[][] val;|}] val6 = check parseString(jsonStr6);
-    test:assertEquals(val6, [{val: [[1, 2], [2, 3]]}]);
+    test:assertEquals(val6, [{val: [["1", 2], [2, "3"]]}]);
 }
 
 @test:Config
@@ -791,7 +790,7 @@ isolated function testJsonAsExpTypeForParseString() returns Error? {
 isolated function testMapAsExpTypeForParseString() returns Error? {
     string jsonStr1 = string `{
         "a": "hello",
-        "b": 1
+        "b": "1"
     }`;
 
     map<string> val1 = check parseString(jsonStr1);
@@ -802,7 +801,7 @@ isolated function testMapAsExpTypeForParseString() returns Error? {
         "b": 1,
         "c": {
             "d": "world",
-            "e": 2
+            "e": "2"
         }
     }`;
     record {|
@@ -817,11 +816,11 @@ isolated function testMapAsExpTypeForParseString() returns Error? {
     string jsonStr3 = string `{
         "a": {
             "c": "world",
-            "d": 2
+            "d": "2"
         },
         "b": {
             "c": "world",
-            "d": 2
+            "d": "2"
         }
     }`;
 
@@ -835,20 +834,20 @@ isolated function testMapAsExpTypeForParseString() returns Error? {
 
     map<record {|
         string c;
-        int d;
+        string d;
     |}> val5 = check parseString(jsonStr3);
-    test:assertEquals(val5, {"a": {"c": "world", "d": 2}, "b": {"c": "world", "d": 2}});
+    test:assertEquals(val5, {"a": {"c": "world", "d": "2"}, "b": {"c": "world", "d": "2"}});
 
     string jsonStr6 = string `{
-        "a": Kanth,
+        "a": "Kanth",
         "b": {
             "g": {
                 "c": "hello",
-                "d": 1
+                "d": "1"
             },
             "h": {
                 "c": "world",
-                "d": 2
+                "d": "2"
             }
         }
     }`;
@@ -862,25 +861,25 @@ isolated function testMapAsExpTypeForParseString() returns Error? {
 
 @test:Config
 isolated function testProjectionInTupleForParseString() returns Error? {
-    string str1 = string `[1, 2, 3, 4, 5, 8]`;
+    string str1 = string `["1", 2, "3", 4, 5, 8]`;
     [string, float] val1 = check parseString(str1);
     test:assertEquals(val1, ["1", 2.0]);
 
     string str2 = string `{
-        "a": [1, 2, 3, 4, 5, 8]
+        "a": ["1", "2", 3, "4", 5, 8]
     }`;
-    record {|[string, float] a;|} val2 = check parseString(str2);
-    test:assertEquals(val2.a, ["1", 2.0]);
+    record {|[string, string] a;|} val2 = check parseString(str2);
+    test:assertEquals(val2.a, ["1", "2"]);
 
     string str3 = string `[1, "4"]`;
     [float] val3 = check parseString(str3);
     test:assertEquals(val3, [1.0]);
 
     string str4 = string `["1", {}]`;
-    [float] val4 = check parseString(str4);
-    test:assertEquals(val4, [1.0]);
+    [string] val4 = check parseString(str4);
+    test:assertEquals(val4, ["1"]);
 
-    string str5 = string `["1", [], {"name": 1}]`;
+    string str5 = string `[1, [], {"name": 1}]`;
     [float] val5 = check parseString(str5);
     test:assertEquals(val5, [1.0]);
 }
@@ -921,7 +920,7 @@ isolated function testProjectionInArrayForParseString() returns Error? {
     record {|record {|string name; int age;|}[1] employees;|} val5 = check parseString(strVal5);
     test:assertEquals(val5, {employees: [{name: "Prakanth", age: 26}]});
 
-    string strVal6 = string `["1", 2, 3, { "a" : val_a }]`;
+    string strVal6 = string `[1, 2, 3, { "a" : val_a }]`;
     int[3] val6 = check parseString(strVal6);
     test:assertEquals(val6, [1, 2, 3]);
 }
@@ -932,7 +931,7 @@ isolated function testProjectionInRecordForParseString() returns Error? {
     record {|string name; string city;|} val1 = check parseString(jsonStr1);
     test:assertEquals(val1, {name: "John", city: "New York"});
 
-    string jsonStr2 = string `{"name": John, "age": "30", "city": "New York"}`;
+    string jsonStr2 = string `{"name": "John", "age": "30", "city": "New York"}`;
     record {|string name; string city;|} val2 = check parseString(jsonStr2);
     test:assertEquals(val2, {name: "John", city: "New York"});
 
@@ -988,37 +987,37 @@ isolated function testProjectionInRecordForParseString() returns Error? {
 @test:Config
 isolated function testArrayOrTupleCaseForParseString() returns Error? {
     string jsonStr1 = string `[["1"], 2.0]`;
-    [[int], float] val1 = check parseString(jsonStr1);
-    test:assertEquals(val1, [[1], 2.0]);
+    [[string], float] val1 = check parseString(jsonStr1);
+    test:assertEquals(val1, [["1"], 2.0]);
 
-    string jsonStr2 = string `[["1", 2], 2.0]`;
-    [[int, float], string] val2 = check parseString(jsonStr2);
-    test:assertEquals(val2, [[1, 2.0], "2.0"]);
+    string jsonStr2 = string `[["1", 2], "2.0"]`;
+    [[string, float], string] val2 = check parseString(jsonStr2);
+    test:assertEquals(val2, [["1", 2.0], "2.0"]);
 
-    string jsonStr3 = string `[["1", 2], [2, "3"]]`;
+    string jsonStr3 = string `[[1, 2], [2, 3]]`;
     int[][] val3 = check parseString(jsonStr3);
     test:assertEquals(val3, [[1, 2], [2, 3]]);
 
-    string jsonStr4 = string `{"val" : [[1, 2], "2.0", 3.0, [5, 6]]}`;
+    string jsonStr4 = string `{"val" : [[1, 2], "2.0", 3.0, ["5", 6]]}`;
     record {|
         [[int, float], string, float, [string, int]] val;
     |} val4 = check parseString(jsonStr4);
     test:assertEquals(val4, {val: [[1, 2.0], "2.0", 3.0, ["5", 6]]});
 
-    string jsonStr41 = string `{"val1" : [[1, 2], "2.0", 3.0, [5, 6]], "val2" : [[1, 2], "2.0", 3.0, [5, 6]]}`;
+    string jsonStr41 = string `{"val1" : [[1, 2], "2.0", 3.0, ["5", 6]], "val2" : [[1, 2], "2.0", 3.0, ["5", 6]]}`;
     record {|
         [[int, float], string, float, [string, int]] val1;
         [[float, float], string, float, [string, float]] val2;
     |} val41 = check parseString(jsonStr41);
     test:assertEquals(val41, {val1: [[1, 2.0], "2.0", 3.0, ["5", 6]], val2: [[1.0, 2.0], "2.0", 3.0, ["5", 6.0]]});
 
-    string jsonStr5 = string `{"val" : [["1", 2], [2, "3"]]}`;
+    string jsonStr5 = string `{"val" : [[1, 2], [2, 3]]}`;
     record {|
         int[][] val;
     |} val5 = check parseString(jsonStr5);
     test:assertEquals(val5, {val: [[1, 2], [2, 3]]});
 
-    string jsonStr6 = string `[{"val" : [["1", 2], [2, "3"]]}]`;
+    string jsonStr6 = string `[{"val" : [[1, 2], [2, 3]]}]`;
     [record {|int[][] val;|}] val6 = check parseString(jsonStr6);
     test:assertEquals(val6, [{val: [[1, 2], [2, 3]]}]);
 }
@@ -1040,7 +1039,7 @@ isolated function testListFillerValuesWithParseString() returns Error? {
 
 @test:Config
 isolated function testSingletonAsExpectedTypeForParseString() returns Error? {
-    "1" val1 = check parseString("1");
+    "1" val1 = check parseString("\"1\"");
     test:assertEquals(val1, "1");
 
     Singleton1 val2 = check parseString("1");
@@ -1053,7 +1052,7 @@ isolated function testSingletonAsExpectedTypeForParseString() returns Error? {
     test:assertEquals(val4, ());
 
     string str5 = string `{
-        "value": "1",
+        "value": 1,
         "id": "3"
     }`;
     SingletonInRecord val5 = check parseString(str5);
@@ -1381,6 +1380,102 @@ isolated function testUnalignedJsonContent() returns error? {
 }
 
 @test:Config
+isolated function testNilableTypeAsFieldTypeForParseString() returns error? {
+    string jsonStr1 = string `
+    {
+        "id": 0,
+        "name": "Anne",
+        "address": {
+            "street": "Main",
+            "city": "94",
+            "id": 4294967295
+        }
+    }
+    `;
+    record {|
+        int? id;
+        string? name;
+        anydata? address;
+    |} val1 = check parseString(jsonStr1);
+    test:assertEquals(val1.id, 0);
+    test:assertEquals(val1.name, "Anne");
+    test:assertEquals(val1.address, {street: "Main", city: "94", id: 4294967295});
+
+    string jsonStr2 = string `{
+        "company": "wso2",
+        "employees": [
+            { 
+                "name": "Walter White",
+                "age": 55
+            },
+            { 
+                "name": "Jesse Pinkman",
+                "age": 25
+            }
+        ]
+    }`;
+    record {|
+        anydata? company;
+        record {|
+            string name;
+            int age;
+        |}?[] employees;
+    |} val2 = check parseString(jsonStr2);
+    test:assertEquals(val2.company, "wso2");
+    test:assertEquals(val2.employees[0]?.name, "Walter White");
+    test:assertEquals(val2.employees[0]?.age, 55);
+    test:assertEquals(val2.employees[1]?.name, "Jesse Pinkman");
+    test:assertEquals(val2.employees[1]?.age, 25);
+}
+
+@test:Config
+isolated function testNilableTypeAsFieldTypeForParseAsType() returns error? {
+    json jsonVal1 = {
+        "id": 0,
+        "name": "Anne",
+        "address": {
+            "street": "Main",
+            "city": 94,
+            "id": 4294967295
+        }
+    };
+    record {|
+        int? id;
+        string? name;
+        anydata? address;
+    |} val1 = check parseAsType(jsonVal1);
+    test:assertEquals(val1.id, 0);
+    test:assertEquals(val1.name, "Anne");
+    test:assertEquals(val1.address, {street: "Main", city: 94, id: 4294967295});
+
+    json jsonVal2 = {
+        "company": "wso2",
+        "employees": [
+            { 
+                "name": "Walter White",
+                "age": 55
+            },
+            { 
+                "name": "Jesse Pinkman",
+                "age": 25
+            }
+        ]
+    };
+    record {|
+        anydata? company;
+        record {|
+            string name;
+            int age;
+        |}?[] employees;
+    |} val2 = check parseAsType(jsonVal2);
+    test:assertEquals(val2.company, "wso2");
+    test:assertEquals(val2.employees[0]?.name, "Walter White");
+    test:assertEquals(val2.employees[0]?.age, 55);
+    test:assertEquals(val2.employees[1]?.name, "Jesse Pinkman");
+    test:assertEquals(val2.employees[1]?.age, 25);
+}
+
+@test:Config
 isolated function testParseStringNegative1() returns Error? {
     string str = string `{
         "id": 12,
@@ -1461,7 +1556,7 @@ isolated function testDuplicateFieldInRecordTypeWithParseString() returns Error?
 
 @test:Config
 isolated function testProjectionInArrayNegativeForParseString() {
-    string strVal1 = string `["1", 2, 3, { "a" : val_a }]`;
+    string strVal1 = string `[1, 2, 3, { "a" : val_a }]`;
     int[]|Error val1 = parseString(strVal1);
     test:assertTrue(val1 is Error);
     test:assertEquals((<Error>val1).message(), "invalid type 'int' expected 'map type'");
@@ -1568,7 +1663,7 @@ isolated function testRecordWithRestAsExpectedTypeForParseStringNegative() {
 }
 
 @test:Config
-function testComplexTypeAsUnionMemberAsExpTypeNegative() {
+isolated function testComplexTypeAsUnionMemberAsExpTypeNegative() {
     string str1 = string `[
             {
                 "p1":"v1",
@@ -1594,4 +1689,31 @@ function testComplexTypeAsUnionMemberAsExpTypeNegative() {
     T2|error t2 = parseString(str2);
     test:assertTrue(t2 is error);
     test:assertEquals((<error>t2).message(), "unsupported type '(map<anydata>|int)'");
+}
+
+@test:Config
+isolated function testConvertNonStringValueNegative() {
+    string|Error err1 = parseString("null");
+    test:assertTrue(err1 is Error);
+    test:assertEquals((<Error>err1).message(), "incompatible expected type 'string' for value 'null'");
+
+    string|Error err2 = parseString("true");
+    test:assertTrue(err2 is Error);
+    test:assertEquals((<Error>err2).message(), "incompatible expected type 'string' for value 'true'");
+
+    boolean|Error err3 = parseString("True");
+    test:assertTrue(err3 is Error);
+    test:assertEquals((<Error>err3).message(), "incompatible expected type 'boolean' for value 'True'");
+
+    boolean|Error err4 = parseString("False");
+    test:assertTrue(err4 is Error);
+    test:assertEquals((<Error>err4).message(), "incompatible expected type 'boolean' for value 'False'");
+
+    ()|Error err5 = parseString("Null");
+    test:assertTrue(err5 is Error);
+    test:assertEquals((<Error>err5).message(), "incompatible expected type '()' for value 'Null'");
+
+    ()|Error err6 = parseString("()");
+    test:assertTrue(err6 is Error);
+    test:assertEquals((<Error>err6).message(), "incompatible expected type '()' for value '()'");
 }
