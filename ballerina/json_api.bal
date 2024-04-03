@@ -70,10 +70,6 @@ public type Options record {
     }|false allowDataProjection = {};
 };
 
-# Represents the error type of the ballerina/data.jsondata module. This error type represents any error that can occur
-# during the execution of jsondata APIs.
-public type Error distinct error;
-
 # Defines the name of the JSON Object key.
 #
 # + value - The name of the JSON Object key

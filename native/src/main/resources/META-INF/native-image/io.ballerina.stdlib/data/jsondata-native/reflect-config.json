@@ -1,0 +1,38 @@
+[
+{
+  "name":"com.jayway.jsonpath.internal.function.json.Append",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.jayway.jsonpath.internal.function.json.KeySetFunction",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.jayway.jsonpath.internal.function.numeric.Average",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.jayway.jsonpath.internal.function.numeric.Max",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.jayway.jsonpath.internal.function.numeric.Min",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.jayway.jsonpath.internal.function.numeric.StandardDeviation",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.jayway.jsonpath.internal.function.numeric.Sum",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.jayway.jsonpath.internal.function.text.Length",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.jayway.jsonpath.spi.cache.CacheProvider",
+  "fields":[{"name":"cache"}]
+}
+]
