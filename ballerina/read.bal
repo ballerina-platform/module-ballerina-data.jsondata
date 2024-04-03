@@ -25,7 +25,7 @@ public type JsonPathRawTemplate object {
     public JsonPathValue[] insertions;
 };
 
-# Extract details from the given JSON value using the provided query template expression
+# Extract details from the given JSON value using the provided query template expression.
 #
 # ```ballerina
 # read({id: 1, "name": "John Doe"}, `$.name`) => "John Doe"
@@ -47,7 +47,7 @@ class JsonPathRawTemplateImpl {
     }
 }
 
-# Extract details from the given JSON value using the provided query expression
+# Extract details from the given JSON value using the provided query expression.
 # + 'json - JSON value
 # + query - JSON path expression
 # + return - extracted details as JSON value, a jsonpath:Error otherwise

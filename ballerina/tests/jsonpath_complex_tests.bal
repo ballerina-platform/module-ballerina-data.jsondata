@@ -813,3 +813,13 @@ function testGeneralJsonPathExpresions() returns error? {
     result = check read(j5, `@`);
     test:assertEquals(result, j5);
 }
+
+type A JsonPathRawTemplate;
+
+@test:Config {}
+function testTypeReferencetype() returns error? {
+    A path = `$`;
+
+    json result = check read(j5, path);
+    test:assertEquals(result, j5);
+}
