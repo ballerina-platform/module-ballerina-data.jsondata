@@ -60,12 +60,12 @@ public isolated function toJson(anydata v)
 
 # Represent the options that can be used to modify the behaviour of the projection.
 #
-# + allowDataProjection - Enable or disable projection.
+# + allowDataProjection - Enable or disable projection
 public type Options record {
     record {
-        # If true, nil values will be considered as optional fields in the projection.
+        # If `true`, nil values will be considered as optional fields in the projection.
         boolean nilAsOptionalField = false;
-        # If true, absent fields will be considered as nilable types in the projection.
+        # If `true`, absent fields will be considered as nilable types in the projection.
         boolean absentAsNilableType = false;
     }|false allowDataProjection = {};
 };
