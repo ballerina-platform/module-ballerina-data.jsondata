@@ -1,0 +1,20 @@
+[
+    {
+        "name": "Walter White",
+        "age": 51,
+        "address": {
+            "number": 308,
+            "street": "Negra Arroyo Lane",
+            "city": "Albequerque"
+        }
+    },
+    {
+        "name": "Jesse Pinkman",
+        "age": 26,
+        "address": {
+            "number": 9809,
+            "street": "Margo Street",
+            "city": "Albequerque"
+        }
+    }
+]
