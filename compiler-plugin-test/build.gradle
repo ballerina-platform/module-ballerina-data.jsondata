@@ -83,6 +83,18 @@ test {
     systemProperty "ballerina.offline.flag", "true"
     useTestNG()
     finalizedBy jacocoTestReport
+
+    testLogging {
+        exceptionFormat = "full"
+        afterSuite { desc, result ->
+            if (!desc.parent) { // will match the outermost suite
+                def output = "Compiler Plugin Tests: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
+                def startItem = '|  ', endItem = '  |'
+                def repeatLength = startItem.length() + output.length() + endItem.length()
+                println('\n' + ('-' * repeatLength) + '\n' + startItem + output + endItem + '\n' + ('-' * repeatLength))
+            }
+        }
+    }
 }
 
 jacocoTestReport {
