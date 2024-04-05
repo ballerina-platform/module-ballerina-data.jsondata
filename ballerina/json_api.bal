@@ -58,6 +58,16 @@ public isolated function parseStream(stream<byte[], error?> s, Options options =
 public isolated function toJson(anydata v)
         returns json|Error = @java:Method {'class: "io.ballerina.lib.data.jsondata.json.Native"} external;
 
+# Prettifies a `json` value to print it.
+#
+# + value - The `json` value to be prettified
+# + indentation - The number of spaces for an indentation
+# + return - The prettified `json` as a string
+public isolated function prettify(json value, int indentation = 4) returns string {
+    string indent = getIndentation(indentation);
+    return prettifyJson(value, indent, 0);
+}
+
 # Represent the options that can be used to modify the behaviour of the projection.
 #
 # + allowDataProjection - Enable or disable projection

@@ -1,0 +1,9 @@
+{
+    "name": "Sam",
+    "age": null,
+    "address": {
+        "number": 308,
+        "street": "Negra Arroyo Lane",
+        "city": null
+    }
+}

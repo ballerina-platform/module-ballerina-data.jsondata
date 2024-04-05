@@ -1,0 +1,11 @@
+{
+    "person": {
+        "name": "Walter White",
+        "age": 51,
+        "address": {
+            "number": 308,
+            "street": "Negra Arroyo Lane",
+            "city": "Albequerque"
+        }
+    }
+}
