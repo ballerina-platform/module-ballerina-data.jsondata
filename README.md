@@ -1,5 +1,12 @@
 # Ballerina JSON Data Library
 
+[![Build](https://github.com/ballerina-platform/module-ballerina-data.jsondata/actions/workflows/build-timestamped-master.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerina-data.jsondata/actions/workflows/build-timestamped-master.yml)
+[![codecov](https://codecov.io/gh/ballerina-platform/module-ballerina-data.jsondata/branch/main/graph/badge.svg)](https://codecov.io/gh/ballerina-platform/module-ballerina-data.jsondata)
+[![Trivy](https://github.com/ballerina-platform/module-ballerina-data.jsondata/actions/workflows/trivy-scan.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerina-data.jsondata/actions/workflows/trivy-scan.yml)
+[![GraalVM Check](https://github.com/ballerina-platform/module-ballerina-data.jsondata/actions/workflows/build-with-bal-test-graalvm.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerina-data.jsondata/actions/workflows/build-with-bal-test-graalvm.yml)
+[![GitHub Last Commit](https://img.shields.io/github/last-commit/ballerina-platform/module-ballerina-data.jsondata.svg)](https://github.com/ballerina-platform/module-ballerina-data.jsondata/commits/master)
+[![Github issues](https://img.shields.io/github/issues/ballerina-platform/ballerina-standard-library/module/data.jsondata.svg?label=Open%20Issues)](https://github.com/ballerina-platform/ballerina-standard-library/labels/module%2Fdata.jsondata)
+
 The Ballerina JSON Data Library is a comprehensive toolkit designed to facilitate the handling and manipulation of JSON data within Ballerina applications. It streamlines the process of converting JSON data to native Ballerina data types, enabling developers to work with JSON content seamlessly and efficiently.
 
 ## Features
