@@ -1,7 +1,7 @@
 # Ballerina JSON Data Library
 
 [![Build](https://github.com/ballerina-platform/module-ballerina-data.jsondata/actions/workflows/build-timestamped-master.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerina-data.jsondata/actions/workflows/build-timestamped-master.yml)
-[![codecov](https://codecov.io/gh/ballerina-platform/module-ballerina-data.jsondata/branch/master/graph/badge.svg)](https://codecov.io/gh/ballerina-platform/module-ballerina-data.jsondata)
+[![codecov](https://codecov.io/gh/ballerina-platform/module-ballerina-data.jsondata/branch/main/graph/badge.svg)](https://codecov.io/gh/ballerina-platform/module-ballerina-data.jsondata)
 [![Trivy](https://github.com/ballerina-platform/module-ballerina-data.jsondata/actions/workflows/trivy-scan.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerina-data.jsondata/actions/workflows/trivy-scan.yml)
 [![GraalVM Check](https://github.com/ballerina-platform/module-ballerina-data.jsondata/actions/workflows/build-with-bal-test-graalvm.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerina-data.jsondata/actions/workflows/build-with-bal-test-graalvm.yml)
 [![GitHub Last Commit](https://img.shields.io/github/last-commit/ballerina-platform/module-ballerina-data.jsondata.svg)](https://github.com/ballerina-platform/module-ballerina-data.jsondata/commits/master)
