@@ -96,10 +96,7 @@ isolated function getIndentationForLevel(string indentation, int level) returns 
 }
 
 isolated function getInitialIndentation(string indentation, int level, boolean isMapField) returns string {
-    if isMapField {
-        return " ";
-    }
-    return getIndentationForLevel(indentation, level);
+    return isMapField ? " " : getIndentationForLevel(indentation, level);
 }
 
 isolated function prettifyJsonField(json value, string indentation, int level, boolean isMapField) returns string {
