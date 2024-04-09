@@ -42,7 +42,9 @@ import io.ballerina.compiler.syntax.tree.FunctionDefinitionNode;
 import io.ballerina.compiler.syntax.tree.ModuleMemberDeclarationNode;
 import io.ballerina.compiler.syntax.tree.ModulePartNode;
 import io.ballerina.compiler.syntax.tree.ModuleVariableDeclarationNode;
+import io.ballerina.compiler.syntax.tree.NameReferenceNode;
 import io.ballerina.compiler.syntax.tree.Node;
+import io.ballerina.compiler.syntax.tree.QualifiedNameReferenceNode;
 import io.ballerina.compiler.syntax.tree.SyntaxKind;
 import io.ballerina.compiler.syntax.tree.TypeDefinitionNode;
 import io.ballerina.compiler.syntax.tree.VariableDeclarationNode;
@@ -131,6 +133,14 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
         }
 
         if (expressionNode.kind() != SyntaxKind.FUNCTION_CALL) {
+            return false;
+        }
+        NameReferenceNode nameReferenceNode = ((FunctionCallExpressionNode) expressionNode).functionName();
+        if (nameReferenceNode.kind() != SyntaxKind.QUALIFIED_NAME_REFERENCE) {
+            return false;
+        }
+        String prefix = ((QualifiedNameReferenceNode) nameReferenceNode).modulePrefix().text();
+        if (!prefix.equals(Constants.JSONDATA)) {
             return false;
         }
         String functionName = ((FunctionCallExpressionNode) expressionNode).functionName().toString().trim();
