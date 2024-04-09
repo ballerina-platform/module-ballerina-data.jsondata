@@ -139,7 +139,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
         if (nameReferenceNode.kind() != SyntaxKind.QUALIFIED_NAME_REFERENCE) {
             return false;
         }
-        String prefix = ((QualifiedNameReferenceNode) nameReferenceNode).modulePrefix().toString();
+        String prefix = ((QualifiedNameReferenceNode) nameReferenceNode).modulePrefix().text();
         if (!prefix.equals(Constants.JSONDATA)) {
             return false;
         }
