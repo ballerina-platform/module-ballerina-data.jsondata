@@ -1,0 +1,22 @@
+{
+    "book": [
+        {
+            "title": "Harry Potter and the Philosopher's Stone",
+            "author": "J.K. Rowling",
+            "genre": "Fantasy",
+            "publication_year": 1997
+        },
+        {
+            "title": "The Great Gatsby",
+            "author": "F. Scott Fitzgerald",
+            "genre": "Classic",
+            "publication_year": 1925
+        },
+        {
+            "title": "To Kill a Mockingbird",
+            "author": "Harper Lee",
+            "genre": "Fiction",
+            "publication_year": 1960
+        }
+    ]
+}

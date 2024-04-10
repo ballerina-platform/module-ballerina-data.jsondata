@@ -1,0 +1,25 @@
+{
+    "movie": [
+        {
+            "title": "American Beauty",
+            "director": "Sam Mendes",
+            "genre": "Drama",
+            "release_year": 1999,
+            "id": "1"
+        },
+        {
+            "title": "The Shawshank Redemption",
+            "director": "Frank Darabont",
+            "genre": "Drama",
+            "release_year": 1994,
+            "id": "2"
+        },
+        {
+            "title": "Forrest Gump",
+            "director": "Robert Zemeckis",
+            "genre": "Drama",
+            "release_year": 1994,
+            "id": "3"
+        }
+    ]
+}
