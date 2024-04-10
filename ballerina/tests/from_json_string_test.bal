@@ -30,7 +30,10 @@ function basicTypeDataProviderForParseString() returns [string, typedesc<anydata
         ["5.5", float, 5.5],
         ["5.5", decimal, 5.5d],
         ["\"hello\"", string, "hello"],
-        ["true", boolean, true]
+        ["true", boolean, true],
+        [string `"a"`, string:Char, "a"],
+        [string `"a"`, anydata, "a"],
+        [string `"a"`, json, "a"]
     ];
 }
 
@@ -1476,6 +1479,33 @@ isolated function testNilableTypeAsFieldTypeForParseAsType() returns error? {
 }
 
 @test:Config
+isolated function testEscapeCharacterCaseForParseString() returns error? {
+    string jsonStr1 = string `
+    {
+        "A": "\\A_Field",
+        "B": "\/B_Field",
+        "C": "\"C_Field\"",
+        "D": "\uD83D\uDE01",
+        "E": "FIELD\nE",
+        "F": "FIELD\rF",
+        "G": "FIELD\tG",
+        "H": ["\\A_Field", "\/B_Field", "\"C_Field\"", "\uD83D\uDE01", "FIELD\nE", "FIELD\rF", "FIELD\tG"]
+    }
+    `;
+    OpenRecord val1 = check parseString(jsonStr1);
+    test:assertEquals(val1, {
+        A: "\\A_Field",
+        B: "/B_Field",
+        C: string `"C_Field"`,
+        D: "😁",
+        E: "FIELD\nE",
+        F: "FIELD\rF",
+        G: "FIELD\tG",
+        H: ["\\A_Field", "/B_Field", string `"C_Field"`, "😁", "FIELD\nE", "FIELD\rF", "FIELD\tG"]
+    });
+}
+
+@test:Config
 isolated function testParseStringNegative1() returns Error? {
     string str = string `{
         "id": 12,
@@ -1716,4 +1746,43 @@ isolated function testConvertNonStringValueNegative() {
     ()|Error err6 = parseString("()");
     test:assertTrue(err6 is Error);
     test:assertEquals((<Error>err6).message(), "incompatible expected type '()' for value '()'");
+}
+
+@test:Config
+isolated function testConvertStringValueNegative() {
+    string:Char|Error err1 = parseString("\"abc\"");
+    test:assertTrue(err1 is Error);
+    test:assertEquals((<Error>err1).message(), "incompatible expected type 'lang.string:Char' for value 'abc'");
+
+    ()|Error err2 = parseString("\"abc\"");
+    test:assertTrue(err2 is Error);
+    test:assertEquals((<Error>err2).message(), "incompatible expected type '()' for value 'abc'");
+
+    "a"|Error err3 = parseString("\"abc\"");
+    test:assertTrue(err3 is Error);
+    test:assertEquals((<Error>err3).message(), "incompatible expected type '\"a\"' for value 'abc'");
+
+    boolean|Error err4 = parseString("\"abc\"");
+    test:assertTrue(err4 is Error);
+    test:assertEquals((<Error>err4).message(), "incompatible expected type 'boolean' for value 'abc'");
+
+    int|float|Error err5 = parseString("\"abc\"");
+    test:assertTrue(err5 is Error);
+    test:assertEquals((<Error>err5).message(), "incompatible expected type '(int|float)' for value 'abc'");
+
+    float|Error err6 = parseString(string `1f`);
+    test:assertTrue(err6 is Error);
+    test:assertEquals((<Error>err6).message(), "incompatible expected type 'float' for value '1f'");
+
+    float|Error err7 = parseString(string `1F`);
+    test:assertTrue(err7 is Error);
+    test:assertEquals((<Error>err7).message(), "incompatible expected type 'float' for value '1F'");
+
+    float|Error err8 = parseString(string `1d`);
+    test:assertTrue(err8 is Error);
+    test:assertEquals((<Error>err8).message(), "incompatible expected type 'float' for value '1d'");
+
+    float|Error err9 = parseString(string `1D`);
+    test:assertTrue(err9 is Error);
+    test:assertEquals((<Error>err9).message(), "incompatible expected type 'float' for value '1D'");
 }

@@ -1,0 +1,40 @@
+{
+    "book": [
+        {
+            "id": 1,
+            "title": "The Catcher in the Rye",
+            "author": {
+                "id": 101,
+                "nationality": "American",
+                "first_name": "J.D.",
+                "last_name": "Salinger"
+            },
+            "genre": "Fiction",
+            "publication_year": 1951
+        },
+        {
+            "id": 2,
+            "title": 1984,
+            "author": {
+                "id": 102,
+                "nationality": "British",
+                "first_name": "George",
+                "last_name": "Orwell"
+            },
+            "genre": "Dystopian",
+            "publication_year": 1949
+        },
+        {
+            "id": 3,
+            "title": "The Lord of the Rings",
+            "author": {
+                "id": 103,
+                "nationality": "British",
+                "first_name": "J.R.R.",
+                "last_name": "Tolkien"
+            },
+            "genre": "Fantasy",
+            "publication_year": 1954
+        }
+    ]
+}

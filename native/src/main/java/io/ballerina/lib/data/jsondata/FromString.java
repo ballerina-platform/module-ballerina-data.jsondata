@@ -34,7 +34,6 @@ import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BDecimal;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BString;
-import io.ballerina.runtime.api.values.BTypedesc;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -77,16 +76,6 @@ public class FromString {
     public static final Long UNSIGNED32_MAX_VALUE = 4294967295L;
     public static final Integer UNSIGNED16_MAX_VALUE = 65535;
     public static final Integer UNSIGNED8_MAX_VALUE = 255;
-
-    public static Object fromStringWithType(BString string, BTypedesc typed) {
-        Type expType = typed.getDescribingType();
-
-        try {
-            return fromStringWithType(string, expType);
-        } catch (NumberFormatException e) {
-            return returnError(string.getValue(), expType.toString());
-        }
-    }
 
     public static Object fromStringWithType(BString string, Type expType) {
         String value = string.getValue();

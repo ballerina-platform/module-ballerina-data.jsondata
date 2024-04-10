@@ -1,0 +1,113 @@
+{
+    "order": [
+        {
+            "order_id": 123456,
+            "date": "2024-03-22T10:30:00",
+            "customer_id": 987654,
+            "customer_info": {
+                "name": "John Doe",
+                "email": "john.doe@example.com",
+                "address": {
+                    "street": "123 Main St",
+                    "city": "Anytown",
+                    "state": "CA",
+                    "zip": 12345,
+                    "country": "USA"
+                }
+            },
+            "products": {
+                "product": [
+                    {
+                        "product_id": 789,
+                        "quantity": 2,
+                        "name": "Laptop",
+                        "price": {
+                            "currency": "USD",
+                            "#content": 999.99
+                        }
+                    },
+                    {
+                        "product_id": 456,
+                        "quantity": 1,
+                        "name": "Printer",
+                        "price": {
+                            "currency": "USD",
+                            "#content": 199.99
+                        }
+                    }
+                ]
+            },
+            "payment": {
+                "method": "credit_card",
+                "amount": {
+                    "currency": "USD",
+                    "#content": 2199.97
+                },
+                "card": {
+                    "card_type": "VISA",
+                    "card_number": "1234 5678 9012 3456",
+                    "expiration_date": "2026-12"
+                }
+            },
+            "status": "completed"
+        },
+        {
+            "order_id": 789012,
+            "date": "2024-03-22T11:45:00",
+            "customer_id": 543210,
+            "customer_info": {
+                "name": "Jane Smith",
+                "email": "jane.smith@example.com",
+                "address": {
+                    "street": "456 Oak Ave",
+                    "city": "Smalltown",
+                    "state": "NY",
+                    "zip": 54321,
+                    "country": "USA"
+                }
+            },
+            "products": {
+                "product": [
+                    {
+                        "product_id": 123,
+                        "quantity": 3,
+                        "name": "Smartphone",
+                        "price": {
+                            "currency": "USD",
+                            "#content": 799.99
+                        }
+                    },
+                    {
+                        "product_id": 234,
+                        "quantity": 2,
+                        "name": "Tablet",
+                        "price": {
+                            "currency": "USD",
+                            "#content": 499.99
+                        }
+                    },
+                    {
+                        "product_id": 345,
+                        "quantity": 1,
+                        "name": "Smart Watch",
+                        "price": {
+                            "currency": "USD",
+                            "#content": 299.99
+                        }
+                    }
+                ]
+            },
+            "payment": {
+                "method": "paypal",
+                "amount": {
+                    "currency": "USD",
+                    "#content": 3499.94
+                },
+                "paypal": {
+                    "email": "jane.smith@example.com"
+                }
+            },
+            "status": "pending"
+        }
+    ]
+}

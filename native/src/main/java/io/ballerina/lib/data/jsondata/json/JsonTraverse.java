@@ -71,8 +71,6 @@ public class JsonTraverse {
                         (Boolean) ((BMap<?, ?>) allowDataProjection).get(Constants.NIL_AS_OPTIONAL_FIELD);
             }
             return jsonTree.traverseJson(json, type);
-        } catch (BError e) {
-            return e;
         } finally {
             jsonTree.reset();
         }
