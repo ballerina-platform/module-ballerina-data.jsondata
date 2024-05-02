@@ -229,7 +229,8 @@ public class JsonTraverse {
                     ArrayType arrayType = (ArrayType) rootArray;
                     int expectedArraySize = arrayType.getSize();
                     long sourceArraySize = array.getLength();
-                    if (!allowDataProjection && expectedArraySize < sourceArraySize) {
+                    if (!allowDataProjection && arrayType.getState() == ArrayType.ArrayState.CLOSED
+                            && expectedArraySize < sourceArraySize) {
                         throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
                     }
 

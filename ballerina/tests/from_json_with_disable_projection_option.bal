@@ -297,3 +297,10 @@ isolated function testDisableDataProjectionInRecordTypeWithParseAsType() {
     test:assertTrue(val4 is error);
     test:assertEquals((<error>val4).message(), "undefined field 'company1'");
 }
+
+@test:Config
+isolated function testDisableProjectionForOpenArray() returns error? {
+    string jsonStr = string `[1, 2, 3, 4]`;
+    int[] val = check parseString(jsonStr, options);
+    test:assertEquals(val, [1, 2, 3, 4]);
+}
