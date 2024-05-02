@@ -76,7 +76,7 @@ public class JsonTraverse {
         }
     }
 
-    static class JsonTree {
+    private static class JsonTree {
         Field currentField;
         Stack<Map<String, Field>> fieldHierarchy = new Stack<>();
         Stack<Type> restType = new Stack<>();
@@ -97,7 +97,7 @@ public class JsonTraverse {
             absentAsNilableType = false;
         }
 
-        public Object traverseJson(Object json, Type type) {
+        private Object traverseJson(Object json, Type type) {
             Type referredType = TypeUtils.getReferredType(type);
             switch (referredType.getTag()) {
                 case TypeTags.RECORD_TYPE_TAG -> {
@@ -229,7 +229,8 @@ public class JsonTraverse {
                     ArrayType arrayType = (ArrayType) rootArray;
                     int expectedArraySize = arrayType.getSize();
                     long sourceArraySize = array.getLength();
-                    if (!allowDataProjection && expectedArraySize < sourceArraySize) {
+                    if (!allowDataProjection && arrayType.getState() == ArrayType.ArrayState.CLOSED
+                            && expectedArraySize < sourceArraySize) {
                         throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
                     }
 

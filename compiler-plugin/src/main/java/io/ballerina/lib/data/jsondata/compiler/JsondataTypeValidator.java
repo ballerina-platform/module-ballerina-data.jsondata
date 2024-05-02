@@ -84,16 +84,16 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
             return;
         }
 
-        ModulePartNode rootNode = (ModulePartNode) ctx.node();
-        for (ModuleMemberDeclarationNode member : rootNode.members()) {
-            switch (member.kind()) {
-                case FUNCTION_DEFINITION -> processFunctionDefinitionNode((FunctionDefinitionNode) member, ctx);
-                case MODULE_VAR_DECL ->
-                        processModuleVariableDeclarationNode((ModuleVariableDeclarationNode) member, ctx);
-                case TYPE_DEFINITION ->
-                        processTypeDefinitionNode((TypeDefinitionNode) member, ctx);
-            }
-        }
+//        ModulePartNode rootNode = (ModulePartNode) ctx.node();
+//        for (ModuleMemberDeclarationNode member : rootNode.members()) {
+//            switch (member.kind()) {
+//                case FUNCTION_DEFINITION -> processFunctionDefinitionNode((FunctionDefinitionNode) member, ctx);
+//                case MODULE_VAR_DECL ->
+//                        processModuleVariableDeclarationNode((ModuleVariableDeclarationNode) member, ctx);
+//                case TYPE_DEFINITION ->
+//                        processTypeDefinitionNode((TypeDefinitionNode) member, ctx);
+//            }
+//        }
     }
 
     private void processFunctionDefinitionNode(FunctionDefinitionNode functionDefinitionNode,
@@ -117,6 +117,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
 
             TypeSymbol typeSymbol = ((VariableSymbol) symbol.get()).typeDescriptor();
             if (!isParseFunctionOfStringSource(initializer.get())) {
+                // TODO: Need to get the referred type symbol and check for the type kind.
                 if (typeSymbol.typeKind() == TypeDescKind.RECORD) {
                     detectDuplicateFields((RecordTypeSymbol) typeSymbol, ctx);
                 }
