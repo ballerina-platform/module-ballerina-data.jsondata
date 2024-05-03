@@ -135,6 +135,8 @@ isolated function testUnionTypeAsExpectedTypeForParseString4() returns error? {
 
 type UnionList1 [int, int, int]|int[]|float[];
 
+type UnionList2 int[]|[int, int, int]|float[];
+
 @test:Config {
     groups: ["Union"]
 }
@@ -149,6 +151,9 @@ isolated function testUnionTypeAsExpectedTypeForParseString5() returns error? {
 
     UnionList1 val3 = check parseString(jsonStr2, {allowDataProjection: false});
     test:assertEquals(val3, [1, 2, 3, 4]);
+
+    UnionList2 val4 = check parseString(jsonStr2);
+    test:assertEquals(val4, [1, 2, 3, 4]);
 }
 
 type RecE record {|
@@ -162,7 +167,7 @@ type RecE record {|
 }
 isolated function testUnionTypeAsExpectedTypeForParseString6() returns error? {
     string jsonStr = string `{
-        "l": [1, 2, 3],
+        "l": [12, 22, 13, 44, 51, 26, 100],
         "m": {
             "field1": {
                 "a": "1",
@@ -176,8 +181,125 @@ isolated function testUnionTypeAsExpectedTypeForParseString6() returns error? {
         "n": [1.0, 2.0]
     }`;
     RecE val = check parseString(jsonStr);
-    test:assertEquals(val.l, [1, 2, 3]);
+    test:assertEquals(val.l, [12, 22, 13]);
     test:assertEquals(val.m.field1, {a: "1", b: 2});
     test:assertEquals(val.m.field2, {a: "3", b: 4});
     test:assertEquals(val.n, [1.0, 2.0]);
+}
+
+type UnionReadOnly1 Union1 & readonly;
+
+type UnionReadOnly2 Union2 & readonly;
+
+type UnionReadOnly3 UnionList1 & readonly;
+
+type UnionReadOnly4 UnionList2 & readonly;
+
+type ReadonlyRecB RecB & readonly;
+
+type ReadonlyRecC RecC & readonly;
+
+type ReadonlyRecD RecD & readonly;
+
+type ReadonlyRecE RecE & readonly;
+
+@test:Config {
+    groups: ["Union"]
+}
+isolated function testUnionTypeAsExpectedTypeForParseString7() returns error? {
+    string jsonStr = string `{
+        "a": "1",
+        "b": 2
+    }`;
+    UnionReadOnly1 val = check parseString(jsonStr);
+    test:assertTrue(val is json);
+    test:assertEquals(val, {a: "1", b: 2});
+
+    UnionReadOnly2 val2 = check parseString(jsonStr);
+    test:assertTrue(val2 is RecA);
+    test:assertEquals(val2, {a: "1", b: 2});
+
+    string jsonStr2 = string `[1, 2, 3, 4]`;
+    UnionReadOnly3 val3 = check parseString(jsonStr2);
+    test:assertEquals(val3, [1, 2, 3]);
+
+    UnionReadOnly4 val4 = check parseString(jsonStr2);
+    test:assertEquals(val4, [1, 2, 3, 4]);
+    
+    string jsonStr3 = string `{
+        "field1": {
+            "a": "1",
+            "b": 2
+        },
+        "field2": {
+            "a": "3",
+            "b": 4
+        }
+    }`; 
+    ReadonlyRecB val5 = check parseString(jsonStr3);
+    test:assertEquals(val5.field1, {a: "1", b: 2});
+    test:assertEquals(val5.field2, {a: "3", b: 4});
+
+    string jsonStr4 = string `{
+        "field1": [
+            {
+                "a": "1",
+                "b": 2
+            },
+            {
+                "a": "3",
+                "b": 4
+            }
+        ],
+        "field2": [1.0, 2.0],
+        "field3": "test"
+    }`;
+    ReadonlyRecC val6 = check parseString(jsonStr4);
+    test:assertEquals(val6.field1, [{a: "1", b: 2}, {a: "3", b: 4}]);
+    test:assertEquals(val6.field2, [1.0, 2.0]);
+    test:assertEquals(val6.field3, "test");
+
+    string jsonStr5 = string `{
+        "l": {
+            "field1": {
+                "a": "1",
+                "b": 2
+            },
+            "field2": {
+                "a": "3",
+                "b": 4
+            }
+        },
+        "p": {
+            "m": "5",
+            "n": 6
+        },
+        "q": "test"
+    }`;
+    ReadonlyRecD val7 = check parseString(jsonStr5);
+    test:assertEquals(val7.l.field1, {a: "1", b: 2});
+    test:assertEquals(val7.l.field2, {a: "3", b: 4});
+    test:assertEquals(val7.p.m, "5");
+    test:assertEquals(val7.p.n, 6);
+    test:assertEquals(val7.q, "test");
+
+    string jsonStr6 = string `{
+        "l": [12, 22, 13, 44, 51, 26, 100],
+        "m": {
+            "field1": {
+                "a": "1",
+                "b": 2
+            },
+            "field2": {
+                "a": "3",
+                "b": 4
+            }
+        },
+        "n": [1.0, 2.0]
+    }`;
+    ReadonlyRecE val8 = check parseString(jsonStr6);
+    test:assertEquals(val8.l, [12, 22, 13]);
+    test:assertEquals(val8.m.field1, {a: "1", b: 2});
+    test:assertEquals(val8.m.field2, {a: "3", b: 4});
+    test:assertEquals(val8.n, [1.0, 2.0]);
 }
