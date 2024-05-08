@@ -488,34 +488,6 @@ public class JsonCreator {
         updateNextArrayValue(sm);
     }
 
-    static void handleFieldName(String jsonFieldName, JsonParser.StateMachine sm) {
-        if (sm.jsonFieldDepth == 0 && sm.unionDepth == 0) {
-            Field currentField = sm.visitedFieldHierarchy.peek().get(jsonFieldName);
-            if (currentField == null) {
-                currentField = sm.fieldHierarchy.peek().remove(jsonFieldName);
-            }
-            sm.currentField = currentField;
-
-            Type fieldType;
-            if (currentField == null) {
-                fieldType = sm.restType.peek();
-            } else {
-                // Replace modified field name with actual field name.
-                jsonFieldName = currentField.getFieldName();
-                fieldType = currentField.getFieldType();
-                sm.visitedFieldHierarchy.peek().put(jsonFieldName, currentField);
-            }
-            sm.expectedTypes.push(fieldType);
-
-            if (!sm.allowDataProjection && fieldType == null)  {
-                throw DiagnosticLog.error(DiagnosticErrorCode.UNDEFINED_FIELD, jsonFieldName);
-            }
-        } else if (sm.expectedTypes.peek() == null) {
-            sm.expectedTypes.push(null);
-        }
-        sm.fieldNameHierarchy.peek().push(jsonFieldName);
-    }
-
     static void updateNextArrayValue(JsonParser.StateMachine sm) {
         sm.arrayIndexes.push(0);
         Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);

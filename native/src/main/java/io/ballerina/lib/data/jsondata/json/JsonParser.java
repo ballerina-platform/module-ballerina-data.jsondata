@@ -436,6 +436,33 @@ public class JsonParser {
             return finalizeArrayObjectAndRemoveExpectedType();
         }
 
+        void handleFieldName(String jsonFieldName) {
+            if (jsonFieldDepth == 0 && unionDepth == 0) {
+                currentField = visitedFieldHierarchy.peek().get(jsonFieldName);
+                if (currentField == null) {
+                    currentField = fieldHierarchy.peek().remove(jsonFieldName);
+                }
+
+                Type fieldType;
+                if (currentField == null) {
+                    fieldType = restType.peek();
+                } else {
+                    // Replace modified field name with actual field name.
+                    jsonFieldName = currentField.getFieldName();
+                    fieldType = currentField.getFieldType();
+                    visitedFieldHierarchy.peek().put(jsonFieldName, currentField);
+                }
+                expectedTypes.push(fieldType);
+
+                if (!allowDataProjection && fieldType == null)  {
+                    throw DiagnosticLog.error(DiagnosticErrorCode.UNDEFINED_FIELD, jsonFieldName);
+                }
+            } else if (expectedTypes.peek() == null) {
+                expectedTypes.push(null);
+            }
+            fieldNameHierarchy.peek().push(jsonFieldName);
+        }
+
         public enum ParserContext {
             MAP,
             ARRAY
@@ -688,7 +715,7 @@ public class JsonParser {
                     sm.processLocation(ch);
                     if (ch == sm.currentQuoteChar) {
                         String jsonFieldName = sm.processFieldName();
-                        JsonCreator.handleFieldName(jsonFieldName, sm);
+                        sm.handleFieldName(jsonFieldName);
                         state = END_FIELD_NAME_STATE;
                     } else if (ch == REV_SOL) {
                         state = FIELD_NAME_ESC_CHAR_PROCESSING_STATE;
@@ -850,7 +877,6 @@ public class JsonParser {
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
-                        // TODO: Check why we did not update the exp type with member Type.
                         JsonCreator.updateNextArrayValueBasedOnExpType(sm);
                     } else if (ch == '}') {
                         sm.processValue(false);
@@ -894,7 +920,6 @@ public class JsonParser {
                         JsonCreator.updateNextMapValue(sm);
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
-                        // TODO: Check why we did not update the exp type with member Type.
                         JsonCreator.updateNextArrayValueBasedOnExpType(sm);
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else if (ch == ']') {
