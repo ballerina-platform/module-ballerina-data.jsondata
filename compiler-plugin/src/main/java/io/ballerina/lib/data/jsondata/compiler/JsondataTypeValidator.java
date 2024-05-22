@@ -18,6 +18,7 @@
 
 package io.ballerina.lib.data.jsondata.compiler;
 
+import io.ballerina.compiler.api.ModuleID;
 import io.ballerina.compiler.api.SemanticModel;
 import io.ballerina.compiler.api.symbols.AnnotationAttachmentSymbol;
 import io.ballerina.compiler.api.symbols.AnnotationSymbol;
@@ -27,6 +28,7 @@ import io.ballerina.compiler.api.symbols.ModuleSymbol;
 import io.ballerina.compiler.api.symbols.RecordFieldSymbol;
 import io.ballerina.compiler.api.symbols.RecordTypeSymbol;
 import io.ballerina.compiler.api.symbols.Symbol;
+import io.ballerina.compiler.api.symbols.SymbolKind;
 import io.ballerina.compiler.api.symbols.TupleTypeSymbol;
 import io.ballerina.compiler.api.symbols.TypeDefinitionSymbol;
 import io.ballerina.compiler.api.symbols.TypeDescKind;
@@ -39,6 +41,7 @@ import io.ballerina.compiler.syntax.tree.ChildNodeList;
 import io.ballerina.compiler.syntax.tree.ExpressionNode;
 import io.ballerina.compiler.syntax.tree.FunctionCallExpressionNode;
 import io.ballerina.compiler.syntax.tree.FunctionDefinitionNode;
+import io.ballerina.compiler.syntax.tree.ImportDeclarationNode;
 import io.ballerina.compiler.syntax.tree.ModuleMemberDeclarationNode;
 import io.ballerina.compiler.syntax.tree.ModulePartNode;
 import io.ballerina.compiler.syntax.tree.ModuleVariableDeclarationNode;
@@ -73,6 +76,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
     private SemanticModel semanticModel;
     private final HashMap<Location, DiagnosticInfo> allDiagnosticInfo = new HashMap<>();
     Location currentLocation;
+    private String modulePrefix = Constants.JSONDATA;
 
     @Override
     public void perform(SyntaxNodeAnalysisContext ctx) {
@@ -85,6 +89,8 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
         }
 
         ModulePartNode rootNode = (ModulePartNode) ctx.node();
+        updateModulePrefix(rootNode);
+
         for (ModuleMemberDeclarationNode member : rootNode.members()) {
             switch (member.kind()) {
                 case FUNCTION_DEFINITION -> processFunctionDefinitionNode((FunctionDefinitionNode) member, ctx);
@@ -92,6 +98,19 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
                         processModuleVariableDeclarationNode((ModuleVariableDeclarationNode) member, ctx);
                 case TYPE_DEFINITION ->
                         processTypeDefinitionNode((TypeDefinitionNode) member, ctx);
+            }
+        }
+    }
+
+    private void updateModulePrefix(ModulePartNode rootNode) {
+        for (ImportDeclarationNode importDeclarationNode : rootNode.imports()) {
+            Optional<Symbol> symbol = semanticModel.symbol(importDeclarationNode);
+            if (symbol.isPresent() && symbol.get().kind() == SymbolKind.MODULE) {
+                ModuleSymbol moduleSymbol = (ModuleSymbol) symbol.get();
+                if (isJsondataImport(moduleSymbol)) {
+                    modulePrefix = moduleSymbol.id().modulePrefix();
+                    break;
+                }
             }
         }
     }
@@ -140,7 +159,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
             return false;
         }
         String prefix = ((QualifiedNameReferenceNode) nameReferenceNode).modulePrefix().text();
-        if (!prefix.equals(Constants.JSONDATA)) {
+        if (!prefix.equals(modulePrefix)) {
             return false;
         }
         String functionName = ((FunctionCallExpressionNode) expressionNode).functionName().toString().trim();
@@ -328,5 +347,11 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
         }
         Optional<String> moduleName = moduleSymbol.get().getName();
         return moduleName.orElse("");
+    }
+
+    private boolean isJsondataImport(ModuleSymbol moduleSymbol) {
+        ModuleID moduleId = moduleSymbol.id();
+        return Constants.BALLERINA.equals(moduleId.orgName())
+                && Constants.DATA_JSONDATA.equals(moduleId.moduleName());
     }
 }

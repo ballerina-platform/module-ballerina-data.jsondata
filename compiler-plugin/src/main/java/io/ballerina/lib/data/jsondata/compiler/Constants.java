@@ -29,4 +29,6 @@ public class Constants {
     static final String PARSE_STREAM = "parseStream";
     static final String NAME = "Name";
     static final String JSONDATA = "jsondata";
+    static final String BALLERINA = "ballerina";
+    static final String DATA_JSONDATA = "data.jsondata";
 }
