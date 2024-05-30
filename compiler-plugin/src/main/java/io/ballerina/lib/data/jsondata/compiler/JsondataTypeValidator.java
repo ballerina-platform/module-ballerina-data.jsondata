@@ -85,6 +85,7 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
         boolean erroneousCompilation = diagnostics.stream()
                 .anyMatch(d -> d.diagnosticInfo().severity().equals(DiagnosticSeverity.ERROR));
         if (erroneousCompilation) {
+            reset();
             return;
         }
 
@@ -100,6 +101,15 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
                         processTypeDefinitionNode((TypeDefinitionNode) member, ctx);
             }
         }
+
+        reset();
+    }
+
+    private void reset() {
+        semanticModel = null;
+        allDiagnosticInfo.clear();
+        currentLocation = null;
+        modulePrefix = Constants.JSONDATA;
     }
 
     private void updateModulePrefix(ModulePartNode rootNode) {
