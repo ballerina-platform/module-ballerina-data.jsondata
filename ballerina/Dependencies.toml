@@ -5,13 +5,26 @@
 
 [ballerina]
 dependencies-toml-version = "2"
-distribution-version = "2201.9.0"
+distribution-version = "2201.9.0-20240502-141200-0a49fa42"
+
+[[package]]
+org = "ballerina"
+name = "constraint"
+version = "1.5.0"
+scope = "testOnly"
+dependencies = [
+	{org = "ballerina", name = "jballerina.java"}
+]
+modules = [
+	{org = "ballerina", packageName = "constraint", moduleName = "constraint"}
+]
 
 [[package]]
 org = "ballerina"
 name = "data.jsondata"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
+	{org = "ballerina", name = "constraint"},
 	{org = "ballerina", name = "file"},
 	{org = "ballerina", name = "io"},
 	{org = "ballerina", name = "jballerina.java"},
@@ -19,7 +32,8 @@ dependencies = [
 	{org = "ballerina", name = "lang.int"},
 	{org = "ballerina", name = "lang.object"},
 	{org = "ballerina", name = "lang.value"},
-	{org = "ballerina", name = "test"}
+	{org = "ballerina", name = "test"},
+	{org = "ballerina", name = "time"}
 ]
 modules = [
 	{org = "ballerina", packageName = "data.jsondata", moduleName = "data.jsondata"}
@@ -167,5 +181,8 @@ version = "2.4.0"
 scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"}
+]
+modules = [
+	{org = "ballerina", packageName = "time", moduleName = "time"}
 ]
 

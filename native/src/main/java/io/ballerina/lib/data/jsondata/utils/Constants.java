@@ -30,16 +30,19 @@ import io.ballerina.runtime.api.values.BString;
  * @since 0.1.0
  */
 public class Constants {
-    public static final MapType JSON_MAP_TYPE = TypeCreator.createMapType(PredefinedTypes.TYPE_JSON);
-    public static final MapType ANYDATA_MAP_TYPE = TypeCreator.createMapType(PredefinedTypes.TYPE_ANYDATA);
-    public static final BString VALUE = StringUtils.fromString("value");
     public static final String FIELD = "$field$.";
     public static final String FIELD_REGEX = "\\$field\\$\\.";
     public static final String NAME = "Name";
-    public static final BString ALLOW_DATA_PROJECTION = StringUtils.fromString("allowDataProjection");
-    public static final BString NIL_AS_OPTIONAL_FIELD = StringUtils.fromString("nilAsOptionalField");
-    public static final BString ABSENT_AS_NILABLE_TYPE = StringUtils.fromString("absentAsNilableType");
     public static final String NULL_VALUE = "null";
     public static final String TRUE = "true";
     public static final String FALSE = "false";
+
+    public static final BString VALUE = StringUtils.fromString("value");
+    public static final BString ALLOW_DATA_PROJECTION = StringUtils.fromString("allowDataProjection");
+    public static final BString NIL_AS_OPTIONAL_FIELD = StringUtils.fromString("nilAsOptionalField");
+    public static final BString ABSENT_AS_NILABLE_TYPE = StringUtils.fromString("absentAsNilableType");
+    public static final BString ENABLE_CONSTRAINT_VALIDATION = StringUtils.fromString("enableConstraintValidation");
+
+    public static final MapType JSON_MAP_TYPE = TypeCreator.createMapType(PredefinedTypes.TYPE_JSON);
+    public static final MapType ANYDATA_MAP_TYPE = TypeCreator.createMapType(PredefinedTypes.TYPE_ANYDATA);
 }

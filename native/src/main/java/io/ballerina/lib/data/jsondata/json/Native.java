@@ -20,6 +20,7 @@ package io.ballerina.lib.data.jsondata.json;
 
 import io.ballerina.lib.data.jsondata.io.DataReaderTask;
 import io.ballerina.lib.data.jsondata.io.DataReaderThreadPool;
+import io.ballerina.lib.data.jsondata.utils.DataUtils;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.Future;
 import io.ballerina.runtime.api.utils.JsonUtils;
@@ -35,6 +36,8 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 
+import static io.ballerina.lib.data.jsondata.utils.Constants.ENABLE_CONSTRAINT_VALIDATION;
+
 /**
  * Json conversions.
  *
@@ -44,7 +47,12 @@ public class Native {
 
     public static Object parseAsType(Object json, BMap<BString, Object> options, BTypedesc typed) {
         try {
-            return JsonTraverse.traverse(json, options, typed.getDescribingType());
+            Object convertedValue = JsonTraverse.traverse(json, options, typed.getDescribingType());
+            if (convertedValue instanceof BError) {
+                return convertedValue;
+            }
+            return DataUtils.validateConstraints(convertedValue, typed,
+                    (Boolean) options.get(ENABLE_CONSTRAINT_VALIDATION));
         } catch (BError e) {
             return e;
         }
@@ -52,7 +60,13 @@ public class Native {
 
     public static Object parseString(BString json, BMap<BString, Object> options, BTypedesc typed) {
         try {
-            return JsonParser.parse(new StringReader(json.getValue()), options, typed.getDescribingType());
+            Object convertedValue = JsonParser.parse(new StringReader(json.getValue()), options,
+                    typed.getDescribingType());
+            if (convertedValue instanceof BError) {
+                return convertedValue;
+            }
+            return DataUtils.validateConstraints(convertedValue, typed,
+                    (Boolean) options.get(ENABLE_CONSTRAINT_VALIDATION));
         } catch (BError e) {
             return e;
         }
@@ -61,8 +75,13 @@ public class Native {
     public static Object parseBytes(BArray json, BMap<BString, Object> options, BTypedesc typed) {
         try {
             byte[] bytes = json.getBytes();
-            return JsonParser.parse(new InputStreamReader(new ByteArrayInputStream(bytes)), options,
+            Object convertedValue = JsonParser.parse(new InputStreamReader(new ByteArrayInputStream(bytes)), options,
                     typed.getDescribingType());
+            if (convertedValue instanceof BError) {
+                return convertedValue;
+            }
+            return DataUtils.validateConstraints(convertedValue, typed,
+                    (Boolean) options.get(ENABLE_CONSTRAINT_VALIDATION));
         } catch (BError e) {
             return e;
         }
