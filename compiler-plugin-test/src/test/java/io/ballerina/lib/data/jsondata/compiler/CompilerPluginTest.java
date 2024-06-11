@@ -132,4 +132,32 @@ public class CompilerPluginTest {
         Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(),
                 "unsupported union type: union type does not support multiple complex types");
     }
+
+    @Test
+    public void testComplexUnionTypeCaseWhenUserDefinedModulePrefix1() {
+        DiagnosticResult diagnosticResult =
+                CompilerPluginTestUtils.loadPackage("sample_package_9").getCompilation().diagnosticResult();
+        List<Diagnostic> errorDiagnosticsList = diagnosticResult.diagnostics().stream()
+                .filter(r -> r.diagnosticInfo().severity().equals(DiagnosticSeverity.ERROR))
+                .collect(Collectors.toList());
+        Assert.assertEquals(errorDiagnosticsList.size(), 1);
+        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(),
+                "unsupported union type: union type does not support multiple complex types");
+    }
+
+    @Test
+    public void testComplexUnionTypeCaseWhenUserDefinedModulePrefix2() {
+        DiagnosticResult diagnosticResult =
+                CompilerPluginTestUtils.loadPackage("sample_package_10").getCompilation().diagnosticResult();
+        List<Diagnostic> errorDiagnosticsList = diagnosticResult.diagnostics().stream()
+                .filter(r -> r.diagnosticInfo().severity().equals(DiagnosticSeverity.ERROR))
+                .collect(Collectors.toList());
+        Assert.assertEquals(errorDiagnosticsList.size(), 3);
+        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(),
+                "unsupported union type: union type does not support multiple complex types");
+        Assert.assertEquals(errorDiagnosticsList.get(1).diagnosticInfo().messageFormat(),
+                "unsupported union type: union type does not support multiple complex types");
+        Assert.assertEquals(errorDiagnosticsList.get(2).diagnosticInfo().messageFormat(),
+                "unsupported union type: union type does not support multiple complex types");
+    }
 }
