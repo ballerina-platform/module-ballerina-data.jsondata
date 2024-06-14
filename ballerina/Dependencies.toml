@@ -17,9 +17,7 @@ dependencies = [
 	{org = "ballerina", name = "jballerina.java"},
 	{org = "ballerina", name = "lang.float"},
 	{org = "ballerina", name = "lang.int"},
-	{org = "ballerina", name = "lang.object"},
-	{org = "ballerina", name = "lang.value"},
-	{org = "ballerina", name = "test"}
+	{org = "ballerina", name = "lang.object"}
 ]
 modules = [
 	{org = "ballerina", packageName = "data.jsondata", moduleName = "data.jsondata"}
@@ -73,25 +71,6 @@ dependencies = [
 
 [[package]]
 org = "ballerina"
-name = "lang.array"
-version = "0.0.0"
-scope = "testOnly"
-dependencies = [
-	{org = "ballerina", name = "jballerina.java"},
-	{org = "ballerina", name = "lang.__internal"}
-]
-
-[[package]]
-org = "ballerina"
-name = "lang.error"
-version = "0.0.0"
-scope = "testOnly"
-dependencies = [
-	{org = "ballerina", name = "jballerina.java"}
-]
-
-[[package]]
-org = "ballerina"
 name = "lang.float"
 version = "0.0.0"
 scope = "testOnly"
@@ -132,9 +111,6 @@ scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"}
 ]
-modules = [
-	{org = "ballerina", packageName = "lang.value", moduleName = "lang.value"}
-]
 
 [[package]]
 org = "ballerina"
@@ -144,20 +120,6 @@ scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "io"},
 	{org = "ballerina", name = "jballerina.java"}
-]
-
-[[package]]
-org = "ballerina"
-name = "test"
-version = "0.0.0"
-scope = "testOnly"
-dependencies = [
-	{org = "ballerina", name = "jballerina.java"},
-	{org = "ballerina", name = "lang.array"},
-	{org = "ballerina", name = "lang.error"}
-]
-modules = [
-	{org = "ballerina", packageName = "test", moduleName = "test"}
 ]
 
 [[package]]
