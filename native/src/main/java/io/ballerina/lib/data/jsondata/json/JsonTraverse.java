@@ -132,7 +132,7 @@ public class JsonTraverse {
                             // Ignore
                         }
                     }
-                    throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, type, PredefinedTypes.TYPE_ANYDATA);
+                    throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, json);
                 }
                 case TypeTags.JSON_TAG, TypeTags.ANYDATA_TAG -> {
                     return json;

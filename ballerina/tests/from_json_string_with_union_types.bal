@@ -336,3 +336,33 @@ isolated function testUnionTypeAsExpectedTypeForParseString7() returns error? {
     test:assertEquals(val8.m.field2, {a: "3", b: 4});
     test:assertEquals(val8.n, [1.0, 2.0]);
 }
+
+@test:Config {
+    groups: ["Union"]
+}
+isolated function testUnionAsExpectedTypeForParseStringNegative() {
+    string jsonStr = string `"1"`;
+    int|RecA|Error err = parseString(jsonStr);
+    test:assertTrue(err is error);
+    test:assertEquals((<Error>err).message(), "incompatible expected type '(int|data.jsondata:RecA)' for value '1'");
+    
+    string jsonStr2 = string `{
+        "field1": {
+            "a": "1",
+            "b": 2
+        },
+        "field2": {
+            "a": "3",
+            "b": 4
+        }
+    }`;
+    record {|
+        int|RecC field1;
+        record {
+            string|RecA a;
+            int|float b;
+        } field2;
+    |}|Error err2 = parseString(jsonStr2);
+    test:assertTrue(err2 is Error);
+    test:assertEquals((<Error>err2).message(), "incompatible expected type '(int|data.jsondata:RecC)' for value '{\"a\":\"1\",\"b\":2}'");
+}

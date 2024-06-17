@@ -1561,7 +1561,7 @@ isolated function testParseStringNegative4() returns Error? {
 
     Union|Error y = parseString(str);
     test:assertTrue(y is Error);
-    test:assertEquals((<Error>y).message(), "invalid type 'ballerina/data.jsondata:0:Union' expected 'anydata'");
+    test:assertEquals((<Error>y).message(), "incompatible expected type 'ballerina/data.jsondata:0:Union' for value '{\"name\":\"John\"}'");
 
     table<RN2>|Error z = parseString(str);
     test:assertTrue(z is Error);
