@@ -18,14 +18,12 @@
 package io.ballerina.lib.data.jsondata.io;
 
 import io.ballerina.lib.data.jsondata.json.JsonParser;
-import io.ballerina.lib.data.jsondata.utils.DataUtils;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.Future;
 import io.ballerina.runtime.api.types.MethodType;
 import io.ballerina.runtime.api.types.ObjectType;
 import io.ballerina.runtime.api.utils.TypeUtils;
-import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
@@ -33,8 +31,6 @@ import io.ballerina.runtime.api.values.BTypedesc;
 
 import java.io.InputStreamReader;
 import java.util.function.Consumer;
-
-import static io.ballerina.lib.data.jsondata.utils.Constants.ENABLE_CONSTRAINT_VALIDATION;
 
 /**
  * This class will read data from a Ballerina Stream of byte blocks, in non-blocking manner.
@@ -90,11 +86,7 @@ public class DataReaderTask implements Runnable {
         ResultConsumer<Object> resultConsumer = new ResultConsumer<>(future);
         try (var byteBlockSteam = new BallerinaByteBlockInputStream(env, iteratorObj, resolveNextMethod(iteratorObj),
                                                                     resolveCloseMethod(iteratorObj), resultConsumer)) {
-            Object result = JsonParser.parse(new InputStreamReader(byteBlockSteam), options, typed.getDescribingType());
-            if (!(result instanceof BError)) {
-                result = DataUtils.validateConstraints(result, typed,
-                        (Boolean) options.get(ENABLE_CONSTRAINT_VALIDATION));
-            }
+            Object result = JsonParser.parse(new InputStreamReader(byteBlockSteam), options, typed);
             future.complete(result);
         } catch (Exception e) {
             future.complete(DiagnosticLog.createJsonError("Error occurred while reading the stream: "

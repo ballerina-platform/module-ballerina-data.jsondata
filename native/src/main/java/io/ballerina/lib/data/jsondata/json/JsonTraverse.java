@@ -19,6 +19,7 @@
 package io.ballerina.lib.data.jsondata.json;
 
 import io.ballerina.lib.data.jsondata.utils.Constants;
+import io.ballerina.lib.data.jsondata.utils.DataUtils;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
 import io.ballerina.runtime.api.PredefinedTypes;
@@ -40,6 +41,7 @@ import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
+import io.ballerina.runtime.api.values.BTypedesc;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -47,6 +49,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Stack;
+
+import static io.ballerina.lib.data.jsondata.utils.Constants.ENABLE_CONSTRAINT_VALIDATION;
 
 /**
  * Traverse json tree.
@@ -74,6 +78,15 @@ public class JsonTraverse {
         } finally {
             jsonTree.reset();
         }
+    }
+
+    public static Object traverse(Object json, BMap<BString, Object> options, BTypedesc typed) {
+        Object convertedValue = traverse(json, options, typed.getDescribingType());
+        if (convertedValue instanceof BError) {
+            return convertedValue;
+        }
+        return DataUtils.validateConstraints(convertedValue, typed,
+                (Boolean) options.get(ENABLE_CONSTRAINT_VALIDATION));
     }
 
     static class JsonTree {
