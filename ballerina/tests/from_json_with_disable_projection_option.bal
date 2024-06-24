@@ -299,8 +299,12 @@ isolated function testDisableDataProjectionInRecordTypeWithParseAsType() {
 }
 
 @test:Config
-isolated function testDisableProjectionForOpenArray() returns error? {
-    string jsonStr = string `[1, 2, 3, 4]`;
-    int[] val = check parseString(jsonStr, options);
-    test:assertEquals(val, [1, 2, 3, 4]);
+isolated function testDisableDataProjectionInOpenArray() returns error? {
+    json jsonVal = [1, 3, 4, 5, 7];
+    int[] val1 = check parseAsType(jsonVal, options);
+    test:assertEquals(val1, [1, 3, 4, 5, 7]);
+
+    string jsonStr = string `[1, 3, 4, 5, 7]`;
+    int[] val2 = check parseString(jsonStr, options);
+    test:assertEquals(val2, [1, 3, 4, 5, 7]);
 }

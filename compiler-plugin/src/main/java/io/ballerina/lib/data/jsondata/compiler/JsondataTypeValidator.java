@@ -146,13 +146,31 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
 
             TypeSymbol typeSymbol = ((VariableSymbol) symbol.get()).typeDescriptor();
             if (!isParseFunctionOfStringSource(initializer.get())) {
-                if (typeSymbol.typeKind() == TypeDescKind.RECORD) {
-                    detectDuplicateFields((RecordTypeSymbol) typeSymbol, ctx);
-                }
+                checkTypeAndDetectDuplicateFields(typeSymbol, ctx);
                 continue;
             }
 
             validateExpectedType(typeSymbol, ctx);
+        }
+    }
+
+    private void checkTypeAndDetectDuplicateFields(TypeSymbol typeSymbol, SyntaxNodeAnalysisContext ctx) {
+        switch (typeSymbol.typeKind()) {
+            case RECORD -> detectDuplicateFields((RecordTypeSymbol) typeSymbol, ctx);
+            case ARRAY -> checkTypeAndDetectDuplicateFields(((ArrayTypeSymbol) typeSymbol).memberTypeDescriptor(), ctx);
+            case TUPLE -> {
+                for (TypeSymbol memberType : ((TupleTypeSymbol) typeSymbol).memberTypeDescriptors()) {
+                    checkTypeAndDetectDuplicateFields(memberType, ctx);
+                }
+            }
+            case UNION -> {
+                for (TypeSymbol memberType : ((UnionTypeSymbol) typeSymbol).memberTypeDescriptors()) {
+                    checkTypeAndDetectDuplicateFields(memberType, ctx);
+                }
+            }
+            case TYPE_REFERENCE -> checkTypeAndDetectDuplicateFields(
+                    ((TypeReferenceTypeSymbol) typeSymbol).typeDescriptor(), ctx);
+            case INTERSECTION -> checkTypeAndDetectDuplicateFields(getRawType(typeSymbol), ctx);
         }
     }
 
@@ -184,6 +202,8 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
             case RECORD -> validateRecordType((RecordTypeSymbol) typeSymbol, ctx);
             case ARRAY -> validateExpectedType(((ArrayTypeSymbol) typeSymbol).memberTypeDescriptor(), ctx);
             case TUPLE -> validateTupleType((TupleTypeSymbol) typeSymbol, ctx);
+            case TABLE, XML -> reportDiagnosticInfo(ctx, typeSymbol.getLocation(),
+                    JsondataDiagnosticCodes.UNSUPPORTED_TYPE);
             case TYPE_REFERENCE -> validateExpectedType(((TypeReferenceTypeSymbol) typeSymbol).typeDescriptor(), ctx);
             case INTERSECTION -> validateExpectedType(getRawType(typeSymbol), ctx);
         }
@@ -200,43 +220,24 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
 
         for (Map.Entry<String, RecordFieldSymbol> entry : recordTypeSymbol.fieldDescriptors().entrySet()) {
             RecordFieldSymbol fieldSymbol = entry.getValue();
-            validateRecordFieldType(fieldSymbol.typeDescriptor(), fieldSymbol.getLocation(), ctx);
-        }
-    }
-
-    private void validateRecordFieldType(TypeSymbol typeSymbol, Optional<Location> location,
-                                         SyntaxNodeAnalysisContext ctx) {
-        switch (typeSymbol.typeKind()) {
-            case UNION -> validateUnionType((UnionTypeSymbol) typeSymbol, location, ctx);
-            case ARRAY -> validateRecordFieldType(((ArrayTypeSymbol) typeSymbol).memberTypeDescriptor(), location, ctx);
-            case TYPE_REFERENCE ->
-                    validateRecordFieldType(((TypeReferenceTypeSymbol) typeSymbol).typeDescriptor(), location, ctx);
+            currentLocation = fieldSymbol.getLocation().orElseGet(() -> currentLocation);
+            validateExpectedType(fieldSymbol.typeDescriptor(), ctx);
         }
     }
 
     private void validateUnionType(UnionTypeSymbol unionTypeSymbol, Optional<Location> location,
                                    SyntaxNodeAnalysisContext ctx) {
-        int nonPrimitiveMemberCount = 0;
-        boolean isNilOrErrorPresent = false;
+        boolean isHasUnsupportedType = false;
         List<TypeSymbol> memberTypeSymbols = unionTypeSymbol.memberTypeDescriptors();
         for (TypeSymbol memberTypeSymbol : memberTypeSymbols) {
-            TypeSymbol referredSymbol = getRawType(memberTypeSymbol);
-            if (referredSymbol.typeKind() == TypeDescKind.NIL || referredSymbol.typeKind() == TypeDescKind.ERROR) {
-                isNilOrErrorPresent = true;
+            if (isSupportedUnionMemberType(getRawType(memberTypeSymbol))) {
                 continue;
             }
-            if (isSupportedUnionMemberType(referredSymbol)) {
-                continue;
-            }
-            nonPrimitiveMemberCount++;
+            isHasUnsupportedType = true;
         }
 
-        if (isNilOrErrorPresent && memberTypeSymbols.size() == 2) {
-            return;
-        }
-
-        if (nonPrimitiveMemberCount >= 1) {
-            reportDiagnosticInfo(ctx, location, JsondataDiagnosticCodes.UNSUPPORTED_UNION_TYPE);
+        if (isHasUnsupportedType) {
+            reportDiagnosticInfo(ctx, location, JsondataDiagnosticCodes.UNSUPPORTED_TYPE);
         }
     }
 
@@ -247,11 +248,11 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
         }
 
         switch (kind) {
-            case INT, FLOAT, DECIMAL, STRING, BOOLEAN, BYTE, NIL, SINGLETON, ERROR -> {
-                return true;
+            case TABLE, XML -> {
+                return false;
             }
             default -> {
-                return false;
+                return true;
             }
         }
     }

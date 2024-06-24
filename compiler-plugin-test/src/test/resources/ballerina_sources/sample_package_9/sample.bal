@@ -1,6 +1,6 @@
 import ballerina/data.jsondata as jd;
 
-type UnionType record {|int a;|}|record {|string b;|};
+type UnionType table<record {|int a;|}>|record {|string b;|};
 
 public function main() returns error? {
     string str = string `{"a": 1, "b": "str"}`;

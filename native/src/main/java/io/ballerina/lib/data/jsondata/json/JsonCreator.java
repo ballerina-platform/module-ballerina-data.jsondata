@@ -69,7 +69,9 @@ public class JsonCreator {
     private static final UnionType UNION_OF_BASIC_TYPE_WITHOUT_STRING =
             TypeCreator.createUnionType(BASIC_TYPE_MEMBER_TYPES);
 
-    static BMap<BString, Object> initRootMapValue(Type expectedType) {
+    static BMap<BString, Object> initRootMapValue(JsonParser.StateMachine sm) {
+        Type expectedType = sm.expectedTypes.peek();
+        sm.parserContexts.push(JsonParser.StateMachine.ParserContext.MAP);
         switch (expectedType.getTag()) {
             case TypeTags.RECORD_TYPE_TAG -> {
                 return ValueCreator.createRecordValue(expectedType.getPackage(), expectedType.getName());
@@ -84,20 +86,16 @@ public class JsonCreator {
                 return ValueCreator.createMapValue(Constants.ANYDATA_MAP_TYPE);
             }
             case TypeTags.UNION_TAG -> {
-                // Only handle T? cases.
-                // TODO: Support all union cases.
-                List<Type> filteredMembers = (((UnionType) expectedType).getMemberTypes()).stream().filter(
-                        memType -> memType.getTag() != TypeTags.NULL_TAG).toList();
-                if (filteredMembers.size() == 1) {
-                    return initRootMapValue(filteredMembers.get(0));
-                }
-                throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, expectedType);
+                sm.parserContexts.push(JsonParser.StateMachine.ParserContext.MAP);
+                sm.unionDepth++;
+                sm.fieldNameHierarchy.push(new Stack<>());
+                return ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
             }
             default -> throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, expectedType, "map type");
         }
     }
 
-    static BArray initArrayValue(Type expectedType) {
+    static BArray initArrayValue(JsonParser.StateMachine sm, Type expectedType) {
         switch (expectedType.getTag()) {
             case TypeTags.TUPLE_TAG -> {
                 return ValueCreator.createTupleValue((TupleType) expectedType);
@@ -112,14 +110,9 @@ public class JsonCreator {
                 return ValueCreator.createArrayValue(PredefinedTypes.TYPE_ANYDATA_ARRAY);
             }
             case TypeTags.UNION_TAG -> {
-                // Only handle T? cases.
-                // TODO: Support all union cases.
-                List<Type> filteredMembers = (((UnionType) expectedType).getMemberTypes()).stream().filter(
-                        memType -> memType.getTag() != TypeTags.NULL_TAG).toList();
-                if (filteredMembers.size() == 1) {
-                    return initArrayValue(filteredMembers.get(0));
-                }
-                throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, expectedType);
+                sm.unionDepth++;
+                sm.arrayIndexes.push(0);
+                return ValueCreator.createArrayValue(PredefinedTypes.TYPE_JSON_ARRAY);
             }
             default -> throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, expectedType, "list type");
         }
@@ -171,14 +164,10 @@ public class JsonCreator {
                 return checkTypeAndCreateMappingValue(sm, mutableType.get(), parentContext);
             }
             case TypeTags.UNION_TAG -> {
-                // Only handle T? cases.
-                // TODO: Support all union cases.
-                List<Type> filteredMembers = (((UnionType) currentType).getMemberTypes()).stream().filter(
-                        memType -> memType.getTag() != TypeTags.NULL_TAG).toList();
-                if (filteredMembers.size() == 1) {
-                    return checkTypeAndCreateMappingValue(sm, filteredMembers.get(0), parentContext);
-                }
-                throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, currentType);
+                nextMapValue = ValueCreator.createMapValue(Constants.JSON_MAP_TYPE);
+                sm.parserContexts.push(JsonParser.StateMachine.ParserContext.MAP);
+                sm.unionDepth++;
+                sm.fieldNameHierarchy.push(new Stack<>());
             }
             default -> {
                 if (parentContext == JsonParser.StateMachine.ParserContext.ARRAY) {
@@ -215,7 +204,7 @@ public class JsonCreator {
             }
             expType = type.get();
         }
-        BArray nextArrValue = initArrayValue(expType);
+        BArray nextArrValue = initArrayValue(sm, expType);
         if (currentJsonNode == null) {
             return Optional.ofNullable(nextArrValue);
         }
@@ -251,7 +240,6 @@ public class JsonCreator {
                 && sm.currentField != null && SymbolFlags.isFlagOn(sm.currentField.getFlags(), SymbolFlags.OPTIONAL)) {
                 return null;
         }
-
 
         Object convertedValue = isStringElement ? convertStringToExpectedType(StringUtils.fromString(value), type) :
                 validateNonStringValueAndConvertToExpectedType(value, type);
@@ -470,5 +458,39 @@ public class JsonCreator {
 
     static Object constructReadOnlyValue(Object value) {
         return CloneReadOnly.cloneReadOnly(value);
+    }
+
+    static Object initRootArrayValue(JsonParser.StateMachine sm) {
+        sm.parserContexts.push(JsonParser.StateMachine.ParserContext.ARRAY);
+        Type expType = sm.expectedTypes.peek();
+        // In this point we know rhs is json[] or anydata[] hence init index counter.
+        if (expType.getTag() == TypeTags.JSON_TAG || expType.getTag() == TypeTags.ANYDATA_TAG) {
+            sm.arrayIndexes.push(0);
+        }
+        return initArrayValue(sm, expType);
+    }
+
+    static void updateExpectedType(JsonParser.StateMachine sm) {
+        if (sm.unionDepth > 0) {
+            return;
+        }
+        sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
+                sm.arrayIndexes.peek(), sm.allowDataProjection));
+    }
+
+    static void updateNextMapValueBasedOnExpType(JsonParser.StateMachine sm) {
+        updateExpectedType(sm);
+        updateNextMapValue(sm);
+    }
+
+    static void updateNextArrayValueBasedOnExpType(JsonParser.StateMachine sm) {
+        updateExpectedType(sm);
+        updateNextArrayValue(sm);
+    }
+
+    static void updateNextArrayValue(JsonParser.StateMachine sm) {
+        sm.arrayIndexes.push(0);
+        Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
+        nextArray.ifPresent(bArray -> sm.currentJsonNode = bArray);
     }
 }

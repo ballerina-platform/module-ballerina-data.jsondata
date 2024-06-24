@@ -1552,7 +1552,7 @@ isolated function testParseStringNegative3() returns Error? {
 @test:Config
 isolated function testParseStringNegative4() returns Error? {
     string str = string `{
-        name: "John"
+        "name": "John"
     }`;
 
     int|Error x = parseString(str);
@@ -1561,7 +1561,7 @@ isolated function testParseStringNegative4() returns Error? {
 
     Union|Error y = parseString(str);
     test:assertTrue(y is Error);
-    test:assertEquals((<Error>y).message(), "unsupported type 'ballerina/data.jsondata:0:Union'");
+    test:assertEquals((<Error>y).message(), "incompatible expected type 'ballerina/data.jsondata:0:Union' for value '{\"name\":\"John\"}'");
 
     table<RN2>|Error z = parseString(str);
     test:assertTrue(z is Error);
@@ -1590,53 +1590,6 @@ isolated function testProjectionInArrayNegativeForParseString() {
     int[]|Error val1 = parseString(strVal1);
     test:assertTrue(val1 is Error);
     test:assertEquals((<Error>val1).message(), "invalid type 'int' expected 'map type'");
-}
-
-@test:Config
-isolated function testUnionTypeAsExpTypeForParseStringNegative() {
-    string str1 = string `[
-        123, 
-        "Lakshan",
-        {
-            "city": "Colombo",
-            "street": "123",
-            "zip": 123
-        },
-        {
-            "code": 123,
-            "subject": "Bio"
-        }
-    ]`;
-    (map<anydata>|int|float)[]|Error err1 = parseString(str1);
-    test:assertTrue(err1 is Error);
-    test:assertEquals((<Error>err1).message(), "incompatible expected type '(map<anydata>|int|float)' for value 'Lakshan'");
-
-    string str2 = string `[
-        {
-            "city": "Colombo",
-            "street": "123",
-            "zip": 123
-        },
-        {
-            "code": 123,
-            "subject": "Bio"
-        }
-    ]`;
-    (map<anydata>|int|float)[]|Error err2 = parseString(str2);
-    test:assertTrue(err2 is Error);
-    test:assertEquals((<Error>err2).message(), "unsupported type '(map<anydata>|int|float)'");
-
-    string str3 = string `{
-        "a": "hello",
-        "b": 1,
-        "c": {
-            "d": "world",
-            "e": 2
-        }
-    }`;
-    (map<anydata>|int|float)|Error err3 = parseString(str3);
-    test:assertTrue(err3 is Error);
-    test:assertEquals((<Error>err3).message(), "unsupported type '(map<anydata>|int|float)'");
 }
 
 @test:Config {
@@ -1690,35 +1643,6 @@ isolated function testRecordWithRestAsExpectedTypeForParseStringNegative() {
     PersonA|error val = parseString(personStr);
     test:assertTrue(val is error);
     test:assertEquals((<error>val).message(), "incompatible expected type 'int' for value '5.5'");
-}
-
-@test:Config
-isolated function testComplexTypeAsUnionMemberAsExpTypeNegative() {
-    string str1 = string `[
-            {
-                "p1":"v1",
-                "p2":1
-            },
-            {
-                "p1":"v2",
-                "p2":true
-            }
-        ]`;
-    T1|error t1 = parseString(str1);
-    test:assertTrue(t1 is error);
-    test:assertEquals((<error>t1).message(), "unsupported type '(map<anydata>|int|boolean)'");
-
-    string str2 = string `
-        {
-            "p1":"v1",
-            "p2": {
-                "a": 1,
-                "b": 2
-            }
-        }`;
-    T2|error t2 = parseString(str2);
-    test:assertTrue(t2 is error);
-    test:assertEquals((<error>t2).message(), "unsupported type '(map<anydata>|int)'");
 }
 
 @test:Config
