@@ -71,6 +71,7 @@ public isolated function prettify(json value, int indentation = 4) returns strin
 # Represent the options that can be used to modify the behaviour of the projection.
 #
 # + allowDataProjection - Enable or disable projection
+# + enableConstraintValidation - Enable or disable constraint validation
 public type Options record {
     record {
         # If `true`, nil values will be considered as optional fields in the projection.
@@ -78,6 +79,7 @@ public type Options record {
         # If `true`, absent fields will be considered as nilable types in the projection.
         boolean absentAsNilableType = false;
     }|false allowDataProjection = {};
+    boolean enableConstraintValidation = true;
 };
 
 # Defines the name of the JSON Object key.

@@ -394,8 +394,9 @@ public class JsonCreator {
             return null;
         }
 
-        if (expectedType.getTag() == TypeTags.ARRAY_TAG) {
-            ArrayType arrayType = (ArrayType) expectedType;
+        Type referredType = TypeUtils.getReferredType(expectedType);
+        if (referredType.getTag() == TypeTags.ARRAY_TAG) {
+            ArrayType arrayType = (ArrayType) referredType;
             if (arrayType.getState() == ArrayType.ArrayState.OPEN
                     || arrayType.getState() == ArrayType.ArrayState.CLOSED &&  index < arrayType.getSize()) {
                 return arrayType.getElementType();
@@ -405,8 +406,8 @@ public class JsonCreator {
                 throw DiagnosticLog.error(DiagnosticErrorCode.ARRAY_SIZE_MISMATCH);
             }
             return null;
-        } else if (expectedType.getTag() == TypeTags.TUPLE_TAG) {
-            TupleType tupleType = (TupleType) expectedType;
+        } else if (referredType.getTag() == TypeTags.TUPLE_TAG) {
+            TupleType tupleType = (TupleType) referredType;
             List<Type> tupleTypes = tupleType.getTupleTypes();
             if (tupleTypes.size() < index + 1) {
                 Type restType = tupleType.getRestType();

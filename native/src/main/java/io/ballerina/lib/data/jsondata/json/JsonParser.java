@@ -19,6 +19,7 @@
 package io.ballerina.lib.data.jsondata.json;
 
 import io.ballerina.lib.data.jsondata.utils.Constants;
+import io.ballerina.lib.data.jsondata.utils.DataUtils;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
 import io.ballerina.runtime.api.PredefinedTypes;
@@ -38,6 +39,7 @@ import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
+import io.ballerina.runtime.api.values.BTypedesc;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.ballerinalang.langlib.value.CloneReadOnly;
 
@@ -48,6 +50,8 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
+
+import static io.ballerina.lib.data.jsondata.utils.Constants.ENABLE_CONSTRAINT_VALIDATION;
 
 /**
  * This class converts string to Json with projection.
@@ -63,6 +67,7 @@ public class JsonParser {
      *
      * @param reader  reader which contains the JSON content
      * @param options represent the options that can be used to modify the behaviour of conversion
+     * @param type the type to which the source has to convert
      * @return JSON structure
      * @throws BError for any parsing error
      */
@@ -76,6 +81,25 @@ public class JsonParser {
             // JSON values will be maintained and the java GC will not happen properly.
             sm.reset();
         }
+    }
+
+    /**
+     * Parses the contents of the given {@link Reader}, validates constraints, and returns a JSON object.
+     *
+     * @param reader  reader which contains the JSON content
+     * @param options represent the options that can be used to modify the behaviour of conversion
+     * @param typed type descriptor of expected type
+     * @return JSON structure
+     * @throws BError for any parsing error
+     */
+    public static Object parse(Reader reader, BMap<BString, Object> options, BTypedesc typed)
+            throws BError {
+        Object convertedValue = parse(reader, options, typed.getDescribingType());
+        if (convertedValue instanceof BError) {
+            return convertedValue;
+        }
+        return DataUtils.validateConstraints(convertedValue, typed,
+                (Boolean) options.get(ENABLE_CONSTRAINT_VALIDATION));
     }
 
     /**

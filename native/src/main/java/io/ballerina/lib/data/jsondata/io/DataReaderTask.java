@@ -86,10 +86,11 @@ public class DataReaderTask implements Runnable {
         ResultConsumer<Object> resultConsumer = new ResultConsumer<>(future);
         try (var byteBlockSteam = new BallerinaByteBlockInputStream(env, iteratorObj, resolveNextMethod(iteratorObj),
                                                                     resolveCloseMethod(iteratorObj), resultConsumer)) {
-            Object result = JsonParser.parse(new InputStreamReader(byteBlockSteam), options, typed.getDescribingType());
+            Object result = JsonParser.parse(new InputStreamReader(byteBlockSteam), options, typed);
             future.complete(result);
         } catch (Exception e) {
-            future.complete(DiagnosticLog.getJsonError("Error occurred while reading the stream: " + e.getMessage()));
+            future.complete(DiagnosticLog.createJsonError("Error occurred while reading the stream: "
+                    + e.getMessage()));
         }
     }
 

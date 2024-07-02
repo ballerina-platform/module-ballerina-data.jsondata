@@ -24,28 +24,32 @@ const options1 = {
     allowDataProjection: {
         nilAsOptionalField: true,
         absentAsNilableType: false
-    }
+    },
+    enableConstraintValidation: true
 };
 
 const options2 = {
     allowDataProjection: {
         nilAsOptionalField: false,
         absentAsNilableType: true
-    }
+    },
+    enableConstraintValidation: true
 };
 
 const options3 = {
     allowDataProjection: {
         nilAsOptionalField: true,
         absentAsNilableType: true
-    }
+    },
+    enableConstraintValidation: true
 };
 
 const options4 = {
     allowDataProjection: {
         nilAsOptionalField: false,
         absentAsNilableType: false
-    }
+    },
+    enableConstraintValidation: true
 };
 
 type Sales record {|

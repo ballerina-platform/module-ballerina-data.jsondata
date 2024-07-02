@@ -35,3 +35,9 @@ path = "./lib/accessors-smart-2.4.7.jar"
 groupId = "net.minidev.json"
 artifactId = "accessors-smart"
 version = "2.4.7"
+
+[[platform.java17.dependency]]
+groupId = "io.ballerina.stdlib"
+artifactId = "constraint-native"
+version = "1.5.0"
+path = "./lib/constraint-native-1.5.0.jar"
