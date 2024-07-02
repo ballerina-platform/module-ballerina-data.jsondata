@@ -89,7 +89,7 @@ public class JsonTraverse {
                 (Boolean) options.get(ENABLE_CONSTRAINT_VALIDATION));
     }
 
-    static class JsonTree {
+    private static class JsonTree {
         Field currentField;
         Stack<Map<String, Field>> fieldHierarchy = new Stack<>();
         Stack<Type> restType = new Stack<>();
@@ -110,7 +110,7 @@ public class JsonTraverse {
             absentAsNilableType = false;
         }
 
-        public Object traverseJson(Object json, Type type) {
+        private Object traverseJson(Object json, Type type) {
             Type referredType = TypeUtils.getReferredType(type);
             switch (referredType.getTag()) {
                 case TypeTags.RECORD_TYPE_TAG -> {
@@ -145,7 +145,7 @@ public class JsonTraverse {
                             // Ignore
                         }
                     }
-                    throw DiagnosticLog.error(DiagnosticErrorCode.INVALID_TYPE, type, PredefinedTypes.TYPE_ANYDATA);
+                    throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, json);
                 }
                 case TypeTags.JSON_TAG, TypeTags.ANYDATA_TAG -> {
                     return json;

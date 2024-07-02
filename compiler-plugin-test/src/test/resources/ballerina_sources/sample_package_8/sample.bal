@@ -1,6 +1,6 @@
 import ballerina/data.jsondata;
 
-type UnionType record {|int a;|}|record {|string b;|};
+type UnionType table<record {|int a;|}>|record {|string b;|};
 
 type IntersectionType UnionType & readonly;
 

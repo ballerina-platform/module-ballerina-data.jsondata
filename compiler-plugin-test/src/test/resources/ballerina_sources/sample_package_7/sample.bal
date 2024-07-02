@@ -1,9 +1,9 @@
 import ballerina/data.jsondata;
 
-type T1 (map<anydata>|int|boolean)[];
+type T1 (map<anydata>|int|xml)[];
 type T2 record {|
     string p1;
-    map<anydata>|int p2;
+    table<record {|string a;|}>|int p2;
 |};
 
 public function main() returns error? {

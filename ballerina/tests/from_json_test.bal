@@ -1171,7 +1171,7 @@ isolated function testParseAsTypeNegative4() returns Error? {
 
     Union|Error y = parseAsType(jsonContent);
     test:assertTrue(y is Error);
-    test:assertEquals((<Error>y).message(), "invalid type 'data.jsondata:Union' expected 'anydata'");
+    test:assertEquals((<Error>y).message(), "incompatible expected type 'data.jsondata:Union' for value '{\"name\":\"John\"}'");
 
     table<RN2>|Error z = parseAsType(jsonContent);
     test:assertTrue(z is Error);

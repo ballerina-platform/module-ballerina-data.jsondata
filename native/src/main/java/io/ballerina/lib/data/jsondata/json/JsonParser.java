@@ -22,8 +22,10 @@ import io.ballerina.lib.data.jsondata.utils.Constants;
 import io.ballerina.lib.data.jsondata.utils.DataUtils;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
+import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.ErrorCreator;
+import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.flags.SymbolFlags;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.Field;
@@ -31,7 +33,6 @@ import io.ballerina.runtime.api.types.IntersectionType;
 import io.ballerina.runtime.api.types.MapType;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.Type;
-import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BArray;
@@ -48,7 +49,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Stack;
 
 import static io.ballerina.lib.data.jsondata.utils.Constants.ENABLE_CONSTRAINT_VALIDATION;
@@ -75,7 +75,7 @@ public class JsonParser {
             throws BError {
         StateMachine sm = tlStateMachine.get();
         try {
-            return sm.execute(reader, options, TypeUtils.getReferredType(type));
+            return sm.execute(reader, options, type);
         } finally {
             // Need to reset the state machine before leaving. Otherwise, references to the created
             // JSON values will be maintained and the java GC will not happen properly.
@@ -179,6 +179,7 @@ public class JsonParser {
         int jsonFieldDepth = 0;
         Stack<Integer> arrayIndexes = new Stack<>();
         Stack<ParserContext> parserContexts = new Stack<>();
+        int unionDepth = 0;
 
         StateMachine() {
             reset();
@@ -202,6 +203,7 @@ public class JsonParser {
             allowDataProjection = false;
             nilAsOptionalField = false;
             absentAsNilableType = false;
+            unionDepth = 0;
         }
 
         private static boolean isWhitespace(char ch) {
@@ -236,8 +238,7 @@ public class JsonParser {
                         TypeTags.SIGNED8_INT_TAG, TypeTags.SIGNED16_INT_TAG, TypeTags.SIGNED32_INT_TAG,
                         TypeTags.UNSIGNED8_INT_TAG, TypeTags.UNSIGNED16_INT_TAG, TypeTags.UNSIGNED32_INT_TAG,
                         TypeTags.FLOAT_TAG, TypeTags.DECIMAL_TAG, TypeTags.CHAR_STRING_TAG, TypeTags.STRING_TAG,
-                        TypeTags.FINITE_TYPE_TAG ->
-                        expectedTypes.push(type);
+                        TypeTags.FINITE_TYPE_TAG, TypeTags.UNION_TAG -> expectedTypes.push(type);
                 case TypeTags.JSON_TAG, TypeTags.ANYDATA_TAG -> {
                     expectedTypes.push(type);
                     updateExpectedType(new HashMap<>(), type);
@@ -245,13 +246,6 @@ public class JsonParser {
                 case TypeTags.MAP_TAG -> {
                     expectedTypes.push(type);
                     updateExpectedType(new HashMap<>(), ((MapType) type).getConstrainedType());
-                }
-                case TypeTags.UNION_TAG -> {
-                    if (isSupportedUnionType((UnionType) type)) {
-                        expectedTypes.push(type);
-                        break;
-                    }
-                    throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
                 }
                 case TypeTags.INTERSECTION_TAG -> {
                     Type effectiveType = ((IntersectionType) type).getEffectiveType();
@@ -268,6 +262,9 @@ public class JsonParser {
                         break;
                     }
                     return JsonCreator.constructReadOnlyValue(jsonValue);
+                }
+                case TypeTags.TYPE_REFERENCED_TYPE_TAG -> {
+                    return execute(reader, options, TypeUtils.getReferredType(type));
                 }
                 default -> throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
             }
@@ -293,7 +290,7 @@ public class JsonParser {
                         currentState = currentState.transition(this, buff, this.index, count);
                     }
                 }
-                currentState = currentState.transition(this, new char[] { EOF }, 0, 1);
+                currentState = currentState.transition(this, new char[]{EOF}, 0, 1);
                 if (currentState != DOC_END_STATE) {
                     throw ErrorCreator.createError(StringUtils.fromString("invalid JSON document"));
                 }
@@ -303,21 +300,6 @@ public class JsonParser {
             } catch (JsonParserException e) {
                 throw DiagnosticLog.error(DiagnosticErrorCode.JSON_PARSER_EXCEPTION, e.getMessage(), line, column);
             }
-        }
-
-        private boolean isSupportedUnionType(UnionType type) {
-            for (Type memberType : type.getMemberTypes()) {
-                switch (memberType.getTag()) {
-                    case TypeTags.RECORD_TYPE_TAG, TypeTags.OBJECT_TYPE_TAG, TypeTags.MAP_TAG, TypeTags.JSON_TAG,
-                            TypeTags.ANYDATA_TAG -> {
-                        return false;
-                    }
-                    case TypeTags.UNION_TAG -> {
-                        return !isSupportedUnionType(type);
-                    }
-                }
-            }
-            return true;
         }
 
         private void append(char ch) {
@@ -341,6 +323,14 @@ public class JsonParser {
             State state = finalizeNonArrayObject();
             expectedTypes.pop();
             return state;
+        }
+
+        private State checkUnionAndFinalizeNonArrayObject() {
+            if (unionDepth > 0) {
+                fieldNameHierarchy.pop();
+                return finalizeObject();
+            }
+            return finalizeNonArrayObjectAndRemoveExpectedType();
         }
 
         private State finalizeNonArrayObject() {
@@ -374,10 +364,31 @@ public class JsonParser {
             return finalizeObject();
         }
 
+        private Object verifyAndConvertToUnion(Object json) {
+            if (unionDepth > 0) {
+                return json;
+            }
+            BMap<BString, Object> options = ValueCreator.createMapValue();
+            BMap<BString, Object> allowDataProjectionMap = ValueCreator.createMapValue();
+            if (!allowDataProjection) {
+                options.put(Constants.ALLOW_DATA_PROJECTION, false);
+            } else {
+                allowDataProjectionMap.put(Constants.NIL_AS_OPTIONAL_FIELD, nilAsOptionalField);
+                allowDataProjectionMap.put(Constants.ABSENT_AS_NILABLE_TYPE, absentAsNilableType);
+                options.put(Constants.ALLOW_DATA_PROJECTION, allowDataProjectionMap);
+            }
+            return JsonTraverse.traverse(json, options, expectedTypes.peek());
+        }
+
         @SuppressWarnings("Unchecked")
         private State finalizeObject() {
             // Skip the value and continue to next state.
             parserContexts.pop();
+
+            if (unionDepth > 0) {
+                unionDepth--;
+                currentJsonNode = verifyAndConvertToUnion(currentJsonNode);
+            }
 
             if (!expectedTypes.isEmpty() && expectedTypes.peek() == null) {
                 if (parserContexts.peek() == ParserContext.MAP) {
@@ -435,17 +446,45 @@ public class JsonParser {
             this.fieldNameHierarchy.push(new Stack<>());
         }
 
-        private void updateNextArrayValue() {
-            arrayIndexes.push(0);
-            Optional<BArray> nextArray = JsonCreator.initNewArrayValue(this);
-            nextArray.ifPresent(array -> currentJsonNode = array);
-        }
-
-        private State finalizeArrayObject() {
-            arrayIndexes.pop();
+        private State finalizeArrayObjectAndRemoveExpectedType() {
             State state = finalizeObject();
             expectedTypes.pop();
             return state;
+        }
+
+        private State checkUnionAndFinalizeArrayObject() {
+            arrayIndexes.pop();
+            if (unionDepth > 0) {
+                return finalizeObject();
+            }
+            return finalizeArrayObjectAndRemoveExpectedType();
+        }
+
+        void handleFieldName(String jsonFieldName) {
+            if (jsonFieldDepth == 0 && unionDepth == 0) {
+                currentField = visitedFieldHierarchy.peek().get(jsonFieldName);
+                if (currentField == null) {
+                    currentField = fieldHierarchy.peek().remove(jsonFieldName);
+                }
+
+                Type fieldType;
+                if (currentField == null) {
+                    fieldType = restType.peek();
+                } else {
+                    // Replace modified field name with actual field name.
+                    jsonFieldName = currentField.getFieldName();
+                    fieldType = currentField.getFieldType();
+                    visitedFieldHierarchy.peek().put(jsonFieldName, currentField);
+                }
+                expectedTypes.push(fieldType);
+
+                if (!allowDataProjection && fieldType == null)  {
+                    throw DiagnosticLog.error(DiagnosticErrorCode.UNDEFINED_FIELD, jsonFieldName);
+                }
+            } else if (expectedTypes.peek() == null) {
+                expectedTypes.push(null);
+            }
+            fieldNameHierarchy.peek().push(jsonFieldName);
         }
 
         public enum ParserContext {
@@ -483,17 +522,10 @@ public class JsonParser {
                     ch = buff[i];
                     sm.processLocation(ch);
                     if (ch == '{') {
-                        sm.currentJsonNode = JsonCreator.initRootMapValue(sm.expectedTypes.peek());
-                        sm.parserContexts.push(JsonParser.StateMachine.ParserContext.MAP);
+                        sm.currentJsonNode = JsonCreator.initRootMapValue(sm);
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
-                        sm.parserContexts.push(JsonParser.StateMachine.ParserContext.ARRAY);
-                        Type expType = sm.expectedTypes.peek();
-                        // In this point we know rhs is json[] or anydata[] hence init index counter.
-                        if (expType.getTag() == TypeTags.JSON_TAG || expType.getTag() == TypeTags.ANYDATA_TAG) {
-                            sm.arrayIndexes.push(0);
-                        }
-                        sm.currentJsonNode = JsonCreator.initArrayValue(sm.expectedTypes.peek());
+                        sm.currentJsonNode = JsonCreator.initRootArrayValue(sm);
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else if (StateMachine.isWhitespace(ch)) {
                         state = this;
@@ -536,6 +568,9 @@ public class JsonParser {
                     throw new JsonParserException("JSON document has already ended");
                 }
                 sm.index = i + 1;
+                if (sm.unionDepth > 0) {
+                    sm.currentJsonNode = sm.verifyAndConvertToUnion(sm.currentJsonNode);
+                }
                 return state;
             }
         }
@@ -559,7 +594,7 @@ public class JsonParser {
                         state = this;
                         continue;
                     } else if (ch == '}') {
-                        state = sm.finalizeNonArrayObjectAndRemoveExpectedType();
+                        state = sm.checkUnionAndFinalizeNonArrayObject();
                     } else {
                         StateMachine.throwExpected("\"", "}");
                     }
@@ -588,26 +623,18 @@ public class JsonParser {
                     } else if (ch == QUOTES) {
                         state = STRING_ARRAY_ELEMENT_STATE;
                         sm.currentQuoteChar = ch;
-                        sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek(), sm.allowDataProjection));
+                        JsonCreator.updateExpectedType(sm);
                     } else if (ch == '{') {
-                        // Get member type of the array and set as expected type.
-                        sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek(), sm.allowDataProjection));
-                        JsonCreator.updateNextMapValue(sm);
+                        JsonCreator.updateNextMapValueBasedOnExpType(sm);
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
-                        // Get member type of the array and set as expected type.
-                        sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek(), sm.allowDataProjection));
-                        sm.updateNextArrayValue();
+                        JsonCreator.updateNextArrayValueBasedOnExpType(sm);
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else if (ch == ']') {
-                        state = sm.finalizeArrayObject();
+                        state = sm.checkUnionAndFinalizeArrayObject();
                     } else {
                         state = NON_STRING_ARRAY_ELEMENT_STATE;
-                        sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek(), sm.allowDataProjection));
+                        JsonCreator.updateExpectedType(sm);
                     }
                     break;
                 }
@@ -666,21 +693,15 @@ public class JsonParser {
                     } else if (ch == QUOTES) {
                         state = STRING_ARRAY_ELEMENT_STATE;
                         sm.currentQuoteChar = ch;
-                        sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek(), sm.allowDataProjection));
+                        JsonCreator.updateExpectedType(sm);
                     } else if (ch == '{') {
-                        sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek(), sm.allowDataProjection));
-                        JsonCreator.updateNextMapValue(sm);
+                        JsonCreator.updateNextMapValueBasedOnExpType(sm);
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
-                        sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek(), sm.allowDataProjection));
-                        sm.updateNextArrayValue();
+                        JsonCreator.updateNextArrayValueBasedOnExpType(sm);
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else {
-                        sm.expectedTypes.push(JsonCreator.getMemberType(sm.expectedTypes.peek(),
-                                sm.arrayIndexes.peek(), sm.allowDataProjection));
+                        JsonCreator.updateExpectedType(sm);
                         state = NON_STRING_ARRAY_ELEMENT_STATE;
                     }
                     break;
@@ -718,31 +739,7 @@ public class JsonParser {
                     sm.processLocation(ch);
                     if (ch == sm.currentQuoteChar) {
                         String jsonFieldName = sm.processFieldName();
-                        if (sm.jsonFieldDepth == 0) {
-                            Field currentField = sm.visitedFieldHierarchy.peek().get(jsonFieldName);
-                            if (currentField == null) {
-                                currentField = sm.fieldHierarchy.peek().remove(jsonFieldName);
-                            }
-                            sm.currentField = currentField;
-
-                            Type fieldType;
-                            if (currentField == null) {
-                                fieldType = sm.restType.peek();
-                            } else {
-                                // Replace modified field name with actual field name.
-                                jsonFieldName = currentField.getFieldName();
-                                fieldType = currentField.getFieldType();
-                                sm.visitedFieldHierarchy.peek().put(jsonFieldName, currentField);
-                            }
-                            sm.expectedTypes.push(fieldType);
-
-                            if (!sm.allowDataProjection && fieldType == null)  {
-                                throw DiagnosticLog.error(DiagnosticErrorCode.UNDEFINED_FIELD, jsonFieldName);
-                            }
-                        } else if (sm.expectedTypes.peek() == null) {
-                            sm.expectedTypes.push(null);
-                        }
-                        sm.fieldNameHierarchy.peek().push(jsonFieldName);
+                        sm.handleFieldName(jsonFieldName);
                         state = END_FIELD_NAME_STATE;
                     } else if (ch == REV_SOL) {
                         state = FIELD_NAME_ESC_CHAR_PROCESSING_STATE;
@@ -809,11 +806,7 @@ public class JsonParser {
                         JsonCreator.updateNextMapValue(sm);
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
-                        sm.arrayIndexes.push(0);
-                        Optional<BArray> nextArray = JsonCreator.initNewArrayValue(sm);
-                        if (nextArray.isPresent()) {
-                            sm.currentJsonNode = nextArray.get();
-                        }
+                        JsonCreator.updateNextArrayValue(sm);
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else {
                         state = NON_STRING_FIELD_VALUE_STATE;
@@ -842,20 +835,7 @@ public class JsonParser {
                     ch = buff[i];
                     sm.processLocation(ch);
                     if (ch == sm.currentQuoteChar) {
-                        String s = sm.value();
-                        Type expType = sm.expectedTypes.pop();
-                        if (expType == null) {
-                            state = FIELD_END_STATE;
-                            break;
-                        }
-
-                        if (sm.jsonFieldDepth > 0) {
-                            JsonCreator.checkNullAndUpdateCurrentJson(sm,
-                                    JsonCreator.convertAndUpdateCurrentJsonNode(sm, s, expType, true));
-                        } else if (sm.currentField != null || sm.restType.peek() != null) {
-                            JsonCreator.checkNullAndUpdateCurrentJson(sm,
-                                    JsonCreator.convertAndUpdateCurrentJsonNode(sm, s, expType, true));
-                        }
+                        sm.processValue(true);
                         state = FIELD_END_STATE;
                     } else if (ch == REV_SOL) {
                         state = STRING_FIELD_ESC_CHAR_PROCESSING_STATE;
@@ -921,13 +901,13 @@ public class JsonParser {
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
-                        sm.updateNextArrayValue();
+                        JsonCreator.updateNextArrayValueBasedOnExpType(sm);
                     } else if (ch == '}') {
                         sm.processValue(false);
-                        state = sm.finalizeNonArrayObjectAndRemoveExpectedType();
+                        state = sm.checkUnionAndFinalizeNonArrayObject();
                     } else if (ch == ']') {
                         sm.processValue(false);
-                        state = sm.finalizeArrayObject();
+                        state = sm.checkUnionAndFinalizeArrayObject();
                     } else if (ch == ',') {
                         sm.processValue(false);
                         state = NON_FIRST_FIELD_READY_STATE;
@@ -964,11 +944,11 @@ public class JsonParser {
                         JsonCreator.updateNextMapValue(sm);
                         state = FIRST_FIELD_READY_STATE;
                     } else if (ch == '[') {
+                        JsonCreator.updateNextArrayValueBasedOnExpType(sm);
                         state = FIRST_ARRAY_ELEMENT_READY_STATE;
-                        sm.updateNextArrayValue();
                     } else if (ch == ']') {
                         sm.processValue(false);
-                        state = sm.finalizeArrayObject();
+                        state = sm.checkUnionAndFinalizeArrayObject();
                     } else if (ch == ',') {
                         sm.processValue(false);
                         state = NON_FIRST_ARRAY_ELEMENT_READY_STATE;
@@ -1003,8 +983,15 @@ public class JsonParser {
                     ch = buff[i];
                     sm.processLocation(ch);
                     if (ch == sm.currentQuoteChar) {
-                        JsonCreator.checkNullAndUpdateCurrentJson(sm, JsonCreator.convertAndUpdateCurrentJsonNode(sm,
-                                sm.value(), sm.expectedTypes.peek(), true));
+                        String value = sm.value();
+                        Type expType;
+                        if (sm.unionDepth > 0) {
+                            expType = PredefinedTypes.TYPE_STRING;
+                        } else {
+                            expType = sm.expectedTypes.peek();
+                        }
+                        JsonCreator.checkNullAndUpdateCurrentJson(sm,
+                                JsonCreator.convertAndUpdateCurrentJsonNode(sm, value, expType, true));
                         state = DOC_END_STATE;
                     } else if (ch == REV_SOL) {
                         state = STRING_VAL_ESC_CHAR_PROCESSING_STATE;
@@ -1023,11 +1010,17 @@ public class JsonParser {
         }
 
         private void processValue(boolean isStringElement) {
-            Type expType = expectedTypes.pop();
             // This will clear the buffer
             String value = value();
-            if (expType == null) {
-                return;
+
+            Type expType;
+            if (unionDepth > 0) {
+                expType = isStringElement ? PredefinedTypes.TYPE_STRING : PredefinedTypes.TYPE_JSON;
+            } else {
+                expType = expectedTypes.pop();
+                if (expType == null) {
+                    return;
+                }
             }
             JsonCreator.checkNullAndUpdateCurrentJson(this,
                     JsonCreator.convertAndUpdateCurrentJsonNode(this, value, expType, isStringElement));
@@ -1079,7 +1072,7 @@ public class JsonParser {
                     } else if (ch == ',') {
                         state = NON_FIRST_FIELD_READY_STATE;
                     } else if (ch == '}') {
-                        state = sm.finalizeNonArrayObjectAndRemoveExpectedType();
+                        state = sm.checkUnionAndFinalizeNonArrayObject();
                     } else {
                         StateMachine.throwExpected(",", "}");
                     }
@@ -1107,10 +1100,10 @@ public class JsonParser {
                         state = this;
                         continue;
                     } else if (ch == ',') {
-                        state = NON_FIRST_ARRAY_ELEMENT_READY_STATE;
                         sm.updateIndexOfArrayElement();
+                        state = NON_FIRST_ARRAY_ELEMENT_READY_STATE;
                     } else if (ch == ']') {
-                        state = sm.finalizeArrayObject();
+                        state = sm.checkUnionAndFinalizeArrayObject();
                     } else {
                         StateMachine.throwExpected(",", "]");
                     }

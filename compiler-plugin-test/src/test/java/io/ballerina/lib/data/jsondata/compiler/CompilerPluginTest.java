@@ -32,8 +32,7 @@ import java.util.stream.Collectors;
  */
 public class CompilerPluginTest {
 
-    static final String UNSUPPORTED_UNION_TYPE =
-            "unsupported union type: union type does not support multiple complex types";
+    static final String UNSUPPORTED_TYPE = "unsupported type: type is not supported";
 
     @Test
     public void testInvalidExpectedUnionType1() {
@@ -43,7 +42,7 @@ public class CompilerPluginTest {
                 .filter(r -> r.diagnosticInfo().severity().equals(DiagnosticSeverity.ERROR))
                 .collect(Collectors.toList());
         Assert.assertEquals(errorDiagnosticsList.size(), 1);
-        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_UNION_TYPE);
+        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_TYPE);
     }
 
     @Test
@@ -54,7 +53,7 @@ public class CompilerPluginTest {
                 .filter(r -> r.diagnosticInfo().severity().equals(DiagnosticSeverity.ERROR))
                 .collect(Collectors.toList());
         Assert.assertEquals(errorDiagnosticsList.size(), 1);
-        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_UNION_TYPE);
+        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_TYPE);
     }
 
     @Test
@@ -65,8 +64,8 @@ public class CompilerPluginTest {
                 .filter(r -> r.diagnosticInfo().severity().equals(DiagnosticSeverity.ERROR))
                 .collect(Collectors.toList());
         Assert.assertEquals(errorDiagnosticsList.size(), 2);
-        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_UNION_TYPE);
-        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_UNION_TYPE);
+        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_TYPE);
+        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_TYPE);
     }
 
     @Test
@@ -77,8 +76,8 @@ public class CompilerPluginTest {
                 .filter(r -> r.diagnosticInfo().severity().equals(DiagnosticSeverity.ERROR))
                 .collect(Collectors.toList());
         Assert.assertEquals(errorDiagnosticsList.size(), 2);
-        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_UNION_TYPE);
-        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_UNION_TYPE);
+        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_TYPE);
+        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_TYPE);
     }
 
     @Test
@@ -115,10 +114,8 @@ public class CompilerPluginTest {
                 .filter(r -> r.diagnosticInfo().severity().equals(DiagnosticSeverity.ERROR))
                 .collect(Collectors.toList());
         Assert.assertEquals(errorDiagnosticsList.size(), 2);
-        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(),
-                "unsupported union type: union type does not support multiple complex types");
-        Assert.assertEquals(errorDiagnosticsList.get(1).diagnosticInfo().messageFormat(),
-                "unsupported union type: union type does not support multiple complex types");
+        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_TYPE);
+        Assert.assertEquals(errorDiagnosticsList.get(1).diagnosticInfo().messageFormat(), UNSUPPORTED_TYPE);
     }
 
     @Test
@@ -129,8 +126,7 @@ public class CompilerPluginTest {
                 .filter(r -> r.diagnosticInfo().severity().equals(DiagnosticSeverity.ERROR))
                 .collect(Collectors.toList());
         Assert.assertEquals(errorDiagnosticsList.size(), 1);
-        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(),
-                "unsupported union type: union type does not support multiple complex types");
+        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_TYPE);
     }
 
     @Test
@@ -142,7 +138,7 @@ public class CompilerPluginTest {
                 .collect(Collectors.toList());
         Assert.assertEquals(errorDiagnosticsList.size(), 1);
         Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(),
-                "unsupported union type: union type does not support multiple complex types");
+                UNSUPPORTED_TYPE);
     }
 
     @Test
@@ -153,11 +149,8 @@ public class CompilerPluginTest {
                 .filter(r -> r.diagnosticInfo().severity().equals(DiagnosticSeverity.ERROR))
                 .collect(Collectors.toList());
         Assert.assertEquals(errorDiagnosticsList.size(), 3);
-        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(),
-                "unsupported union type: union type does not support multiple complex types");
-        Assert.assertEquals(errorDiagnosticsList.get(1).diagnosticInfo().messageFormat(),
-                "unsupported union type: union type does not support multiple complex types");
-        Assert.assertEquals(errorDiagnosticsList.get(2).diagnosticInfo().messageFormat(),
-                "unsupported union type: union type does not support multiple complex types");
+        Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(), UNSUPPORTED_TYPE);
+        Assert.assertEquals(errorDiagnosticsList.get(1).diagnosticInfo().messageFormat(), UNSUPPORTED_TYPE);
+        Assert.assertEquals(errorDiagnosticsList.get(2).diagnosticInfo().messageFormat(), UNSUPPORTED_TYPE);
     }
 }
