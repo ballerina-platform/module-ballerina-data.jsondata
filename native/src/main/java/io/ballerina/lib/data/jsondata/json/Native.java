@@ -44,7 +44,7 @@ public class Native {
 
     public static Object parseAsType(Object json, BMap<BString, Object> options, BTypedesc typed) {
         try {
-            return JsonTraverse.traverse(json, options, typed.getDescribingType());
+            return JsonTraverse.traverse(json, options, typed);
         } catch (BError e) {
             return e;
         }
@@ -52,7 +52,7 @@ public class Native {
 
     public static Object parseString(BString json, BMap<BString, Object> options, BTypedesc typed) {
         try {
-            return JsonParser.parse(new StringReader(json.getValue()), options, typed.getDescribingType());
+            return JsonParser.parse(new StringReader(json.getValue()), options, typed);
         } catch (BError e) {
             return e;
         }
@@ -61,8 +61,7 @@ public class Native {
     public static Object parseBytes(BArray json, BMap<BString, Object> options, BTypedesc typed) {
         try {
             byte[] bytes = json.getBytes();
-            return JsonParser.parse(new InputStreamReader(new ByteArrayInputStream(bytes)), options,
-                    typed.getDescribingType());
+            return JsonParser.parse(new InputStreamReader(new ByteArrayInputStream(bytes)), options, typed);
         } catch (BError e) {
             return e;
         }

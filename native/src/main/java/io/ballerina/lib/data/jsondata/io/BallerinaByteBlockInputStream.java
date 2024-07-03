@@ -87,7 +87,7 @@ public class BallerinaByteBlockInputStream extends InputStream {
                 return read();
             }
         } catch (InterruptedException e) {
-            BError error = DiagnosticLog.getJsonError("Cannot read the stream, interrupted error");
+            BError error = DiagnosticLog.createJsonError("Cannot read the stream, interrupted error");
             futureResultConsumer.accept(error);
             return -1;
         }

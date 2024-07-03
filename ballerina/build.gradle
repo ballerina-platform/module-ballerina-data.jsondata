@@ -68,15 +68,23 @@ dependencies {
     externalJars(group: 'net.minidev', name: 'accessors-smart', version: "${javaAccessorsSmartVersion}") {
         transitive = false
     }
+    externalJars(group: 'io.ballerina.stdlib', name: 'constraint-native', version: "${stdlibConstraintVersion}") {
+        transitive = false
+    }
 }
 
 task updateTomlFiles {
     doLast {
+        def stdlibDependentConstraintNativeVersion = stdlibConstraintVersion
+        def stdlibDependentConstraintVersion = stripBallerinaExtensionVersion("${stdlibDependentConstraintNativeVersion}")
+
         def newConfig = ballerinaTomlFilePlaceHolder.text.replace("@project.version@", project.version)
         newConfig = newConfig.replace("@toml.version@", tomlVersion)
         newConfig = newConfig.replace("@jsonpath.version@", project.javaJsonPathVersion)
         newConfig = newConfig.replace("@jsonsmart.version@", project.javaJsonSmartVersion)
         newConfig = newConfig.replace("@accessors.version@", project.javaAccessorsSmartVersion)
+        newConfig = newConfig.replace("@stdlib.constraintnative.version@", stdlibDependentConstraintNativeVersion)
+        newConfig = newConfig.replace("@constraint.version@", stdlibDependentConstraintVersion)
         ballerinaTomlFile.text = newConfig
 
         def newCompilerPluginToml = compilerPluginTomlFilePlaceHolder.text.replace("@project.version@", project.version)
