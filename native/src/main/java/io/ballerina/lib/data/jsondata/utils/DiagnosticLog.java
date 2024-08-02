@@ -35,7 +35,7 @@ import java.util.ResourceBundle;
 public class DiagnosticLog {
     private static final String ERROR_PREFIX = "error";
     private static final String ERROR = "Error";
-    private static final ResourceBundle MESSAGES = ResourceBundle.getBundle("error", Locale.getDefault());
+    private static final ResourceBundle MESSAGES = ResourceBundle.getBundle("json_error", Locale.getDefault());
 
     public static BError error(DiagnosticErrorCode code, Object... args) {
         String msg = formatMessage(code, args);
