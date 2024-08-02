@@ -1,6 +1,6 @@
 {
   "bundles":[{
-    "name":"error",
+    "name":"json_error",
     "locales":[""]
   }]
 }
