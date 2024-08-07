@@ -42,7 +42,7 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "file"
-version = "1.9.0"
+version = "1.10.0"
 scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "io"},
