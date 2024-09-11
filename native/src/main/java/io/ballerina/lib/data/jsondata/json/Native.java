@@ -20,9 +20,11 @@ package io.ballerina.lib.data.jsondata.json;
 
 import io.ballerina.lib.data.jsondata.io.DataReaderTask;
 import io.ballerina.lib.data.jsondata.io.DataReaderThreadPool;
+import io.ballerina.lib.data.jsondata.utils.Constants;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.Future;
-import io.ballerina.runtime.api.utils.JsonUtils;
+import io.ballerina.runtime.api.types.RecordType;
+import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
@@ -34,6 +36,11 @@ import io.ballerina.runtime.api.values.BTypedesc;
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.util.Map;
+
+import static io.ballerina.lib.data.jsondata.json.JsonCreator.getModifiedName;
+import static io.ballerina.lib.data.jsondata.utils.DataUtils.unescapeIdentifier;
+
 
 /**
  * Json conversions.
@@ -75,7 +82,23 @@ public class Native {
         return null;
     }
 
-    public static Object toJson(Object value) {
-        return JsonUtils.convertToJson(value);
+    public static BString getNameAnnotation(BMap<BString, Object> options, BString key) {
+        if (!(options.getType() instanceof RecordType recordType)) {
+            return key;
+        }
+        BMap<BString, Object> annotations = recordType.getAnnotations();
+        for (BString keyV: annotations.getKeys()) {
+            String keyStr = keyV.toString();
+            if (!keyStr.contains(Constants.FIELD)) {
+                continue;
+            }
+            String fieldName = unescapeIdentifier(keyStr.split(Constants.FIELD_REGEX)[1]);
+            if (fieldName.equals(key.getValue())) {
+                Map<BString, Object> fieldAnnotation = (Map<BString, Object>) annotations.get(keyV);
+                String modifiedName = getModifiedName(fieldAnnotation, fieldName);
+                return StringUtils.fromString(modifiedName);
+            }
+        }
+        return key;
     }
 }
