@@ -22,7 +22,7 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "data.jsondata"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
 	{org = "ballerina", name = "constraint"},
 	{org = "ballerina", name = "file"},
