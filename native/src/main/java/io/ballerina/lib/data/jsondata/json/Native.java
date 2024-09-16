@@ -82,8 +82,8 @@ public class Native {
         return null;
     }
 
-    public static BString getNameAnnotation(BMap<BString, Object> options, BString key) {
-        if (!(options.getType() instanceof RecordType recordType)) {
+    public static BString getNameAnnotation(BMap<BString, Object> value, BString key) {
+        if (!(value.getType() instanceof RecordType recordType)) {
             return key;
         }
         BMap<BString, Object> annotations = recordType.getAnnotations();
