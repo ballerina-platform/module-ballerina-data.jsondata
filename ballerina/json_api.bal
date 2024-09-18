@@ -55,8 +55,18 @@ public isolated function parseStream(stream<byte[], error?> s, Options options =
 #
 # + v - Source anydata value
 # + return - representation of `v` as value of type json
-public isolated function toJson(anydata v)
-        returns json|Error = @java:Method {'class: "io.ballerina.lib.data.jsondata.json.Native"} external;
+public isolated function toJson(anydata v) returns json {
+    if v is anydata[] {
+        return from anydata elem in v
+            select toJson(elem);
+    } else if v is map<anydata> {
+        return map from var [key, feild] in v.entries()
+            select [getNameAnnotation(v, key), toJson(feild)];
+    }
+    return v.toJson();
+}
+
+isolated function getNameAnnotation(map<anydata> data, string key) returns string = @java:Method {'class: "io.ballerina.lib.data.jsondata.json.Native"} external;
 
 # Prettifies a `json` value to print it.
 #

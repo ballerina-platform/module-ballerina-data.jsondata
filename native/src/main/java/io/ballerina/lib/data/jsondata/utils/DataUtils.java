@@ -4,6 +4,9 @@ import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BTypedesc;
 import io.ballerina.stdlib.constraint.Constraints;
 
+import static io.ballerina.lib.data.jsondata.utils.Constants.EMPTY;
+import static io.ballerina.lib.data.jsondata.utils.Constants.ESCAPE_SLASH;
+
 public class DataUtils {
     public static Object validateConstraints(Object convertedValue, BTypedesc typed, boolean requireValidation) {
         if (!requireValidation) {
@@ -24,5 +27,9 @@ public class DataUtils {
             errorMsg += ", " + details;
         }
         return errorMsg;
+    }
+
+    public static String unescapeIdentifier(String parameterName) {
+        return parameterName.replaceAll(ESCAPE_SLASH, EMPTY);
     }
 }

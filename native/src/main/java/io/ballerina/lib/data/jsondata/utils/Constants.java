@@ -45,4 +45,6 @@ public class Constants {
 
     public static final MapType JSON_MAP_TYPE = TypeCreator.createMapType(PredefinedTypes.TYPE_JSON);
     public static final MapType ANYDATA_MAP_TYPE = TypeCreator.createMapType(PredefinedTypes.TYPE_ANYDATA);
+    public static final String ESCAPE_SLASH = "\\\\";
+    public static final String EMPTY = "";
 }

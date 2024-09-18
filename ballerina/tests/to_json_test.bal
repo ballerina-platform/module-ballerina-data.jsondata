@@ -80,3 +80,96 @@ function testToJsonWithXML() {
     test:assertTrue(j is json);
     test:assertEquals(j, x1.toString());
 }
+
+type TestRecord3 record {|
+    @Name {
+        value: "a-o"
+    }
+    string a;
+    @Name {
+        value: "b-o"
+    }
+    string b;
+    int c;
+|};
+
+type NestedRecord3 record {
+    @Name {
+        value: "d-o"
+    }
+    int d\-name;
+    @Name {
+        value: "e-o"
+    }
+    string e;
+    NestedRecord3 f?;
+    record {
+        @Name {
+            value: "i-o"
+        }
+        int i;
+        @Name {
+            value: "k-o"
+        }
+        NestedRecord3 k?;
+    } j;
+};
+
+@test:Config
+function testToJsonWithNameANnotation() {
+    TestRecord3 r = {
+        a: "name",
+        b: "b name",
+        c: 1
+    };
+    json out = {
+        "a-o": "name",
+        "b-o": "b name",
+        "c": 1
+    };
+    json|Error j = toJson(r);
+    test:assertTrue(j is json);
+    test:assertEquals(j, out);
+
+    NestedRecord3 n = {
+        d\-name: 2,
+        e: "test-e",
+        f: {
+            d\-name: 45,
+            e: "nested-e",
+            j: {
+                i: 1000,
+                k: {
+                    d\-name: 4,
+                    e: "nest-nest-e",
+                    j: {
+                        i: 10000
+                    }
+                }
+            }
+        },
+        j: { i: 100}
+    };
+    json out2 = {
+        "d-o": 2,
+        "e-o": "test-e",
+        f: {
+            "d-o": 45,
+            e\-o: "nested-e",
+            j: {
+                "i-o": 1000, 
+                "k-o": {
+                    d\-o: 4,
+                    "e-o": "nest-nest-e",
+                    j: {
+                        "i-o": 10000
+                    }
+                }
+            }
+        },
+        j: { "i-o": 100}
+    };
+    json|Error j2 = toJson(n);
+    test:assertTrue(j2 is json);
+    test:assertEquals(j2, out2);
+}
