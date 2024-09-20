@@ -61,6 +61,7 @@ import io.ballerina.tools.diagnostics.Location;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -155,23 +156,31 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
     }
 
     private void checkTypeAndDetectDuplicateFields(TypeSymbol typeSymbol, SyntaxNodeAnalysisContext ctx) {
+        checkTypeAndDetectDuplicateFields(typeSymbol, ctx, new HashSet<>());
+    }
+
+    private void checkTypeAndDetectDuplicateFields(TypeSymbol typeSymbol,
+                                                   SyntaxNodeAnalysisContext ctx, HashSet<TypeSymbol> visited) {
+        if (!visited.add(typeSymbol)) {
+            return;
+        }
         switch (typeSymbol.typeKind()) {
             case RECORD -> detectDuplicateFields((RecordTypeSymbol) typeSymbol, ctx);
-            case ARRAY -> checkTypeAndDetectDuplicateFields(((ArrayTypeSymbol) typeSymbol).memberTypeDescriptor(), ctx);
+            case ARRAY -> checkTypeAndDetectDuplicateFields(((ArrayTypeSymbol) typeSymbol)
+                    .memberTypeDescriptor(), ctx, visited);
             case TUPLE -> {
                 for (TypeSymbol memberType : ((TupleTypeSymbol) typeSymbol).memberTypeDescriptors()) {
-                    checkTypeAndDetectDuplicateFields(memberType, ctx);
+                    checkTypeAndDetectDuplicateFields(memberType, ctx, visited);
                 }
             }
-//            commented due to the https://github.com/ballerina-platform/ballerina-library/issues/7010
-//            case UNION -> {
-//                for (TypeSymbol memberType : ((UnionTypeSymbol) typeSymbol).memberTypeDescriptors()) {
-//                    checkTypeAndDetectDuplicateFields(memberType, ctx);
-//                }
-//            }
+            case UNION -> {
+                for (TypeSymbol memberType : ((UnionTypeSymbol) typeSymbol).memberTypeDescriptors()) {
+                    checkTypeAndDetectDuplicateFields(memberType, ctx, visited);
+                }
+            }
             case TYPE_REFERENCE -> checkTypeAndDetectDuplicateFields(
-                    ((TypeReferenceTypeSymbol) typeSymbol).typeDescriptor(), ctx);
-            case INTERSECTION -> checkTypeAndDetectDuplicateFields(getRawType(typeSymbol), ctx);
+                    ((TypeReferenceTypeSymbol) typeSymbol).typeDescriptor(), ctx, visited);
+            case INTERSECTION -> checkTypeAndDetectDuplicateFields(getRawType(typeSymbol), ctx, visited);
         }
     }
 
@@ -197,32 +206,43 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
     }
 
     private void validateExpectedType(TypeSymbol typeSymbol, SyntaxNodeAnalysisContext ctx) {
+        validateExpectedType(typeSymbol, ctx, new HashSet<>());
+    }
+
+    private void validateExpectedType(TypeSymbol typeSymbol,
+                                      SyntaxNodeAnalysisContext ctx, HashSet<TypeSymbol> visited) {
+        if (!visited.add(typeSymbol)) {
+            return;
+        }
         typeSymbol.getLocation().ifPresent(location -> currentLocation = location);
         switch (typeSymbol.typeKind()) {
             case UNION -> validateUnionType((UnionTypeSymbol) typeSymbol, typeSymbol.getLocation(), ctx);
-            case RECORD -> validateRecordType((RecordTypeSymbol) typeSymbol, ctx);
-            case ARRAY -> validateExpectedType(((ArrayTypeSymbol) typeSymbol).memberTypeDescriptor(), ctx);
-            case TUPLE -> validateTupleType((TupleTypeSymbol) typeSymbol, ctx);
+            case RECORD -> validateRecordType((RecordTypeSymbol) typeSymbol, ctx, visited);
+            case ARRAY -> validateExpectedType(((ArrayTypeSymbol) typeSymbol).memberTypeDescriptor(), ctx, visited);
+            case TUPLE -> validateTupleType((TupleTypeSymbol) typeSymbol, ctx, visited);
             case TABLE, XML -> reportDiagnosticInfo(ctx, typeSymbol.getLocation(),
                     JsondataDiagnosticCodes.UNSUPPORTED_TYPE);
-            case TYPE_REFERENCE -> validateExpectedType(((TypeReferenceTypeSymbol) typeSymbol).typeDescriptor(), ctx);
-            case INTERSECTION -> validateExpectedType(getRawType(typeSymbol), ctx);
+            case TYPE_REFERENCE -> validateExpectedType(((TypeReferenceTypeSymbol) typeSymbol)
+                    .typeDescriptor(), ctx, visited);
+            case INTERSECTION -> validateExpectedType(getRawType(typeSymbol), ctx, visited);
         }
     }
 
-    private void validateTupleType(TupleTypeSymbol tupleTypeSymbol, SyntaxNodeAnalysisContext ctx) {
+    private void validateTupleType(TupleTypeSymbol tupleTypeSymbol,
+                                   SyntaxNodeAnalysisContext ctx, HashSet<TypeSymbol> visited) {
         for (TypeSymbol memberType : tupleTypeSymbol.memberTypeDescriptors()) {
-            validateExpectedType(memberType, ctx);
+            validateExpectedType(memberType, ctx, visited);
         }
     }
 
-    private void validateRecordType(RecordTypeSymbol recordTypeSymbol, SyntaxNodeAnalysisContext ctx) {
+    private void validateRecordType(RecordTypeSymbol recordTypeSymbol,
+                                    SyntaxNodeAnalysisContext ctx, HashSet<TypeSymbol> visited) {
         detectDuplicateFields(recordTypeSymbol, ctx);
 
         for (Map.Entry<String, RecordFieldSymbol> entry : recordTypeSymbol.fieldDescriptors().entrySet()) {
             RecordFieldSymbol fieldSymbol = entry.getValue();
             currentLocation = fieldSymbol.getLocation().orElseGet(() -> currentLocation);
-            validateExpectedType(fieldSymbol.typeDescriptor(), ctx);
+            validateExpectedType(fieldSymbol.typeDescriptor(), ctx, visited);
         }
     }
 
