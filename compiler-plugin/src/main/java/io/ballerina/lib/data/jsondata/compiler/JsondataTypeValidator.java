@@ -163,11 +163,12 @@ public class JsondataTypeValidator implements AnalysisTask<SyntaxNodeAnalysisCon
                     checkTypeAndDetectDuplicateFields(memberType, ctx);
                 }
             }
-            case UNION -> {
-                for (TypeSymbol memberType : ((UnionTypeSymbol) typeSymbol).memberTypeDescriptors()) {
-                    checkTypeAndDetectDuplicateFields(memberType, ctx);
-                }
-            }
+//            commented due to the https://github.com/ballerina-platform/ballerina-library/issues/7010
+//            case UNION -> {
+//                for (TypeSymbol memberType : ((UnionTypeSymbol) typeSymbol).memberTypeDescriptors()) {
+//                    checkTypeAndDetectDuplicateFields(memberType, ctx);
+//                }
+//            }
             case TYPE_REFERENCE -> checkTypeAndDetectDuplicateFields(
                     ((TypeReferenceTypeSymbol) typeSymbol).typeDescriptor(), ctx);
             case INTERSECTION -> checkTypeAndDetectDuplicateFields(getRawType(typeSymbol), ctx);
