@@ -23,4 +23,5 @@ module io.ballerina.lib.data {
     requires junit;
     requires org.apache.commons.lang3;
     exports io.ballerina.lib.data.jsondata.json;
+    exports io.ballerina.lib.data;
 }
