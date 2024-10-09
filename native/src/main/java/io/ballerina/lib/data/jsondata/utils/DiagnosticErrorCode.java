@@ -36,7 +36,8 @@ public enum DiagnosticErrorCode {
     INVALID_TYPE_FOR_FIELD("JSON_ERROR_009", "invalid.type.for.field"),
     DUPLICATE_FIELD("JSON_ERROR_010", "duplicate.field"),
     CANNOT_CONVERT_TO_EXPECTED_TYPE("JSON_ERROR_011", "cannot.convert.to.expected.type"),
-    UNDEFINED_FIELD("JSON_ERROR_012", "undefined.field");
+    UNDEFINED_FIELD("JSON_ERROR_012", "undefined.field"),
+    CAN_NOT_READ_STREAM("JSON_ERROR_013", "cannot.read.stream");
 
     String diagnosticId;
     String messageKey;
