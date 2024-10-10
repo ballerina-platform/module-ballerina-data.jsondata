@@ -31,7 +31,6 @@ import io.ballerina.runtime.api.values.BString;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Java Input Stream based on Ballerina byte block stream. <code>stream<byte[], error?></code>
@@ -43,7 +42,7 @@ public class BallerinaByteBlockInputStream extends InputStream {
     private final BObject iterator;
     private final Environment env;
     private final String nextMethodName;
-    private final AtomicBoolean done = new AtomicBoolean(false);
+    private boolean done = false;
     private final MethodType closeMethod;
 
     private byte[] currentChunk = new byte[0];
@@ -60,7 +59,7 @@ public class BallerinaByteBlockInputStream extends InputStream {
 
     @Override
     public int read() {
-        if (done.get()) {
+        if (done) {
             return -1;
         }
         if (hasBytesInCurrentChunk()) {
@@ -95,7 +94,7 @@ public class BallerinaByteBlockInputStream extends InputStream {
         try {
             Object result = env.getRuntime().call(iterator, nextMethodName);
             if (result == null) {
-                done.set(true);
+                done = true;
                 return true;
             }
             if (result instanceof BMap<?, ?>) {
@@ -104,13 +103,13 @@ public class BallerinaByteBlockInputStream extends InputStream {
                 final BArray arrayValue = valueRecord.getArrayValue(value);
                 currentChunk = arrayValue.getByteArray();
             } else {
-                done.set(true);
+                done = true;
             }
         } catch (BError bError) {
-            done.set(true);
+            done = true;
             currentChunk = new byte[0];
         }
-        return !done.get();
+        return !done;
     }
 
     public BError getError() {
