@@ -9,35 +9,35 @@ license = ["Apache-2.0"]
 distribution = "2201.10.0"
 export = ["data.jsondata"]
 
-[platform.java17]
+[platform.java21]
 graalvmCompatible = true
 
-[[platform.java17.dependency]]
+[[platform.java21.dependency]]
 groupId = "io.ballerina.lib"
 artifactId = "jsondata-native"
 version = "0.3.0"
 path = "../native/build/libs/data.jsondata-native-0.3.0-SNAPSHOT.jar"
 
-[[platform.java17.dependency]]
+[[platform.java21.dependency]]
 path = "./lib/json-path-2.9.0.jar"
 groupId = "com.jayway.jsonpath"
 artifactId = "json-path"
 version = "2.9.0"
 
-[[platform.java17.dependency]]
+[[platform.java21.dependency]]
 path = "./lib/json-smart-2.4.11.jar"
 groupId = "net.minidev.json"
 artifactId = "json-smart"
 version = "2.4.11"
 
-[[platform.java17.dependency]]
+[[platform.java21.dependency]]
 path = "./lib/accessors-smart-2.4.7.jar"
 groupId = "net.minidev.json"
 artifactId = "accessors-smart"
 version = "2.4.7"
 
-[[platform.java17.dependency]]
+[[platform.java21.dependency]]
 groupId = "io.ballerina.stdlib"
 artifactId = "constraint-native"
-version = "1.5.0"
-path = "./lib/constraint-native-1.5.0.jar"
+version = "1.5.1"
+path = "./lib/constraint-native-1.5.1-20240930-123400-5ecd396.jar"
