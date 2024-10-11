@@ -249,7 +249,7 @@ public class JsonParser {
                 }
                 case TypeTags.INTERSECTION_TAG -> {
                     Type effectiveType = ((IntersectionType) type).getEffectiveType();
-                    if (!SymbolFlags.isFlagOn(SymbolFlags.READONLY, effectiveType.getFlags())) {
+                    if (!effectiveType.isReadOnly()) {
                         throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
                     }
 
