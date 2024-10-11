@@ -71,6 +71,26 @@ isolated function testSimpleJsonStringToRecord2() returns Error? {
     test:assertEquals(r, {id: 4012});
 }
 
+public type UserId readonly & int;
+
+public type UserName readonly & record {
+    string firstname;
+    string lastname;
+};
+
+type ReadOnlyUser2 readonly & record {|
+    UserId id;
+    UserName name;
+    int age;
+|};
+
+@test:Config
+isolated function testSimpleJsonStringToRecord3() returns Error? {
+    string user = string `{"id": 4012, "name": {"firstname": "John", "lastname": "Doe"}, "age": 27}`;
+    ReadOnlyUserRecord2 r = check parseString(user);
+    test:assertEquals(r, {id: 4012, age: 27, name: {firstname: "John", lastname: "Doe"}});
+}
+
 @test:Config
 isolated function testSimpleJsonStringToRecordWithProjection() returns Error? {
     string str = string `{"a": "hello", "b": 1}`;
