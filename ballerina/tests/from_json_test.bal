@@ -98,6 +98,15 @@ isolated function testSimpleJsonToRecord3() returns Error? {
     test:assertEquals(r, {id: 4012, age: 27, name: {firstname: "John", lastname: "Doe"}});
 }
 
+type UserRecord3 ReadOnlyUserRecord2;
+
+@test:Config
+isolated function testSimpleJsonToRecord4() returns Error? {
+    json user = {id: 4012, name: {firstname: "John", lastname: "Doe"}, age: 27};
+    UserRecord3 r = check parseAsType(user);
+    test:assertEquals(r, {id: 4012, age: 27, name: {firstname: "John", lastname: "Doe"}});
+}
+
 @test:Config
 isolated function testSimpleJsonToRecordWithProjection() returns Error? {
     json j = {"a": "hello", "b": 1};
