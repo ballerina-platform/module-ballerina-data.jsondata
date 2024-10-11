@@ -7,3 +7,14 @@ type Data record {
     string A;
     string B;
 };
+
+type Data2 record {
+    @jsondata:Name {
+        value: "C"
+    }
+    string A;
+    @jsondata:Name {
+        value: "C"
+    }
+    string B;
+};
