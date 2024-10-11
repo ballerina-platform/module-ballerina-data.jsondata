@@ -87,8 +87,10 @@ public class CompilerPluginTest {
         List<Diagnostic> errorDiagnosticsList = diagnosticResult.diagnostics().stream()
                 .filter(r -> r.diagnosticInfo().severity().equals(DiagnosticSeverity.ERROR))
                 .collect(Collectors.toList());
-        Assert.assertEquals(errorDiagnosticsList.size(), 1);
+        Assert.assertEquals(errorDiagnosticsList.size(), 2);
         Assert.assertEquals(errorDiagnosticsList.get(0).diagnosticInfo().messageFormat(),
+                "invalid field: duplicate field found");
+        Assert.assertEquals(errorDiagnosticsList.get(1).diagnosticInfo().messageFormat(),
                 "invalid field: duplicate field found");
     }
 
