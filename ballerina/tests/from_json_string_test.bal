@@ -60,35 +60,41 @@ isolated function testSimpleJsonStringToRecord() returns Error? {
     test:assertEquals(recC.get("b"), 1);
 }
 
-type ReadOnlyUser readonly & record {|
-    int id;
-|};
-
 @test:Config
 isolated function testSimpleJsonStringToRecord2() returns Error? {
     string user = string `{"id": 4012}`;
-    ReadOnlyUser r = check parseString(user);
+    ReadOnlyUserRecord r = check parseString(user);
     test:assertEquals(r, {id: 4012});
 }
-
-public type UserId readonly & int;
-
-public type UserName readonly & record {
-    string firstname;
-    string lastname;
-};
-
-type ReadOnlyUser2 readonly & record {|
-    UserId id;
-    UserName name;
-    int age;
-|};
 
 @test:Config
 isolated function testSimpleJsonStringToRecord3() returns Error? {
     string user = string `{"id": 4012, "name": {"firstname": "John", "lastname": "Doe"}, "age": 27}`;
     ReadOnlyUserRecord2 r = check parseString(user);
     test:assertEquals(r, {id: 4012, age: 27, name: {firstname: "John", lastname: "Doe"}});
+}
+
+@test:Config
+isolated function testSimpleJsonStringToRecord4() returns Error? {
+    string user = string `{"id": 4012, "name": {"firstname": "John", "lastname": "Doe"}, "age": 27}`;
+    UserRecord3 r = check parseString(user);
+    test:assertEquals(r, {id: 4012, age: 27, name: {firstname: "John", lastname: "Doe"}});
+}
+
+@test:Config
+isolated function testSimpleJsonStringToRecord5() returns Error? {
+    string user = string `{"id": 4012, "name": {"firstname": "John", "lastname": "Doe"}, "age": 27}`;
+    ReadOnlyUserRecord2 r = check parseString(user);
+    test:assertEquals(r, {id: 4012, age: 27, name: {firstname: "John", lastname: "Doe"}});
+}
+
+@test:Config
+isolated function testSimpleJsonStringToRecord6() returns Error? {
+    string user = string `{"ids": [4012, 4013], "names": [{"firstname": "John", "lastname": "Doe"},
+                                            {"firstname": "Jane", "lastname": "Doe"}], "age": 27}`;
+    ReadOnlyUsersRecord3 r = check parseString(user);
+    test:assertEquals(r, {ids: [4012, 4013], names: [{firstname: "John", lastname: "Doe"},
+                                                    {firstname: "Jane", lastname: "Doe"}]});
 }
 
 @test:Config
