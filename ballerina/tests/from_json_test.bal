@@ -67,6 +67,83 @@ isolated function testSimpleJsonToRecord() returns Error? {
     test:assertEquals(recC.get("b"), 1);
 }
 
+type ReadOnlyUserRecord readonly & record {|
+    int id;
+|};
+
+@test:Config
+isolated function testSimpleJsonToRecord2() returns Error? {
+    json user = {id: 4012};
+    ReadOnlyUserRecord r = check parseAsType(user);
+    test:assertEquals(r, {id: 4012});
+}
+
+public type ReadonlyUserId readonly & int;
+
+public type ReadonlyUserName readonly & record {
+    string firstname;
+    string lastname;
+};
+
+type ReadOnlyUserRecord2 readonly & record {|
+    ReadonlyUserId id;
+    ReadonlyUserName name;
+    int age;
+|};
+
+@test:Config
+isolated function testSimpleJsonToRecord3() returns Error? {
+    json user = {id: 4012, name: {firstname: "John", lastname: "Doe"}, age: 27};
+    ReadOnlyUserRecord2 r = check parseAsType(user);
+    test:assertEquals(r, {id: 4012, age: 27, name: {firstname: "John", lastname: "Doe"}});
+}
+
+type UserRecord3 ReadOnlyUserRecord2;
+
+@test:Config
+isolated function testSimpleJsonToRecord4() returns Error? {
+    json user = {id: 4012, name: {firstname: "John", lastname: "Doe"}, age: 27};
+    UserRecord3 r = check parseAsType(user);
+    test:assertEquals(r, {id: 4012, age: 27, name: {firstname: "John", lastname: "Doe"}});
+}
+
+@test:Config
+isolated function testSimpleJsonToRecord5() returns Error? {
+    ReadonlyUserName username = {firstname: "John", lastname: "Doe"};
+    record{string firstname; string lastname;} nameRec = username;
+    json user = {id: 4012, name: nameRec.toJson(), age: 27};
+    ReadOnlyUserRecord2 r = check parseAsType(user);
+    test:assertEquals(r, {id: 4012, age: 27, name: {firstname: "John", lastname: "Doe"}});
+}
+
+type ReadOnlyUsersRecord3 readonly & record {|
+    ReadonlyUserId[] ids;
+    ReadonlyUserName[] names;
+|};
+
+@test:Config
+isolated function testSimpleJsonToRecord6() returns Error? {
+    json user = {ids: [4012, 4013], names: [{firstname: "John", lastname: "Doe"},
+                                            {firstname: "Jane", lastname: "Doe"}], age: 27};
+    ReadOnlyUsersRecord3 r = check parseAsType(user);
+    test:assertEquals(r, {ids: [4012, 4013], names: [{firstname: "John", lastname: "Doe"},
+                                                    {firstname: "Jane", lastname: "Doe"}]});
+}
+
+type ReadOnlyUsersRecord4 readonly & record {|
+    ReadonlyUserId[] & readonly ids;
+    ReadonlyUserName[] & readonly names;
+|};
+
+@test:Config
+isolated function testSimpleJsonToRecord7() returns Error? {
+    json user = {ids: [4012, 4013], names: [{firstname: "John", lastname: "Doe"},
+                                            {firstname: "Jane", lastname: "Doe"}], age: 27};
+    ReadOnlyUsersRecord4 r = check parseAsType(user);
+    test:assertEquals(r, {ids: [4012, 4013], names: [{firstname: "John", lastname: "Doe"},
+                                                    {firstname: "Jane", lastname: "Doe"}]});
+}
+
 @test:Config
 isolated function testSimpleJsonToRecordWithProjection() returns Error? {
     json j = {"a": "hello", "b": 1};
