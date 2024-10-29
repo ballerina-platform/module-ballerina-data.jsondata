@@ -1454,12 +1454,16 @@ function testReadonlyFieldsWithDefaultValues() returns error? {
 
     ReadonlyFieldsRec19 r9 = check parseAsType(user);
     test:assertEquals(r9, {id: 4012, taxNo: "N/A", name: "John Doe"});
+    r9.name = "Updated name";
+    test:assertEquals(r9, {id: 4012, taxNo: "N/A", name: "Updated name"});
     
     ReadonlyFieldsRec20 r10 = check parseAsType(user);
     test:assertEquals(r10, {taxNo: "N/A", id: 4012, name: "John Doe"});
 
     ReadonlyFieldsRec20 r11 = check parseAsType(user3);
     test:assertEquals(r11, {"id": 4012, "userDetails": user, taxNo: "1234", address: "Colombo", age: 19, name: "John Doe"});
+    r11.name = "Updated name";
+    test:assertEquals(r11, {"id": 4012, "userDetails": user, taxNo: "1234", address: "Colombo", age: 19, name: "Updated name"});
 }
 
 @test:Config
