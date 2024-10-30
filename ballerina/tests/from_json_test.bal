@@ -1426,6 +1426,17 @@ type ReadonlyFieldsRec20 record {
     string name;
 };
 
+type ReadonlyFieldsRecWithSelectiveImmutable record {|
+    readonly int id;
+    readonly int[] ages;
+    readonly string address = "N/A";
+|};
+
+type ReadonlyFieldsRecWithSelectiveImmutable2 record {|
+    readonly int id;
+    int[] ages;
+    readonly string address = "N/A";
+|};
 
 @test:Config
 function testReadonlyFieldsWithDefaultValues() returns error? {
@@ -1472,6 +1483,13 @@ function testReadonlyFieldsWithDefaultValues() returns error? {
     test:assertEquals(r11, {"id": 4012, "userDetails": user, taxNo: "1234", address: "Colombo", age: 19, name: "John Doe"});
     r11.name = "Updated name";
     test:assertEquals(r11, {"id": 4012, "userDetails": user, taxNo: "1234", address: "Colombo", age: 19, name: "Updated name"});
+
+    ReadonlyFieldsRecWithSelectiveImmutable r21 = check parseAsType({id: 1, ages: [21, 24, 27]});
+    test:assertEquals(r21, {id: 1, ages: [21, 24, 27], address: "N/A"});
+    test:assertTrue(r21.ages is readonly);
+
+    ReadonlyFieldsRecWithSelectiveImmutable2 r22 = check parseAsType({id: 1, ages: [21, 24, 27]});
+    test:assertEquals(r22, {id: 1, ages: [21, 24, 27], address: "N/A"});
 }
 
 @test:Config
