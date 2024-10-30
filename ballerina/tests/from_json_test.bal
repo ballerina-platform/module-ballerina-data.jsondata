@@ -1264,3 +1264,376 @@ isolated function testRecordWithRestAsExpectedTypeForParseAsTypeNegative() {
     test:assertTrue(val is error);
     test:assertEquals((<error>val).message(), "incompatible value '7' for type 'int' in field 'measurements'");
 }
+
+type ReadonlyFieldsRec1 record {|
+    readonly int id;
+|};
+
+type ReadonlyFieldsRec2 record {
+    readonly int id;
+};
+
+type ReadonlyFieldsRec3 record {|
+    readonly int id;
+    readonly string name;
+|};
+
+type ReadonlyFieldsRec4 record {
+    readonly int id;
+    readonly string name;
+};
+
+type ReadonlyFieldsRec5 record {|
+    readonly int id;
+    readonly ReadonlyFieldsRec4 userDetails;
+|};
+
+type ReadonlyFieldsRec6 record {
+    readonly int id;
+    readonly ReadonlyFieldsRec4 userDetails;
+};
+
+type ReadonlyFieldsRec7 record {|
+    readonly int id;
+    readonly ReadonlyFieldsRec3 userDetails;
+|};
+
+type ReadonlyFieldsRec8 record {
+    readonly int id;
+    readonly ReadonlyFieldsRec3 userDetails;
+};
+
+type ReadonlyFieldsRec9 record {|
+    readonly int id;
+    string name;
+|};
+
+type ReadonlyFieldsRec10 record {
+    readonly int id;
+    string name;
+};
+
+@test:Config
+function testReadonlyFields() returns error? {
+    json user = {"id": 4012, "name": "John Doe"};
+    json user2 = {"id": 4012, "userDetails": user, age: 13};
+
+    ReadonlyFieldsRec1 r1 = check parseAsType(user);
+    test:assertEquals(r1, {id: 4012});
+    test:assertEquals(r1.id, 4012);
+    test:assertTrue(r1 is readonly);
+    test:assertTrue(r1.id is readonly);
+    
+    ReadonlyFieldsRec2 r2 = check parseAsType(user);
+    test:assertEquals(r2, {id: 4012, name: "John Doe"});
+    test:assertEquals(r2.id, 4012);
+    test:assertTrue(r2.id is readonly);
+    
+    ReadonlyFieldsRec3 r3 = check parseAsType(user);
+    test:assertEquals(r3, {id: 4012, name: "John Doe"});
+    test:assertEquals(r3.id, 4012);
+    test:assertTrue(r3 is readonly);
+    test:assertTrue(r3.id is readonly);
+
+    ReadonlyFieldsRec4 r4 = check parseAsType(user);
+    test:assertEquals(r4, {id: 4012, name: "John Doe"});
+    test:assertEquals(r4.id, 4012);
+    test:assertTrue(r4.id is readonly);
+
+    ReadonlyFieldsRec5 r5 = check parseAsType(user2);
+    test:assertEquals(r5, {id: 4012, userDetails: {id: 4012, name: "John Doe"}});
+    test:assertEquals(r5.id, 4012);
+    test:assertEquals(r5.userDetails, {id: 4012, name: "John Doe"});
+    
+    ReadonlyFieldsRec6 r6 = check parseAsType(user2);
+    test:assertEquals(r6, {id: 4012, userDetails: {id: 4012, name: "John Doe"}, age: 13});
+    test:assertEquals(r6.id, 4012);
+    
+    ReadonlyFieldsRec7 r7 = check parseAsType(user2);
+    test:assertEquals(r7, {id: 4012, userDetails: {id: 4012, name: "John Doe"}});
+    test:assertEquals(r7.id, 4012);
+    test:assertTrue(r7 is readonly);
+    test:assertTrue(r7.userDetails is readonly);
+
+    ReadonlyFieldsRec8 r8 = check parseAsType(user2);
+    test:assertEquals(r8, {id: 4012, userDetails: {id: 4012, name: "John Doe"}, age: 13});
+    test:assertEquals(r8.id, 4012);
+
+    ReadonlyFieldsRec9 r9 = check parseAsType(user);
+    test:assertEquals(r9, {id: 4012, name: "John Doe"});
+    test:assertEquals(r9.id, 4012);
+    
+    ReadonlyFieldsRec10 r10 = check parseAsType(user);
+    test:assertEquals(r10, {id: 4012, name: "John Doe"});
+    test:assertEquals(r10.id, 4012);
+}
+
+type ReadonlyFieldsRec11 record {|
+    readonly int id;
+    readonly string taxNo = "N/A";
+|};
+
+type ReadonlyFieldsRec12 record {
+    readonly int id;
+    readonly string taxNo = "N/A";
+};
+
+type ReadonlyFieldsRec13 record {|
+    readonly int id;
+    readonly string name;
+    readonly string taxNo = "N/A";
+|};
+
+type ReadonlyFieldsRec14 record {
+    readonly int id;
+    readonly string name;
+    readonly string taxNo = "N/A";
+};
+
+type ReadonlyFieldsRec15 record {|
+    readonly int id;
+    readonly ReadonlyFieldsRec4 userDetails;
+    readonly string address = "N/A";
+|};
+
+type ReadonlyFieldsRec16 record {
+    readonly int id;
+    readonly ReadonlyFieldsRec4 userDetails;
+    readonly string address = "N/A";
+};
+
+type ReadonlyFieldsRec17 record {|
+    readonly int id;
+    readonly ReadonlyFieldsRec3 userDetails;
+    readonly string address = "N/A";
+|};
+
+type ReadonlyFieldsRec18 record {
+    readonly int id;
+    readonly ReadonlyFieldsRec3 userDetails;
+    readonly string address = "N/A";
+};
+
+type ReadonlyFieldsRec19 record {|
+    string name;
+    readonly int id;
+    readonly string taxNo = "N/A";
+|};
+
+type ReadonlyFieldsRec20 record {
+    readonly string taxNo = "N/A";
+    readonly int id;
+    string name;
+};
+
+type ReadonlyFieldsRecWithSelectiveImmutable record {|
+    readonly int id;
+    readonly int[] ages;
+    readonly string address = "N/A";
+|};
+
+type ReadonlyFieldsRecWithSelectiveImmutable2 record {|
+    readonly int id;
+    int[] ages;
+    readonly string address = "N/A";
+|};
+
+@test:Config
+function testReadonlyFieldsWithDefaultValues() returns error? {
+    json user = {"id": 4012, "name": "John Doe"};
+    json user2 = {"id": 4012, "userDetails": user};
+    json user3 = {"id": 4012, "userDetails": user, taxNo: "1234", address: "Colombo", age: 19, name: "John Doe"};
+
+    ReadonlyFieldsRec11 r1 = check parseAsType(user);
+    test:assertEquals(r1, {id: 4012, taxNo: "N/A"});
+    test:assertEquals(r1.taxNo, "N/A");
+    
+    ReadonlyFieldsRec12 r2 = check parseAsType(user);
+    test:assertEquals(r2, {id: 4012, taxNo: "N/A", name: "John Doe"});
+    test:assertEquals(r2.taxNo, "N/A");
+    
+    ReadonlyFieldsRec13 r3 = check parseAsType(user);
+    test:assertEquals(r3, {id: 4012, taxNo: "N/A", name: "John Doe"});
+    test:assertEquals(r3.taxNo, "N/A");
+
+    ReadonlyFieldsRec14 r4 = check parseAsType(user);
+    test:assertEquals(r4, {id: 4012, taxNo: "N/A", name: "John Doe"});
+
+    ReadonlyFieldsRec15 r5 = check parseAsType(user2);
+    test:assertEquals(r5, {id: 4012, userDetails: {id: 4012, name: "John Doe"}, address: "N/A"});
+    
+    ReadonlyFieldsRec16 r6 = check parseAsType(user2);
+    test:assertEquals(r6, {id: 4012, userDetails: {id: 4012, name: "John Doe"}, address: "N/A"});
+    
+    ReadonlyFieldsRec17 r7 = check parseAsType(user2);
+    test:assertEquals(r7, {id: 4012, userDetails: {id: 4012, name: "John Doe"}, address: "N/A"});
+
+    ReadonlyFieldsRec18 r8 = check parseAsType(user2);
+    test:assertEquals(r8, {id: 4012, userDetails: {id: 4012, name: "John Doe"}, address: "N/A"});
+
+    ReadonlyFieldsRec19 r9 = check parseAsType(user);
+    test:assertEquals(r9, {id: 4012, taxNo: "N/A", name: "John Doe"});
+    r9.name = "Updated name";
+    test:assertEquals(r9, {id: 4012, taxNo: "N/A", name: "Updated name"});
+    
+    ReadonlyFieldsRec20 r10 = check parseAsType(user);
+    test:assertEquals(r10, {taxNo: "N/A", id: 4012, name: "John Doe"});
+
+    ReadonlyFieldsRec20 r11 = check parseAsType(user3);
+    test:assertEquals(r11, {"id": 4012, "userDetails": user, taxNo: "1234", address: "Colombo", age: 19, name: "John Doe"});
+    r11.name = "Updated name";
+    test:assertEquals(r11, {"id": 4012, "userDetails": user, taxNo: "1234", address: "Colombo", age: 19, name: "Updated name"});
+
+    ReadonlyFieldsRecWithSelectiveImmutable r21 = check parseAsType({id: 1, ages: [21, 24, 27]});
+    test:assertEquals(r21, {id: 1, ages: [21, 24, 27], address: "N/A"});
+    test:assertTrue(r21.ages is readonly);
+
+    ReadonlyFieldsRecWithSelectiveImmutable2 r22 = check parseAsType({id: 1, ages: [21, 24, 27]});
+    test:assertEquals(r22, {id: 1, ages: [21, 24, 27], address: "N/A"});
+}
+
+@test:Config
+function testNegativeReadonlyFields() returns error? {
+    json user = {"a": 4012, "b": "John Doe"};
+    json user2 = {"a": 4012, "b": user};
+    json user3 = {"id": "string", "b": user};
+
+    ReadonlyFieldsRec11|error r1 = parseAsType(user);
+    test:assertTrue(r1 is Error);
+    test:assertEquals((<error> r1).message(), "required field 'id' not present in JSON");
+
+    ReadonlyFieldsRec11|error r2 = parseAsType(user3);
+    test:assertTrue(r2 is Error);
+    test:assertEquals((<error> r2).message(), "incompatible value 'string' for type 'int' in field 'id'");
+
+    ReadonlyFieldsRec15|error r3 = parseAsType(user2);
+    test:assertTrue(r3 is Error);
+    test:assertEquals((<error> r3).message(), "required field 'id' not present in JSON");
+
+    ReadonlyFieldsRec19|error r5 = parseAsType(user);
+    test:assertTrue(r5 is Error);
+    test:assertEquals((<error> r5).message(), "required field 'name' not present in JSON");
+}
+
+type ReadonlyFieldsRec21 record {|
+    @Name {
+        value: "id"
+    }
+    readonly int testId;
+|};
+
+type ReadonlyFieldsRec22 record {
+    @Name {
+        value: "id"
+    }
+    readonly int testId;
+
+    @Name {
+        value: "taxNo"
+    }
+    readonly string testTaxNo = "N/A";
+};
+
+type ReadonlyFieldsRec23 record {|
+    @Name {
+        value: "id"
+    }
+    readonly int testId;
+    @Name {
+        value: "name"
+    }
+    readonly string testName;
+    @Name {
+        value: "taxNo"
+    }
+    readonly string testTaxNo = "N/A";
+|};
+
+type ReadonlyFieldsRec24 record {|
+    @Name {
+        value: "id"
+    }
+    readonly int testId;
+    @Name {
+        value: "userDetails"
+    }
+    readonly ReadonlyFieldsRec3 testUserDetails;
+    @Name {
+        value: "address"
+    }
+    readonly string testAddress = "N/A";
+|};
+
+type ReadonlyFieldsRec25 record {|
+    @Name {
+        value: "id"
+    }
+    readonly int testId;
+    @Name {
+        value: "userDetails"
+    }
+    readonly ReadonlyFieldsRec23 testUserDetails;
+
+    @Name {
+        value: "address"
+    }
+    readonly string testAddress = "N/A";
+|};
+
+type ReadonlyFieldsRec26 record {
+    @Name {
+        value: "id"
+    }
+    readonly int testId;
+    @Name {
+        value: "userDetails"
+    }
+    readonly ReadonlyFieldsRec4 testUserDetails;
+
+    @Name {
+        value: "address"
+    }
+    readonly string testAddress = "N/A";
+};
+
+type ReadonlyFieldsRec27 record {|
+    @Name {
+        value: "name"
+    }
+    string testName;
+    @Name {
+        value: "id"
+    }
+    readonly int testId;
+    @Name {
+        value: "taxNo"
+    }
+    readonly string testTaxNo = "N/A";
+|};
+
+@test:Config
+function testReadonlyFieldsWithNameAnnotation() returns error? {
+    json user = {"id": 4012, "name": "John Doe"};
+    json user2 = {"id": 4012, "userDetails": user, taxNo: "1234", address: "Colombo", age: 19, name: "John Doe"};
+
+    ReadonlyFieldsRec21 r1 = check parseAsType(user);
+    test:assertEquals(r1, {testId: 4012});
+
+    ReadonlyFieldsRec22 r2 = check parseAsType(user);
+    test:assertEquals(r2, {testId: 4012, testTaxNo: "N/A", name: "John Doe"});
+
+    ReadonlyFieldsRec23 r3 = check parseAsType(user);
+    test:assertEquals(r3, {testId: 4012, testTaxNo: "N/A", testName: "John Doe"});
+
+    ReadonlyFieldsRec24 r4 = check parseAsType(user2);
+    test:assertEquals(r4, {testId: 4012, testUserDetails: user, testAddress: "Colombo"});
+
+    ReadonlyFieldsRec25 r5 = check parseAsType(user2);
+    test:assertEquals(r5, {testId: 4012, testUserDetails: {testId: 4012, testName: "John Doe", testTaxNo: "N/A"}, testAddress: "Colombo"});
+
+    ReadonlyFieldsRec26 r6 = check parseAsType(user2);
+    test:assertEquals(r6, {testId: 4012, testUserDetails: user, testAddress: "Colombo", "taxNo":"1234","age":19, "name":"John Doe"});
+
+    ReadonlyFieldsRec27 r7 = check parseAsType(user);
+    test:assertEquals(r7, {testId: 4012, testTaxNo: "N/A", testName: "John Doe"});
+}
