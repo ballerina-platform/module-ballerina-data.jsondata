@@ -128,6 +128,9 @@ isolated function testSimpleJsonToRecord6() returns Error? {
     ReadOnlyUsersRecord3 r = check parseAsType(user);
     test:assertEquals(r, {ids: [4012, 4013], names: [{firstname: "John", lastname: "Doe"},
                                                     {firstname: "Jane", lastname: "Doe"}]});
+    test:assertTrue(r.ids is readonly);
+    test:assertTrue(r.names is readonly);
+    test:assertTrue(r is ReadOnlyUsersRecord5 & readonly);
 }
 
 type ReadOnlyUsersRecord4 readonly & record {|
@@ -156,6 +159,8 @@ isolated function testSimpleJsonToRecord8() returns Error? {
     ReadOnlyUsersRecord5 r = check parseAsType(user);
     test:assertEquals(r, {ids: [4012, 4013], names: [{firstname: "John", lastname: "Doe"},
                                                     {firstname: "Jane", lastname: "Doe"}]});
+    test:assertTrue(r.ids is readonly);
+    test:assertTrue(r.names is readonly);
 }
 
 @test:Config
