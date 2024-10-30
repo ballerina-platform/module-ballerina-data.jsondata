@@ -1321,18 +1321,24 @@ function testReadonlyFields() returns error? {
     ReadonlyFieldsRec1 r1 = check parseAsType(user);
     test:assertEquals(r1, {id: 4012});
     test:assertEquals(r1.id, 4012);
+    test:assertTrue(r1 is readonly);
+    test:assertTrue(r1.id is readonly);
     
     ReadonlyFieldsRec2 r2 = check parseAsType(user);
     test:assertEquals(r2, {id: 4012, name: "John Doe"});
     test:assertEquals(r2.id, 4012);
+    test:assertTrue(r2.id is readonly);
     
     ReadonlyFieldsRec3 r3 = check parseAsType(user);
     test:assertEquals(r3, {id: 4012, name: "John Doe"});
     test:assertEquals(r3.id, 4012);
+    test:assertTrue(r3 is readonly);
+    test:assertTrue(r3.id is readonly);
 
     ReadonlyFieldsRec4 r4 = check parseAsType(user);
     test:assertEquals(r4, {id: 4012, name: "John Doe"});
     test:assertEquals(r4.id, 4012);
+    test:assertTrue(r4.id is readonly);
 
     ReadonlyFieldsRec5 r5 = check parseAsType(user2);
     test:assertEquals(r5, {id: 4012, userDetails: {id: 4012, name: "John Doe"}});
@@ -1346,6 +1352,8 @@ function testReadonlyFields() returns error? {
     ReadonlyFieldsRec7 r7 = check parseAsType(user2);
     test:assertEquals(r7, {id: 4012, userDetails: {id: 4012, name: "John Doe"}});
     test:assertEquals(r7.id, 4012);
+    test:assertTrue(r7 is readonly);
+    test:assertTrue(r7.userDetails is readonly);
 
     ReadonlyFieldsRec8 r8 = check parseAsType(user2);
     test:assertEquals(r8, {id: 4012, userDetails: {id: 4012, name: "John Doe"}, age: 13});
