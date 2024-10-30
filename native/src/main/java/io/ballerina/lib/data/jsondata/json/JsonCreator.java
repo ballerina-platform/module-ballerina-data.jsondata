@@ -396,7 +396,7 @@ public class JsonCreator {
 
         Type referredType = TypeUtils.getReferredType(expectedType);
         if (referredType.getTag() == TypeTags.INTERSECTION_TAG) {
-            return getMemberType(((IntersectionType) expectedType).getEffectiveType(), index, allowDataProjection);
+            return getMemberType(((IntersectionType) referredType).getEffectiveType(), index, allowDataProjection);
         }
         if (referredType.getTag() == TypeTags.ARRAY_TAG) {
             ArrayType arrayType = (ArrayType) referredType;
