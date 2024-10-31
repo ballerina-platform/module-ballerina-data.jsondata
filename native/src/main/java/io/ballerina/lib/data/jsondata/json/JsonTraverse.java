@@ -169,7 +169,7 @@ public class JsonTraverse {
                 }
                 case TypeTags.INTERSECTION_TAG -> {
                     Type effectiveType = ((IntersectionType) referredType).getEffectiveType();
-                    if (!SymbolFlags.isFlagOn(SymbolFlags.READONLY, effectiveType.getFlags())) {
+                    if (!effectiveType.isReadOnly()) {
                         throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
                     }
                     for (Type constituentType : ((IntersectionType) referredType).getConstituentTypes()) {
