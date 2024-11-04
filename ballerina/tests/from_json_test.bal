@@ -1656,4 +1656,10 @@ function testMapAsExpectedTypeWithJsonSource() returns error? {
 
     map<anydata> mapValue3 = check parseAsType(jsonValue, options = {allowDataProjection: {}});
     test:assertEquals(mapValue3, {"id":"chamil","values":{"a":2,"b":45,"c":{"x":"mnb","y":"uio"}}});
+
+    map<json>? mapValue4 = check parseAsType(jsonValue, options = {allowDataProjection: false});
+    test:assertEquals(mapValue4, {"id":"chamil","values":{"a":2,"b":45,"c":{"x":"mnb","y":"uio"}}});
+
+    record{|json?...;|} recValue3 = check parseAsType(jsonValue, options = {allowDataProjection: false});
+    test:assertEquals(recValue3, {"id":"chamil","values":{"a":2,"b":45,"c":{"x":"mnb","y":"uio"}}});
 }
