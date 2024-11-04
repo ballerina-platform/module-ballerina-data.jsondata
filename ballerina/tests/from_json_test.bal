@@ -1637,3 +1637,23 @@ function testReadonlyFieldsWithNameAnnotation() returns error? {
     ReadonlyFieldsRec27 r7 = check parseAsType(user);
     test:assertEquals(r7, {testId: 4012, testTaxNo: "N/A", testName: "John Doe"});
 }
+
+@test:Config
+function testMapAsExpectedTypeWithJsonSource() returns error? {
+    json jsonValue = {id: "chamil", values: {a: 2, b: 45, c: {x: "mnb", y: "uio"}}};
+
+    map<json> mapValue = check parseAsType(jsonValue, options = {allowDataProjection: false});
+    test:assertEquals(mapValue, {"id":"chamil","values":{"a":2,"b":45,"c":{"x":"mnb","y":"uio"}}});
+
+    record{|json...;|} recValue = check parseAsType(jsonValue, options = {allowDataProjection: false});
+    test:assertEquals(recValue, {"id":"chamil","values":{"a":2,"b":45,"c":{"x":"mnb","y":"uio"}}});
+
+    map<json> mapValue2 = check parseAsType(jsonValue, options = {allowDataProjection: {}});
+    test:assertEquals(mapValue2, {"id":"chamil","values":{"a":2,"b":45,"c":{"x":"mnb","y":"uio"}}});
+
+    record{|json...;|} recValue2 = check parseAsType(jsonValue, options = {allowDataProjection: {}});
+    test:assertEquals(recValue2, {"id":"chamil","values":{"a":2,"b":45,"c":{"x":"mnb","y":"uio"}}});
+
+    map<anydata> mapValue3 = check parseAsType(jsonValue, options = {allowDataProjection: {}});
+    test:assertEquals(mapValue3, {"id":"chamil","values":{"a":2,"b":45,"c":{"x":"mnb","y":"uio"}}});
+}
