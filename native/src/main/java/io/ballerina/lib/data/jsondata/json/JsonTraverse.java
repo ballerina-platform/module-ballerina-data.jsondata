@@ -212,6 +212,7 @@ public class JsonTraverse {
                     if (restType.peek() != null) {
                         Type restFieldType = TypeUtils.getReferredType(restType.peek());
                         addRestField(restFieldType, key, map.get(key), currentJsonNode);
+                        continue;
                     }
                     if (allowDataProjection) {
                         continue;
