@@ -173,3 +173,49 @@ function testToJsonWithNameANnotation() {
     test:assertTrue(j2 is json);
     test:assertEquals(j2, out2);
 }
+
+type TestRecord4 record {|
+    @Name {
+        value: "a-o"
+    }
+    string a;
+    @Name {
+        value: "b-o"
+    }
+    string b;
+    int c;
+    TestRecord4[] d;
+|};
+
+@test:Config
+function testToJsonWithCyclicValues() {
+    json[] v1 = [];
+    v1.push(v1);
+    json|error r1 = trap toJsonWithCyclicValues(v1);
+    test:assertTrue(r1 is error);
+    error r1Err = <error> r1;
+    test:assertEquals("the value has a cyclic reference", r1Err.message());
+
+    map<json> v2 = {};
+    v2["val"] = v2;
+    json|error r2 = trap toJsonWithCyclicValues(v2);
+    test:assertTrue(r2 is error);
+    error r2Err = <error> r2;
+    test:assertEquals("the value has a cyclic reference", r2Err.message());
+
+    TestRecord4 v3 = {
+        a: "a-v",
+        b: "b-v",
+        c: 1,
+        d: []
+    };
+    v3.d.push(v3);
+    json|error r3 = trap toJsonWithCyclicValues(v3);
+    test:assertTrue(r3 is error);
+    error r3Err = <error> r3;
+    test:assertEquals("the value has a cyclic reference", r3Err.message());
+}
+
+function toJsonWithCyclicValues(anydata val) returns json {
+    return toJson(val);
+}
