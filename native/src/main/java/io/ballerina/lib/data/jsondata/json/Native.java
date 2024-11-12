@@ -37,6 +37,7 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BStream;
 import io.ballerina.runtime.api.values.BString;
+import io.ballerina.runtime.api.values.BTable;
 import io.ballerina.runtime.api.values.BTypedesc;
 
 import java.io.ByteArrayInputStream;
@@ -119,6 +120,17 @@ public class Native {
             }
 
             return jsonObject;
+        }
+
+        if (value instanceof BTable tableValue) {
+            int length = tableValue.size();
+            Object[] convertedValues = new Object[length];
+
+            int index = 0;
+            for (Object tableMember : tableValue.values()) {
+                convertedValues[index++] = toJson(tableMember, visitedValues);
+            }
+            return ValueCreator.createArrayValue(convertedValues, PredefinedTypes.TYPE_JSON_ARRAY);
         }
 
         return JsonUtils.convertToJson(value);
