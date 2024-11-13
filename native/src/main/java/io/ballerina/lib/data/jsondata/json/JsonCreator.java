@@ -22,8 +22,6 @@ import io.ballerina.lib.data.jsondata.FromString;
 import io.ballerina.lib.data.jsondata.utils.Constants;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
-import io.ballerina.runtime.api.PredefinedTypes;
-import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.flags.SymbolFlags;
@@ -32,9 +30,11 @@ import io.ballerina.runtime.api.types.Field;
 import io.ballerina.runtime.api.types.FiniteType;
 import io.ballerina.runtime.api.types.IntersectionType;
 import io.ballerina.runtime.api.types.MapType;
+import io.ballerina.runtime.api.types.PredefinedTypes;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.TupleType;
 import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.TypeTags;
 import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
@@ -395,6 +395,9 @@ public class JsonCreator {
         }
 
         Type referredType = TypeUtils.getReferredType(expectedType);
+        if (referredType.getTag() == TypeTags.INTERSECTION_TAG) {
+            return getMemberType(((IntersectionType) referredType).getEffectiveType(), index, allowDataProjection);
+        }
         if (referredType.getTag() == TypeTags.ARRAY_TAG) {
             ArrayType arrayType = (ArrayType) referredType;
             if (arrayType.getState() == ArrayType.ArrayState.OPEN

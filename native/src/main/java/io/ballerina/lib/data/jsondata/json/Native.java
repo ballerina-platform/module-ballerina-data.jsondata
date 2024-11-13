@@ -20,8 +20,14 @@ package io.ballerina.lib.data.jsondata.json;
 
 import io.ballerina.lib.data.jsondata.io.BallerinaByteBlockInputStream;
 import io.ballerina.lib.data.jsondata.utils.Constants;
+import io.ballerina.lib.data.jsondata.utils.DiagnosticErrorCode;
+import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
 import io.ballerina.runtime.api.Environment;
+import io.ballerina.runtime.api.creators.TypeCreator;
+import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.types.PredefinedTypes;
 import io.ballerina.runtime.api.types.RecordType;
+import io.ballerina.runtime.api.utils.JsonUtils;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
@@ -29,12 +35,15 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BStream;
 import io.ballerina.runtime.api.values.BString;
+import io.ballerina.runtime.api.values.BTable;
 import io.ballerina.runtime.api.values.BTypedesc;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static io.ballerina.lib.data.jsondata.json.JsonCreator.getModifiedName;
 import static io.ballerina.lib.data.jsondata.utils.DataUtils.unescapeIdentifier;
@@ -82,6 +91,51 @@ public class Native {
             return byteBlockSteam.getError();
         }
         return result;
+    }
+
+    public static Object toJson(Object value) {
+        return toJson(value, new HashSet<>());
+    }
+
+    public static Object toJson(Object value, Set<Object> visitedValues) {
+        if (!visitedValues.add(value)) {
+            throw DiagnosticLog.error(DiagnosticErrorCode.CYCLIC_REFERENCE);
+        }
+
+        if (value instanceof BArray listValue) {
+            int length = (int) listValue.getLength();
+            Object[] convertedValues = new Object[length];
+            for (int i = 0; i < length; i++) {
+                convertedValues[i] = toJson(listValue.get(i), visitedValues);
+            }
+            return ValueCreator.createArrayValue(convertedValues, PredefinedTypes.TYPE_JSON_ARRAY);
+        }
+
+        if (value instanceof BMap) {
+            BMap<BString, Object> mapValue = (BMap<BString, Object>) value;
+            BMap<BString, Object> jsonObject =
+                    ValueCreator.createMapValue(TypeCreator.createMapType(PredefinedTypes.TYPE_JSON));
+
+            for (BString entryKey : mapValue.getKeys()) {
+                Object entryValue = mapValue.get(entryKey);
+                jsonObject.put(getNameAnnotation(mapValue, entryKey), toJson(entryValue, visitedValues));
+            }
+
+            return jsonObject;
+        }
+
+        if (value instanceof BTable tableValue) {
+            int length = tableValue.size();
+            Object[] convertedValues = new Object[length];
+
+            int index = 0;
+            for (Object tableMember : tableValue.values()) {
+                convertedValues[index++] = toJson(tableMember, visitedValues);
+            }
+            return ValueCreator.createArrayValue(convertedValues, PredefinedTypes.TYPE_JSON_ARRAY);
+        }
+
+        return JsonUtils.convertToJson(value);
     }
 
     public static BString getNameAnnotation(BMap<BString, Object> value, BString key) {

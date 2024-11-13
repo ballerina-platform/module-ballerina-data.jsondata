@@ -22,17 +22,18 @@ import io.ballerina.lib.data.jsondata.utils.Constants;
 import io.ballerina.lib.data.jsondata.utils.DataUtils;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
-import io.ballerina.runtime.api.PredefinedTypes;
-import io.ballerina.runtime.api.TypeTags;
+import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.flags.SymbolFlags;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.Field;
 import io.ballerina.runtime.api.types.IntersectionType;
 import io.ballerina.runtime.api.types.MapType;
+import io.ballerina.runtime.api.types.PredefinedTypes;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.TupleType;
 import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.TypeTags;
 import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
@@ -117,6 +118,16 @@ public class JsonTraverse {
                     RecordType recordType = (RecordType) referredType;
                     fieldHierarchy.push(JsonCreator.getAllFieldsInRecord(recordType));
                     restType.push(recordType.getRestFieldType());
+                    if (recordType.isReadOnly()) {
+                        Object value = traverseMapJsonOrArrayJson(json,
+                                        ValueCreator.createMapValue(TypeCreator
+                                                .createMapType(PredefinedTypes.TYPE_ANYDATA)), referredType);
+                        try {
+                            return ValueUtils.convert(JsonCreator.constructReadOnlyValue(value), recordType);
+                        } catch (BError e) {
+                            throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, json);
+                        }
+                    }
                     return traverseMapJsonOrArrayJson(json,
                             ValueCreator.createRecordValue(type.getPackage(), type.getName()), referredType);
                 }
@@ -158,7 +169,7 @@ public class JsonTraverse {
                 }
                 case TypeTags.INTERSECTION_TAG -> {
                     Type effectiveType = ((IntersectionType) referredType).getEffectiveType();
-                    if (!SymbolFlags.isFlagOn(SymbolFlags.READONLY, effectiveType.getFlags())) {
+                    if (!effectiveType.isReadOnly()) {
                         throw DiagnosticLog.error(DiagnosticErrorCode.UNSUPPORTED_TYPE, type);
                     }
                     for (Type constituentType : ((IntersectionType) referredType).getConstituentTypes()) {
@@ -201,6 +212,7 @@ public class JsonTraverse {
                     if (restType.peek() != null) {
                         Type restFieldType = TypeUtils.getReferredType(restType.peek());
                         addRestField(restFieldType, key, map.get(key), currentJsonNode);
+                        continue;
                     }
                     if (allowDataProjection) {
                         continue;

@@ -81,6 +81,26 @@ function testToJsonWithXML() {
     test:assertEquals(j, x1.toString());
 }
 
+type Employee record {|
+    readonly int id;
+    string name;
+    string dept;
+|};
+
+@test:Config
+function testToJsonWithTables() {
+    table<Employee> key (id) tb = table [
+        {id: 1001, name: "Mary", dept: "legal"},
+        {id: 1002, name: "John", dept: "finance"}
+    ];
+    json tbJson = toJson(tb);
+    test:assertTrue(tbJson is json[]);
+    test:assertEquals(tbJson, <json> [
+        {id: 1001, name: "Mary", dept: "legal"},
+        {id: 1002, name: "John", dept: "finance"}
+    ]);
+}
+
 type TestRecord3 record {|
     @Name {
         value: "a-o"
@@ -116,7 +136,7 @@ type NestedRecord3 record {
 };
 
 @test:Config
-function testToJsonWithNameANnotation() {
+function testToJsonWithNameAnnotation() {
     TestRecord3 r = {
         a: "name",
         b: "b name",
@@ -172,4 +192,73 @@ function testToJsonWithNameANnotation() {
     json|Error j2 = toJson(n);
     test:assertTrue(j2 is json);
     test:assertEquals(j2, out2);
+
+    table<TestRecord3> tb = table [
+        {a: "a value", b: "b value", c: 1001},
+        {a: "a value 2", b: "b value 2", c: 1002}
+    ];
+    json j3 = toJson(tb);
+    test:assertTrue(j3 is json[]);
+    json[] out3 = [
+        {"a-o": "a value", "b-o": "b value", c: 1001},
+        {"a-o": "a value 2", "b-o": "b value 2", c: 1002}
+    ];
+    test:assertEquals(j3, out3);
+}
+
+type TestRecord4 record {|
+    @Name {
+        value: "a-o"
+    }
+    string a;
+    @Name {
+        value: "b-o"
+    }
+    string b;
+    int c;
+    TestRecord4[] d;
+|};
+
+@test:Config
+function testToJsonWithCyclicValues() {
+    json[] v1 = [];
+    v1.push(v1);
+    json|error r1 = trap toJsonWithCyclicValues(v1);
+    test:assertTrue(r1 is error);
+    error r1Err = <error> r1;
+    test:assertEquals("the value has a cyclic reference", r1Err.message());
+
+    map<json> v2 = {};
+    v2["val"] = v2;
+    json|error r2 = trap toJsonWithCyclicValues(v2);
+    test:assertTrue(r2 is error);
+    error r2Err = <error> r2;
+    test:assertEquals("the value has a cyclic reference", r2Err.message());
+
+    TestRecord4 v3 = {
+        a: "a-v",
+        b: "b-v",
+        c: 1,
+        d: []
+    };
+    v3.d.push(v3);
+    json|error r3 = trap toJsonWithCyclicValues(v3);
+    test:assertTrue(r3 is error);
+    error r3Err = <error> r3;
+    test:assertEquals("the value has a cyclic reference", r3Err.message());
+
+    table<record {readonly int id; string name; record {} details;}> key (id) v4 =
+        table [
+            {id: 1023, name: "Joy", details: {}}
+        ];
+    record {} details = v4.get(1023).details;
+    details["tb"] = v4;
+    json|error r4 = trap toJsonWithCyclicValues(v4);
+    test:assertTrue(r4 is error);
+    error r4Err = <error> r4;
+    test:assertEquals("the value has a cyclic reference", r4Err.message());
+}
+
+function toJsonWithCyclicValues(anydata val) returns json {
+    return toJson(val);
 }
