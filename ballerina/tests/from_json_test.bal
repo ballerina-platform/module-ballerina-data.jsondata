@@ -1805,9 +1805,9 @@ function testMapAsExpectedTypeWithJsonSource() returns error? {
 
     map<record{|json...;|}|string|int> mapValue7 = check parseAsType(jsonValue, options = {allowDataProjection: {}});
     test:assertEquals(mapValue7, {"id": "chamil", "values": {"a":2, "b": 45, "c": {"x": "mnb", "y": "uio"}}});
-    test:assertTrue(mapValue7 is map<anydata>);
+    test:assertTrue(mapValue7 is map<record{|json...;|}|string|int>);
 
     record{|record{|json...;|}|string|int...;|}? mapValue8 = check parseAsType(jsonValue, options = {allowDataProjection: false});
     test:assertEquals(mapValue8, {"id": "chamil", "values": {"a":2, "b": 45, "c": {"x": "mnb", "y": "uio"}}});
-    test:assertTrue(mapValue8 is map<json>?);
+    test:assertTrue(mapValue8 is record{|record{|json...;|}|string|int...;|}?);
 }
