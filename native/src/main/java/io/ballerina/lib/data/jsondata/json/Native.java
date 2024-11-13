@@ -21,9 +21,15 @@ package io.ballerina.lib.data.jsondata.json;
 import io.ballerina.lib.data.jsondata.io.DataReaderTask;
 import io.ballerina.lib.data.jsondata.io.DataReaderThreadPool;
 import io.ballerina.lib.data.jsondata.utils.Constants;
+import io.ballerina.lib.data.jsondata.utils.DiagnosticErrorCode;
+import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.Future;
+import io.ballerina.runtime.api.PredefinedTypes;
+import io.ballerina.runtime.api.creators.TypeCreator;
+import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.RecordType;
+import io.ballerina.runtime.api.utils.JsonUtils;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
@@ -36,7 +42,9 @@ import io.ballerina.runtime.api.values.BTypedesc;
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static io.ballerina.lib.data.jsondata.json.JsonCreator.getModifiedName;
 import static io.ballerina.lib.data.jsondata.utils.DataUtils.unescapeIdentifier;
@@ -80,6 +88,40 @@ public class Native {
         DataReaderTask task = new DataReaderTask(env, iteratorObj, future, typed, options);
         DataReaderThreadPool.EXECUTOR_SERVICE.submit(task);
         return null;
+    }
+
+    public static Object toJson(Object value) {
+        return toJson(value, new HashSet<>());
+    }
+
+    public static Object toJson(Object value, Set<Object> visitedValues) {
+        if (!visitedValues.add(value)) {
+            throw DiagnosticLog.error(DiagnosticErrorCode.CYCLIC_REFERENCE);
+        }
+
+        if (value instanceof BArray listValue) {
+            int length = (int) listValue.getLength();
+            Object[] convertedValues = new Object[length];
+            for (int i = 0; i < length; i++) {
+                convertedValues[i] = toJson(listValue.get(i), visitedValues);
+            }
+            return ValueCreator.createArrayValue(convertedValues, PredefinedTypes.TYPE_JSON_ARRAY);
+        }
+
+        if (value instanceof BMap) {
+            BMap<BString, Object> mapValue = (BMap<BString, Object>) value;
+            BMap<BString, Object> jsonObject =
+                    ValueCreator.createMapValue(TypeCreator.createMapType(PredefinedTypes.TYPE_JSON));
+
+            for (BString entryKey : mapValue.getKeys()) {
+                Object entryValue = mapValue.get(entryKey);
+                jsonObject.put(getNameAnnotation(mapValue, entryKey), toJson(entryValue, visitedValues));
+            }
+
+            return jsonObject;
+        }
+
+        return JsonUtils.convertToJson(value);
     }
 
     public static BString getNameAnnotation(BMap<BString, Object> value, BString key) {
