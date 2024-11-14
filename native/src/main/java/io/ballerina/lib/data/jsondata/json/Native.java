@@ -29,6 +29,7 @@ import io.ballerina.runtime.api.types.PredefinedTypes;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.utils.JsonUtils;
 import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
@@ -98,6 +99,10 @@ public class Native {
     }
 
     public static Object toJson(Object value, Set<Object> visitedValues) {
+        if (isSimpleBasicTypeOrString(value)) {
+            return value;
+        }
+
         if (!visitedValues.add(value)) {
             throw DiagnosticLog.error(DiagnosticErrorCode.CYCLIC_REFERENCE);
         }
@@ -138,7 +143,11 @@ public class Native {
         return JsonUtils.convertToJson(value);
     }
 
-    public static BString getNameAnnotation(BMap<BString, Object> value, BString key) {
+    private static boolean isSimpleBasicTypeOrString(Object value) {
+        return value == null || TypeUtils.getType(value).getTag() < 7;
+    }
+
+    private static BString getNameAnnotation(BMap<BString, Object> value, BString key) {
         if (!(value.getType() instanceof RecordType recordType)) {
             return key;
         }
