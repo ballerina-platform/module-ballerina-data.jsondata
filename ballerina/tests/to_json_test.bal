@@ -259,6 +259,60 @@ function testToJsonWithCyclicValues() {
     test:assertEquals("the value has a cyclic reference", r4Err.message());
 }
 
+@test:Config
+function testToJsonWithoutCyclicValuesWithRepeatedSimpleValueMembers() {
+    byte byteVal = 3;
+    json jsonVal = {
+        "a": "abc",
+        "b": 1,
+        "c": true,
+        "d": null,
+        "e": 1,
+        "f": null,
+        "g": true,
+        "h": byteVal,
+        "i": 2f,
+        "j": 2f,
+        "k": "non-dup",
+        "l": 3d,
+        "m": byteVal,
+        "n": 3d,
+        "o": "abc",
+        "p": false
+    };
+    json jsonRes = toJson(jsonVal);
+    test:assertEquals(jsonVal, jsonRes);
+    test:assertNotExactEquals(jsonVal, jsonRes);
+}
+
+@test:Config
+function testToJsonWithCyclicValuesWithOtherSimpleValueMembers() {
+    byte byteVal = 3;
+    map<json> jsonVal = {
+        "a": "abc",
+        "b": 1,
+        "c": true,
+        "d": null,
+        "e": 1,
+        "f": null,
+        "g": true,
+        "h": byteVal,
+        "i": 2f,
+        "j": 2f,
+        "k": "non-dup",
+        "l": 3d,
+        "m": byteVal,
+        "n": 3d,
+        "o": "abc",
+        "p": false
+    };
+    jsonVal["q"] = jsonVal;
+    json|error r1 = trap toJsonWithCyclicValues(jsonVal);
+    test:assertTrue(r1 is error);
+    error r1Err = <error> r1;
+    test:assertEquals("the value has a cyclic reference", r1Err.message());
+}
+
 function toJsonWithCyclicValues(anydata val) returns json {
     return toJson(val);
 }
