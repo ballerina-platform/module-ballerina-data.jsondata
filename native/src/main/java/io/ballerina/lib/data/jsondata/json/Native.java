@@ -18,16 +18,14 @@
 
 package io.ballerina.lib.data.jsondata.json;
 
-import io.ballerina.lib.data.jsondata.io.DataReaderTask;
-import io.ballerina.lib.data.jsondata.io.DataReaderThreadPool;
+import io.ballerina.lib.data.jsondata.io.BallerinaByteBlockInputStream;
 import io.ballerina.lib.data.jsondata.utils.Constants;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
 import io.ballerina.runtime.api.Environment;
-import io.ballerina.runtime.api.Future;
-import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.types.PredefinedTypes;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.utils.JsonUtils;
 import io.ballerina.runtime.api.utils.StringUtils;
@@ -50,7 +48,8 @@ import java.util.Set;
 
 import static io.ballerina.lib.data.jsondata.json.JsonCreator.getModifiedName;
 import static io.ballerina.lib.data.jsondata.utils.DataUtils.unescapeIdentifier;
-
+import static io.ballerina.lib.data.jsondata.utils.DataReader.resolveCloseMethod;
+import static io.ballerina.lib.data.jsondata.utils.DataReader.resolveNextMethod;
 
 /**
  * Json conversions.
@@ -86,10 +85,13 @@ public class Native {
 
     public static Object parseStream(Environment env, BStream json, BMap<BString, Object> options, BTypedesc typed) {
         final BObject iteratorObj = json.getIteratorObj();
-        final Future future = env.markAsync();
-        DataReaderTask task = new DataReaderTask(env, iteratorObj, future, typed, options);
-        DataReaderThreadPool.EXECUTOR_SERVICE.submit(task);
-        return null;
+        BallerinaByteBlockInputStream byteBlockSteam = new BallerinaByteBlockInputStream(env,
+                iteratorObj, resolveNextMethod(iteratorObj), resolveCloseMethod(iteratorObj));
+        Object result = JsonParser.parse(new InputStreamReader(byteBlockSteam), options, typed);
+        if (byteBlockSteam.getError() != null) {
+            return byteBlockSteam.getError();
+        }
+        return result;
     }
 
     public static Object toJson(Object value) {
