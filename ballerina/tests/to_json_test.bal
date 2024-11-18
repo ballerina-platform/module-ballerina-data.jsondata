@@ -223,17 +223,13 @@ type TestRecord4 record {|
 function testToJsonWithCyclicValues() {
     json[] v1 = [];
     v1.push(v1);
-    json|error r1 = trap toJsonWithCyclicValues(v1);
-    test:assertTrue(r1 is error);
-    error r1Err = <error> r1;
-    test:assertEquals("the value has a cyclic reference", r1Err.message());
+    json|error r1 = toJsonWithCyclicValues(v1);
+    assertCyclicReferenceError(r1);
 
     map<json> v2 = {};
     v2["val"] = v2;
-    json|error r2 = trap toJsonWithCyclicValues(v2);
-    test:assertTrue(r2 is error);
-    error r2Err = <error> r2;
-    test:assertEquals("the value has a cyclic reference", r2Err.message());
+    json|error r2 = toJsonWithCyclicValues(v2);
+    assertCyclicReferenceError(r2);
 
     TestRecord4 v3 = {
         a: "a-v",
@@ -242,10 +238,8 @@ function testToJsonWithCyclicValues() {
         d: []
     };
     v3.d.push(v3);
-    json|error r3 = trap toJsonWithCyclicValues(v3);
-    test:assertTrue(r3 is error);
-    error r3Err = <error> r3;
-    test:assertEquals("the value has a cyclic reference", r3Err.message());
+    json|error r3 = toJsonWithCyclicValues(v3);
+    assertCyclicReferenceError(r3);
 
     table<record {readonly int id; string name; record {} details;}> key (id) v4 =
         table [
@@ -253,10 +247,8 @@ function testToJsonWithCyclicValues() {
         ];
     record {} details = v4.get(1023).details;
     details["tb"] = v4;
-    json|error r4 = trap toJsonWithCyclicValues(v4);
-    test:assertTrue(r4 is error);
-    error r4Err = <error> r4;
-    test:assertEquals("the value has a cyclic reference", r4Err.message());
+    json|error r4 = toJsonWithCyclicValues(v4);
+    assertCyclicReferenceError(r4);
 }
 
 @test:Config
@@ -285,6 +277,48 @@ function testToJsonWithoutCyclicValuesWithRepeatedSimpleValueMembers() {
     test:assertNotExactEquals(jsonVal, jsonRes);
 }
 
+type GreetingConf record {|
+    readonly int id;
+    record {| string message; |} greeting;
+    record {| int count; int interval; |} repetition;
+|};
+
+@test:Config
+function testToJsonWithoutCyclicValuesWithRepeatedStructuredMembers() {
+    map<json> greetingConf = {greeting: {message: "hello world"}, repetition: {count: 2, interval: 5}};
+    map<json>[] greetingConfs = [greetingConf, greetingConf];
+    json arrJson = toJson(greetingConfs);
+    test:assertEquals(greetingConfs, arrJson);
+    test:assertNotExactEquals(greetingConfs, arrJson);
+
+    GreetingConf gc = {
+        id: 1001,
+        greeting: {message: "hello world"},
+        repetition: {count: 2, interval: 5}
+    };
+    table<GreetingConf> tab = table [];
+    tab.put(gc);
+    tab.put({id: 1002, greeting: {message: "hello!"}, repetition: {count: 1, interval: 30}});
+    tab.put(gc);
+    json tabJson = toJson(tab);
+    test:assertEquals(<json[]> [
+        gc,
+        {id: 1002, greeting: {message: "hello!"}, repetition: {count: 1, interval: 30}},
+        gc
+    ], tabJson);
+
+    int[] arr = [1, 2, 3];
+    map<int[]> mp = {
+        a: arr,
+        b: [],
+        c: [3, 5, 6, 7],
+        d: arr
+    };
+    json mapJson = toJson(mp);
+    test:assertEquals(mp, mapJson);
+    test:assertNotExactEquals(mp, mapJson);
+}
+
 @test:Config
 function testToJsonWithCyclicValuesWithOtherSimpleValueMembers() {
     byte byteVal = 3;
@@ -307,12 +341,16 @@ function testToJsonWithCyclicValuesWithOtherSimpleValueMembers() {
         "p": false
     };
     jsonVal["q"] = jsonVal;
-    json|error r1 = trap toJsonWithCyclicValues(jsonVal);
-    test:assertTrue(r1 is error);
-    error r1Err = <error> r1;
-    test:assertEquals("the value has a cyclic reference", r1Err.message());
+    json|error r1 = toJsonWithCyclicValues(jsonVal);
+    assertCyclicReferenceError(r1);
 }
 
-function toJsonWithCyclicValues(anydata val) returns json {
-    return toJson(val);
+function toJsonWithCyclicValues(anydata val) returns json|error {
+    return trap toJson(val);
+}
+
+function assertCyclicReferenceError(json|error res) {
+    test:assertTrue(res is error);
+    error err = <error> res;
+    test:assertEquals("the value has a cyclic reference", err.message());
 }

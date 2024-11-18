@@ -111,7 +111,9 @@ public class Native {
             int length = (int) listValue.getLength();
             Object[] convertedValues = new Object[length];
             for (int i = 0; i < length; i++) {
-                convertedValues[i] = toJson(listValue.get(i), visitedValues);
+                Object memValue = listValue.get(i);
+                convertedValues[i] = toJson(memValue, visitedValues);
+                visitedValues.remove(memValue);
             }
             return ValueCreator.createArrayValue(convertedValues, PredefinedTypes.TYPE_JSON_ARRAY);
         }
@@ -124,6 +126,7 @@ public class Native {
             for (BString entryKey : mapValue.getKeys()) {
                 Object entryValue = mapValue.get(entryKey);
                 jsonObject.put(getNameAnnotation(mapValue, entryKey), toJson(entryValue, visitedValues));
+                visitedValues.remove(entryValue);
             }
 
             return jsonObject;
@@ -136,6 +139,7 @@ public class Native {
             int index = 0;
             for (Object tableMember : tableValue.values()) {
                 convertedValues[index++] = toJson(tableMember, visitedValues);
+                visitedValues.remove(tableMember);
             }
             return ValueCreator.createArrayValue(convertedValues, PredefinedTypes.TYPE_JSON_ARRAY);
         }
