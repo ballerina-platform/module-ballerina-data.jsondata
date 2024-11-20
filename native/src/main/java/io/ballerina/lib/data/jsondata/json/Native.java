@@ -18,19 +18,18 @@
 
 package io.ballerina.lib.data.jsondata.json;
 
-import io.ballerina.lib.data.jsondata.io.DataReaderTask;
-import io.ballerina.lib.data.jsondata.io.DataReaderThreadPool;
+import io.ballerina.lib.data.jsondata.io.BallerinaByteBlockInputStream;
 import io.ballerina.lib.data.jsondata.utils.Constants;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
 import io.ballerina.runtime.api.Environment;
-import io.ballerina.runtime.api.Future;
-import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.types.PredefinedTypes;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.utils.JsonUtils;
 import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
@@ -49,7 +48,8 @@ import java.util.Set;
 
 import static io.ballerina.lib.data.jsondata.json.JsonCreator.getModifiedName;
 import static io.ballerina.lib.data.jsondata.utils.DataUtils.unescapeIdentifier;
-
+import static io.ballerina.lib.data.jsondata.utils.DataReader.resolveCloseMethod;
+import static io.ballerina.lib.data.jsondata.utils.DataReader.resolveNextMethod;
 
 /**
  * Json conversions.
@@ -85,10 +85,13 @@ public class Native {
 
     public static Object parseStream(Environment env, BStream json, BMap<BString, Object> options, BTypedesc typed) {
         final BObject iteratorObj = json.getIteratorObj();
-        final Future future = env.markAsync();
-        DataReaderTask task = new DataReaderTask(env, iteratorObj, future, typed, options);
-        DataReaderThreadPool.EXECUTOR_SERVICE.submit(task);
-        return null;
+        BallerinaByteBlockInputStream byteBlockSteam = new BallerinaByteBlockInputStream(env,
+                iteratorObj, resolveNextMethod(iteratorObj), resolveCloseMethod(iteratorObj));
+        Object result = JsonParser.parse(new InputStreamReader(byteBlockSteam), options, typed);
+        if (byteBlockSteam.getError() != null) {
+            return byteBlockSteam.getError();
+        }
+        return result;
     }
 
     public static Object toJson(Object value) {
@@ -96,6 +99,10 @@ public class Native {
     }
 
     public static Object toJson(Object value, Set<Object> visitedValues) {
+        if (isSimpleBasicTypeOrString(value)) {
+            return value;
+        }
+
         if (!visitedValues.add(value)) {
             throw DiagnosticLog.error(DiagnosticErrorCode.CYCLIC_REFERENCE);
         }
@@ -104,7 +111,9 @@ public class Native {
             int length = (int) listValue.getLength();
             Object[] convertedValues = new Object[length];
             for (int i = 0; i < length; i++) {
-                convertedValues[i] = toJson(listValue.get(i), visitedValues);
+                Object memValue = listValue.get(i);
+                convertedValues[i] = toJson(memValue, visitedValues);
+                visitedValues.remove(memValue);
             }
             return ValueCreator.createArrayValue(convertedValues, PredefinedTypes.TYPE_JSON_ARRAY);
         }
@@ -117,6 +126,7 @@ public class Native {
             for (BString entryKey : mapValue.getKeys()) {
                 Object entryValue = mapValue.get(entryKey);
                 jsonObject.put(getNameAnnotation(mapValue, entryKey), toJson(entryValue, visitedValues));
+                visitedValues.remove(entryValue);
             }
 
             return jsonObject;
@@ -129,6 +139,7 @@ public class Native {
             int index = 0;
             for (Object tableMember : tableValue.values()) {
                 convertedValues[index++] = toJson(tableMember, visitedValues);
+                visitedValues.remove(tableMember);
             }
             return ValueCreator.createArrayValue(convertedValues, PredefinedTypes.TYPE_JSON_ARRAY);
         }
@@ -136,7 +147,11 @@ public class Native {
         return JsonUtils.convertToJson(value);
     }
 
-    public static BString getNameAnnotation(BMap<BString, Object> value, BString key) {
+    private static boolean isSimpleBasicTypeOrString(Object value) {
+        return value == null || TypeUtils.getType(value).getTag() < 7;
+    }
+
+    private static BString getNameAnnotation(BMap<BString, Object> value, BString key) {
         if (!(value.getType() instanceof RecordType recordType)) {
             return key;
         }
