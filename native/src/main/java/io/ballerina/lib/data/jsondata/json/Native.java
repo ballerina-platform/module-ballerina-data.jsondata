@@ -85,13 +85,15 @@ public class Native {
 
     public static Object parseStream(Environment env, BStream json, BMap<BString, Object> options, BTypedesc typed) {
         final BObject iteratorObj = json.getIteratorObj();
-        BallerinaByteBlockInputStream byteBlockSteam = new BallerinaByteBlockInputStream(env,
-                iteratorObj, resolveNextMethod(iteratorObj), resolveCloseMethod(iteratorObj));
-        Object result = JsonParser.parse(new InputStreamReader(byteBlockSteam), options, typed);
-        if (byteBlockSteam.getError() != null) {
-            return byteBlockSteam.getError();
-        }
-        return result;
+        return env.yieldAndRun(() -> {
+            BallerinaByteBlockInputStream byteBlockSteam = new BallerinaByteBlockInputStream(env, iteratorObj,
+                    resolveNextMethod(iteratorObj), resolveCloseMethod(iteratorObj));
+            Object result = JsonParser.parse(new InputStreamReader(byteBlockSteam), options, typed);
+            if (byteBlockSteam.getError() != null) {
+                return byteBlockSteam.getError();
+            }
+            return result;
+        });
     }
 
     public static Object toJson(Object value) {
