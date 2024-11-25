@@ -21,7 +21,6 @@ package io.ballerina.lib.data.jsondata.io;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
 import io.ballerina.runtime.api.Environment;
-import io.ballerina.runtime.api.concurrent.StrandMetadata;
 import io.ballerina.runtime.api.types.MethodType;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BError;
@@ -83,7 +82,7 @@ public class BallerinaByteBlockInputStream extends InputStream {
     public void close() throws IOException {
         super.close();
         if (closeMethod != null) {
-            env.getRuntime().callMethod(iterator, closeMethod.getName(), new StrandMetadata(false, null));
+            env.getRuntime().callMethod(iterator, closeMethod.getName(), null);
         }
     }
 
@@ -93,7 +92,7 @@ public class BallerinaByteBlockInputStream extends InputStream {
 
     private boolean readNextChunk() throws InterruptedException {
         try {
-            Object result = env.getRuntime().callMethod(iterator, nextMethodName, new StrandMetadata(false, null));
+            Object result = env.getRuntime().callMethod(iterator, nextMethodName, null);
             if (result == null) {
                 done = true;
                 return true;
