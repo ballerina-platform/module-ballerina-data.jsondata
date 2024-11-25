@@ -8,7 +8,6 @@ repository = "https://github.com/ballerina-platform/module-ballerina-data.jsonda
 license = ["Apache-2.0"]
 distribution = "2201.11.0"
 export = ["data.jsondata"]
-readme = "Package.md"
 
 [platform.java21]
 graalvmCompatible = true
