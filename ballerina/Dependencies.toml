@@ -10,7 +10,7 @@ distribution-version = "2201.12.0-20250228-201300-8d411a0f"
 [[package]]
 org = "ballerina"
 name = "constraint"
-version = "1.6.0"
+version = "1.7.0"
 scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"}
@@ -22,7 +22,7 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "data.jsondata"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
 	{org = "ballerina", name = "constraint"},
 	{org = "ballerina", name = "file"},
@@ -42,7 +42,7 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "file"
-version = "1.11.0"
+version = "1.12.0"
 scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "io"},
@@ -57,7 +57,7 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "io"
-version = "1.7.0"
+version = "1.8.0"
 scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"},
@@ -153,7 +153,7 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "os"
-version = "1.9.0"
+version = "1.10.0"
 scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "io"},
@@ -177,7 +177,7 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "time"
-version = "2.6.0"
+version = "2.7.0"
 scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"}
