@@ -32,10 +32,10 @@ public annotation StringValidationRec StringValidation on type;
 
 # Defines constraints for JSON schema number type.
 #
-# + maximum - The maximum value allowed.
-# + minimum - The minimum value allowed.
-# + exclusiveMaximum - The upper exclusive bound (value must be less than this).
-# + exclusiveMinimum - The lower exclusive bound (value must be greater than this).
+# + maximum - The inclusive upper bound of the constrained type.
+# + minimum - The inclusive lower bound of the constrained type.
+# + exclusiveMaximum - The exclusive upper bound of the constrained type.
+# + exclusiveMinimum - The exclusive lower bound of the constrained type.
 # + multipleOf - The number must be a multiple of this value.
 public type NumberValidationRec record {|
     int|float|decimal maximum?;
@@ -99,17 +99,24 @@ public type DependentRequiredRec record {|
 # The annotation is used to specify dependent Required fields.
 public annotation DependentRequiredRec DependentRequired on record field;
 
-# Defines patternProperties in an object.
+# Represents a single `patternProperties` rule in a JSON object schema.
 #
-# + pattern - Regular expression for the field name
-# + value - Data type of the respective field
-public type PatternPropertiesElement record {
+# + pattern - A regular expression that the property name must match
+# + value - The type that properties matching the pattern must conform to
+public type PatternPropertiesElement record {|
     string:RegExp pattern;
     typedesc<json> value;
-};
+|};
 
-# The annotation is used to specify patternProperties in an object.
-public annotation record {PatternPropertiesElement[] value;} PatternProperties on type;
+# A container for multiple `patternProperties` rules.
+#
+# + value - The list of `patternProperties` rules (each with a pattern and type)
+public type PatternPropertiesElements record {|
+    PatternPropertiesElement[] value;
+|};
+
+# Annotation used to define `patternProperties` constraints on object types.
+public annotation PatternPropertiesElements PatternProperties on type;
 
 # Defines additionalProperties in an object.
 #
