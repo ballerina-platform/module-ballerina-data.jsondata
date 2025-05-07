@@ -79,7 +79,7 @@ public type ObjectValidationRec record {|
 # The annotation is used to specify validation constraints for object type.
 public annotation ObjectValidationRec ObjectValidation on type;
 
-# Defines a dependent schema.
+# Defines a dependentSchema.
 #
 # + value - The dependent Sub Schema
 public type DependentSchemaRec record {|
@@ -89,9 +89,9 @@ public type DependentSchemaRec record {|
 # The annotation is used to specify a dependent schema.
 public annotation DependentSchemaRec DependentSchema on record field;
 
-# Defines the dependent Required fields.
+# Defines the dependentRequired fields.
 #
-# + value - The dependent Required fields
+# + value - The dependentRequired fields
 public type DependentRequiredRec record {|
     string[] value;
 |};
