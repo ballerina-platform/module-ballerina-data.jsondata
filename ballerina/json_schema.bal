@@ -79,7 +79,7 @@ public type ObjectValidationRec record {|
 # The annotation is used to specify validation constraints for object type.
 public annotation ObjectValidationRec ObjectValidation on type;
 
-# Defines a dependentSchema.
+# Defines a `dependentSchema`.
 #
 # + value - The dependent Sub Schema
 public type DependentSchemaRec record {|
@@ -89,7 +89,7 @@ public type DependentSchemaRec record {|
 # The annotation is used to specify a dependent schema.
 public annotation DependentSchemaRec DependentSchema on record field;
 
-# Defines the dependentRequired fields.
+# Defines the `dependentRequired` fields.
 #
 # + value - The dependentRequired fields
 public type DependentRequiredRec record {|
@@ -118,12 +118,12 @@ public type PatternPropertiesElements record {|
 # Annotation used to define `patternProperties` constraints on object types.
 public annotation PatternPropertiesElements PatternProperties on type;
 
-# Defines additionalProperties in an object.
+# Defines `additionalProperties` in an object.
 #
 # + value - Data type of the respective field
 public type AdditionalPropertiesRec record {|
     typedesc<json> value;
 |};
 
-# The annotation is used to specify additionalProperties in an object.
+# The annotation is used to specify `additionalProperties` in an object.
 public annotation AdditionalPropertiesRec AdditionalProperties on type;
