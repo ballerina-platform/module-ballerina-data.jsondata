@@ -15,7 +15,7 @@
 // under the License.
 
 # Defines constraints for JSON schema string type.
-public type JsonStringConstriants record {|
+public type StringConstraintsConfig record {|
     # The maximum number of characters allowed in the string.
     int:Unsigned32 maxLength?;
     # The minimum number of characters required in the string.
@@ -27,10 +27,10 @@ public type JsonStringConstriants record {|
 |};
 
 # The annotation is used to specify validation constraints for string type.
-public annotation JsonStringConstriants StringConstraints on type;
+public annotation StringConstraintsConfig StringConstraints on type;
 
 # Defines constraints for JSON schema number type.
-public type JsonNumberConstraints record {|
+public type NumberConstraintsConfig record {|
     # The inclusive upper bound of the constrained type.
     int|float|decimal maximum?;
     # The inclusive lower bound of the constrained type.
@@ -44,10 +44,10 @@ public type JsonNumberConstraints record {|
 |};
 
 # The annotation is used to specify validation constraints for number type.
-public annotation JsonNumberConstraints NumberConstriants on type;
+public annotation NumberConstraintsConfig NumberConstraints on type;
 
 # Defines constraints for JSON Schema array type.
-public type JsonArrayConstraints record {|
+public type ArrayConstraintsConfig record {|
     # The minimum number of items required in the array.
     int:Unsigned32 minItems = 0;
     # The maximum number of items allowed in the array.
@@ -65,10 +65,10 @@ public type JsonArrayConstraints record {|
 |};
 
 # The annotation is used to specify validation constraints for array type.
-public annotation JsonArrayConstraints ArrayConstraints on type;
+public annotation ArrayConstraintsConfig ArrayConstraints on type;
 
 # Defines constraints for JSON Schema object type.
-public type JsonObjectConstraints record {|
+public type ObjectConstraintsConfig record {|
     # The maximum number of properties allowed in the object.
     int:Unsigned32 maxProperties?;
     # The minimum number of properties required in the object.
@@ -78,18 +78,18 @@ public type JsonObjectConstraints record {|
 |};
 
 # The annotation is used to specify validation constraints for object type.
-public annotation JsonObjectConstraints ObjectConstraints on type;
+public annotation ObjectConstraintsConfig ObjectConstraints on type;
 
-# Defines a `dependentSchema`.
+# Defines a dependent Schema.
 public type DependentSchemaConfig record {|
-    # The dependent Sub Schema
+    # The dependent sub Schema
     typedesc<json> value;
 |};
 
 # The annotation is used to specify a dependent schema.
 public annotation DependentSchemaConfig DependentSchema on record field;
 
-# Defines the `dependentRequired` fields.
+# Defines the fields dependent required on other fields.
 public type DepenedentRequiredConfig record {|
     # The dependentRequired fields
     string|string[] value;
@@ -98,7 +98,7 @@ public type DepenedentRequiredConfig record {|
 # The annotation is used to specify dependent Required fields.
 public annotation DepenedentRequiredConfig DependentRequired on record field;
 
-# Represents a single `patternProperties` rule in a JSON object schema.
+# Represents a single patternProperties rule in a JSON object schema.
 public type PatternPropertiesElement record {|
     # A regular expression that the property name must match
     string:RegExp pattern;
@@ -106,20 +106,20 @@ public type PatternPropertiesElement record {|
     typedesc<json> value;
 |};
 
-# A container for multiple `patternProperties` rules.
+# A container for multiple patternProperties rules.
 public type PatternPropertiesElements record {|
-    # The list of `patternProperties` rules (each with a pattern and type)
+    # The list of patternProperties rules (each with a pattern and type)
     PatternPropertiesElement|PatternPropertiesElement[] value;
 |};
 
-# Annotation used to define `patternProperties` constraints on object types.
+# Annotation used to define patternProperties constraints on object types.
 public annotation PatternPropertiesElements PatternProperties on type;
 
-# Defines `additionalProperties` in an object.
+# Defines data type of the additional properties.
 public type AdditionalPropertiesConfig record {|
     # Data type of the respective field
     typedesc<json> value;
 |};
 
-# The annotation is used to specify `additionalProperties` in an object.
+# The annotation is used to specify additionalProperties in an object.
 public annotation AdditionalPropertiesConfig AdditionalProperties on type;
