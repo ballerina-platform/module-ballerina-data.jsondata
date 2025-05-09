@@ -80,7 +80,7 @@ public type ObjectConstraintsConfig record {|
 # The annotation is used to specify validation constraints for object type.
 public annotation ObjectConstraintsConfig ObjectConstraints on type;
 
-# Defines a dependent Schema.
+# Defines a dependent sub Schema in an object field.
 public type DependentSchemaConfig record {|
     # The dependent sub Schema
     typedesc<json> value;
@@ -91,7 +91,7 @@ public annotation DependentSchemaConfig DependentSchema on record field;
 
 # Defines the fields dependent required on other fields.
 public type DepenedentRequiredConfig record {|
-    # The dependentRequired fields
+    # The dependent required field/fields
     string|string[] value;
 |};
 
