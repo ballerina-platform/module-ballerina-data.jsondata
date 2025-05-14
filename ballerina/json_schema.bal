@@ -93,13 +93,13 @@ public type DependentSchemaConfig record {|
 public annotation DependentSchemaConfig DependentSchema on record field;
 
 # The configuration for fields dependent required on other fields.
-public type DepenedentRequiredConfig record {|
+public type DependentRequiredConfig record {|
     # The dependent required field/fields
     string|string[] value;
 |};
 
 # The annotation is used to specify dependent required fields.
-public annotation DepenedentRequiredConfig DependentRequired on record field;
+public annotation DependentRequiredConfig DependentRequired on record field;
 
 # Represents a single pattern property rule in a JSON object schema.
 public type PatternPropertiesElement record {|
