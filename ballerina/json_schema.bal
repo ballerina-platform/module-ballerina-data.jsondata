@@ -14,94 +14,94 @@
 // specific language governing permissions and limitations
 // under the License.
 
-# The configuration for JSON schema string type constraints.
+# The configuration for JSON string type constraints
 public type StringConstraintsConfig record {|
-    # The maximum number of characters allowed in the string.
+    # The maximum number of characters allowed in the string
     int:Unsigned32 maxLength?;
-    # The minimum number of characters required in the string.
+    # The minimum number of characters required in the string
     int:Unsigned32 minLength?;
-    # A regular expression that the string must match.
+    # A regular expression that the string must match
     string:RegExp pattern?;
-    # The format that the string must adhere to (e.g., email, date-time).
+    # The format that the string must adhere to (e.g., email, date-time)
     string format?;
 |};
 
-# The annotation is used to specify validation constraints for string type.
+# Annotation used to specify validation constraints for JSON string type
 public annotation StringConstraintsConfig StringConstraints on type;
 
-# The configuration for JSON schema number type constraints.
+# The configuration for JSON number type constraints
 public type NumberConstraintsConfig record {|
-    # The inclusive upper bound of the constrained type.
+    # The inclusive upper bound of the number
     int|float|decimal maximum?;
-    # The inclusive lower bound of the constrained type.
+    # The inclusive lower bound of the number
     int|float|decimal minimum?;
-    # The exclusive upper bound of the constrained type.
+    # The exclusive upper bound of the number
     int|float|decimal exclusiveMaximum?;
-    # The exclusive lower bound of the constrained type.
+    # The exclusive lower bound of the number
     int|float|decimal exclusiveMinimum?;
-    # The number must be a multiple of this value.
+    # The number must be a multiple of this value
     int|float|decimal multipleOf?;
 |};
 
-# The annotation is used to specify validation constraints for number type.
+# Annotation used to specify validation constraints for JSON number type
 public annotation NumberConstraintsConfig NumberConstraints on type;
 
-# The configuration for JSON Schema array type constraints.
+# The configuration for JSON array type constraints
 public type ArrayConstraintsConfig record {|
-    # The minimum number of items required in the array.
+    # The minimum number of items required in the array
     int:Unsigned32 minItems = 0;
-    # The maximum number of items allowed in the array.
+    # The maximum number of items allowed in the array
     int:Unsigned32 maxItems?;
-    # Specifies whether all items in the array must be unique.
-    boolean uniqueItems?;
-    # Specifies a schema that a specific number of items in the array must match.
+    # Specifies whether all items in the array must be unique
+    boolean uniqueItems = false;
+    # Specifies a schema that a specific number of items in the array must match
     record {|
-        # The minimum number of items required in the array that satisfies the schema.
+        # The minimum number of items required in the array that satisfies the schema
         int:Unsigned32 minContains = 0;
-        # The maximum number of items allowed in the array that satisfies the schema.
+        # The maximum number of items allowed in the array that satisfies the schema
         int:Unsigned32 maxContains?;
-        # The schema that items in the array must match.
+        # The schema that items in the array must match
         typedesc<json> value;
     |} contains?;
-    # Specifies a schema for items that are not evaluated by contains.
+    # Specifies a schema for items that are not evaluated by contains
     typedesc<json> unevaluatedItems?;
 |};
 
-# The annotation is used to specify validation constraints for array type.
+# Annotation used to define validation constraints for JSON array type
 public annotation ArrayConstraintsConfig ArrayConstraints on type;
 
-# The configuration for JSON Schema object type.
+# The configuration for JSON object type constraints
 public type ObjectConstraintsConfig record {|
-    # The maximum number of properties allowed in the object.
+    # The maximum number of properties allowed in the object
     int:Unsigned32 maxProperties?;
-    # The minimum number of properties required in the object.
+    # The minimum number of properties required in the object
     int:Unsigned32 minProperties?;
-    # The schema to validate the names of properties in the object.
+    # The schema to validate the names of properties in the object
     typedesc<json> propertyNames?;
 |};
 
-# The annotation is used to specify validation constraints for object type.
+# Annotation used to define validation constraints for JSON object type
 public annotation ObjectConstraintsConfig ObjectConstraints on type;
 
-# The configuration for a dependent schema in a JSON object field.
+# The configuration for dependent schema in JSON object fields
 public type DependentSchemaConfig record {|
-    # The dependent sub Schema
+    # The dependent sub schema
     typedesc<json> value;
 |};
 
-# The annotation is used to specify a dependent schema.
+# Annotation used to define a dependent schema in JSON object fields
 public annotation DependentSchemaConfig DependentSchema on record field;
 
-# The configuration for fields dependent required on other fields.
+# The configuration for fields dependent required on other fields
 public type DependentRequiredConfig record {|
     # The dependent required field/fields
     string|string[] value;
 |};
 
-# The annotation is used to specify dependent required fields.
+# Annotation used to define dependent required fields in JSON object fields
 public annotation DependentRequiredConfig DependentRequired on record field;
 
-# Represents a single pattern property rule in a JSON object schema.
+# Represents a single pattern property rule in a JSON object schema
 public type PatternPropertiesElement record {|
     # A regular expression that the property name must match
     string:RegExp pattern;
@@ -109,20 +109,20 @@ public type PatternPropertiesElement record {|
     typedesc<json> value;
 |};
 
-# The configuration for multiple pattern property rules.
+# The configuration for multiple pattern property rules
 public type PatternPropertiesElements record {|
     # The list of pattern property rules (each with a pattern and a type)
     PatternPropertiesElement|PatternPropertiesElement[] value;
 |};
 
-# Annotation used to define pattern property constraints on JSON object types.
+# Annotation used to define pattern property constraints on JSON object types
 public annotation PatternPropertiesElements PatternProperties on type;
 
-# The configuration for additional properties.
+# The configuration for additional properties
 public type AdditionalPropertiesConfig record {|
     # Data type of the respective field
     typedesc<json> value;
 |};
 
-# The annotation is used to specify additional properties in a JSON object.
+# Annotation used to define additional properties in a JSON object type
 public annotation AdditionalPropertiesConfig AdditionalProperties on type;
