@@ -126,3 +126,62 @@ public type AdditionalPropertiesConfig record {|
 
 # Annotation used to define additional properties in a JSON object type
 public annotation AdditionalPropertiesConfig AdditionalProperties on type;
+
+# The annotation is used to specify read-only fields.
+public annotation ReadOnly on type;
+
+# The annotation is used to specify write-only fields.
+public annotation WriteOnly on type;
+
+# The configuration for meta data.
+public type MetaDataConfig record {|
+    # The title of the field.
+    string title?;
+    # Examples of the field
+    json[] examples?;
+    # Comments about the field
+    string comment?;
+|};
+
+# The annotation is used to specify meta data.
+public annotation MetaDataConfig MetaData on type;
+
+# The configuration for string encoded data.
+public type StringEncodedDataConfig record {|
+    # The media type of the string encoded data
+    string contentMediaType?;
+    # The encoding of the string encoded data
+    string contentEncoding?;
+    # The schema of the decoded content
+    typedesc<json> contentSchema?;
+|};
+
+# The annotation is used to specify string encoded data.
+public annotation StringEncodedDataConfig StringEncodedData on type;
+
+# The annotation is used to specify allOf.
+public annotation AllOf on type;
+
+# The annotation is used to specify oneOf.
+public annotation OneOf on type;
+
+# The annotation is used to specify anyOf.
+public annotation AnyOf on type;
+
+# The configuration for not.
+public type NotConfig record {|
+    # The schema that items in the array must not match
+    typedesc<json> value;
+|};
+
+# The annotation is used to specify not.
+public annotation NotConfig Not on type;
+
+# The configuration for unevaluated properties.
+public type UnevaluatedPropertiesConfig record {|
+    # The schema that unevaluated field types must match
+    typedesc<json> value;
+|};
+
+# The annotation is used to specify the type of unevaluated properties.
+public annotation UnevaluatedPropertiesConfig UnevaluatedProperties on type;
