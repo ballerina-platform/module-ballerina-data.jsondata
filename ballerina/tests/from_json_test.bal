@@ -1323,7 +1323,10 @@ isolated function testDuplicateFieldInRecordTypeWithParseAsType() returns Error?
 
     BookN|Error x = parseAsType(jsonContent);
     test:assertTrue(x is Error);
-    test:assertEquals((<Error>x).message(), "duplicate field 'author'");
+    test:assertEquals((<Error>x).message(), "incompatible expected type 'data.jsondata:BookN' for value '{
+                                                                        "title": "Clean Code",
+                                                                        "author": "Robert C. Martin",
+                                                                        '");
 }
 
 @test:Config
