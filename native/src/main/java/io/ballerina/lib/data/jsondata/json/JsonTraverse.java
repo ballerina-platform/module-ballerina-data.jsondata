@@ -115,6 +115,9 @@ public class JsonTraverse {
             Type referredType = TypeUtils.getReferredType(type);
             switch (referredType.getTag()) {
                 case TypeTags.RECORD_TYPE_TAG -> {
+                    if (!(json instanceof BMap)) {
+                        throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, json);
+                    }
                     RecordType recordType = (RecordType) referredType;
                     fieldHierarchy.push(JsonCreator.getAllFieldsInRecord(recordType));
                     restType.push(recordType.getRestFieldType());
