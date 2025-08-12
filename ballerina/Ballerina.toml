@@ -1,7 +1,7 @@
 [package]
 org = "ballerina"
 name = "data.jsondata"
-version = "1.1.0"
+version = "1.1.1"
 authors = ["Ballerina"]
 keywords = ["json", "json path", "json-transform", "json transform", "json to json", "json-convert", "json convert"]
 repository = "https://github.com/ballerina-platform/module-ballerina-data.jsondata"
@@ -15,8 +15,8 @@ graalvmCompatible = true
 [[platform.java21.dependency]]
 groupId = "io.ballerina.lib"
 artifactId = "jsondata-native"
-version = "1.1.0"
-path = "../native/build/libs/data.jsondata-native-1.1.0.jar"
+version = "1.1.1"
+path = "../native/build/libs/data.jsondata-native-1.1.1-SNAPSHOT.jar"
 
 [[platform.java21.dependency]]
 path = "./lib/json-path-2.9.0.jar"
