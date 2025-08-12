@@ -277,3 +277,6 @@ type BookN record {
     string author;
 };
 
+type UserResponse record {
+    record {} schemas?;
+};

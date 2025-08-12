@@ -1302,7 +1302,50 @@ isolated function testParseAsTypeNegative4() returns Error? {
 }
 
 @test:Config
+isolated function testParseAsTypeNegative5() returns Error? {
+    json jsonContent = string `{`;
+
+    BookN|Error x = parseAsType(jsonContent);
+    test:assertTrue(x is Error);
+    test:assertEquals((<Error>x).message(), "incompatible expected type 'data.jsondata:BookN' for value '{'");
+}
+
+@test:Config
 isolated function testParseAsTypeNegative6() {
+    json userResponse = {
+        "schemas": [
+            "schema1"
+        ]
+    };
+    UserResponse|Error x = parseAsType(userResponse);
+    test:assertTrue(x is Error);
+    test:assertEquals((<Error>x).message(), "incompatible expected type 'data.jsondata:record {| anydata...; |}' for value '[\"schema1\"]'");
+}
+
+@test:Config
+isolated function testParseAsTypeNegative7() {
+    json userResponse = {
+        "schemas": [
+            "schema1"
+        ]
+    };
+    UserResponse[]|Error x = parseAsType(userResponse);
+    test:assertTrue(x is Error);
+}
+
+@test:Config
+isolated function testParseAsTypeNegative8() {
+    json userResponse = {
+        "schemas": [
+            "schema1"
+        ]
+    };
+    [UserResponse]|Error x = parseAsType(userResponse);
+    test:assertTrue(x is Error);
+}
+
+@test:Config
+isolated function testParseAsTypeNegative() {
     json jsonContent = {
         "street": "Main",
         "city": "Mahar",
@@ -1312,18 +1355,6 @@ isolated function testParseAsTypeNegative6() {
     TestArr3|Error x = parseAsType(jsonContent);
     test:assertTrue(x is Error);
     test:assertEquals((<Error>x).message(), "incompatible value '4' for type 'int' in field 'house'");
-}
-
-@test:Config
-isolated function testDuplicateFieldInRecordTypeWithParseAsType() returns Error? {
-    json jsonContent = string `{
-        "title": "Clean Code",
-        "author": "Robert C. Martin",
-        `;
-
-    BookN|Error x = parseAsType(jsonContent);
-    test:assertTrue(x is Error);
-    test:assertEquals((<Error>x).message(), "duplicate field 'author'");
 }
 
 @test:Config
