@@ -1312,6 +1312,40 @@ isolated function testParseAsTypeNegative5() returns Error? {
 
 @test:Config
 isolated function testParseAsTypeNegative6() {
+    json userResponse = {
+        "schemas": [
+            "schema1"
+        ]
+    };
+    UserResponse|Error x = parseAsType(userResponse);
+    test:assertTrue(x is Error);
+    test:assertEquals((<Error>x).message(), "incompatible expected type 'data.jsondata:record {| anydata...; |}' for value '[\"schema1\"]'");
+}
+
+@test:Config
+isolated function testParseAsTypeNegative7() {
+    json userResponse = {
+        "schemas": [
+            "schema1"
+        ]
+    };
+    UserResponse[]|Error x = parseAsType(userResponse);
+    test:assertTrue(x is Error);
+}
+
+@test:Config
+isolated function testParseAsTypeNegative8() {
+    json userResponse = {
+        "schemas": [
+            "schema1"
+        ]
+    };
+    [UserResponse]|Error x = parseAsType(userResponse);
+    test:assertTrue(x is Error);
+}
+
+@test:Config
+isolated function testParseAsTypeNegative() {
     json jsonContent = {
         "street": "Main",
         "city": "Mahar",

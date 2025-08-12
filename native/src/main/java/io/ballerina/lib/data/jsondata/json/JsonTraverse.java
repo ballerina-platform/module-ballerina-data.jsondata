@@ -135,11 +135,17 @@ public class JsonTraverse {
                             ValueCreator.createRecordValue(type.getPackage(), type.getName()), referredType);
                 }
                 case TypeTags.ARRAY_TAG -> {
+                    if (!(json instanceof BArray)) {
+                        throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, json);
+                    }
                     rootArray = referredType;
                     return traverseMapJsonOrArrayJson(json, ValueCreator.createArrayValue((ArrayType) referredType),
                             referredType);
                 }
                 case TypeTags.TUPLE_TAG -> {
+                    if (!(json instanceof BArray)) {
+                        throw DiagnosticLog.error(DiagnosticErrorCode.INCOMPATIBLE_TYPE, type, json);
+                    }
                     rootArray = referredType;
                     return traverseMapJsonOrArrayJson(json, ValueCreator.createTupleValue((TupleType) referredType),
                             referredType);
