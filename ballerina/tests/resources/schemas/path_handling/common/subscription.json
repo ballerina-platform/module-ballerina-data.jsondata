@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "http://wso2.com/schemas/common/subscription.json",
+  "type": "object",
+  "properties": {
+    "plan": {
+      "type": "string",
+      "enum": ["free", "basic", "premium", "enterprise"]
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "auto_renew": {
+      "type": "boolean"
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["api_access", "advanced_analytics", "priority_support", "custom_integrations"]
+      }
+    }
+  },
+  "required": ["plan", "start_date"]
+}

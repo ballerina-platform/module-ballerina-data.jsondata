@@ -1,0 +1,24 @@
+{
+  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "$id" : "http://wso2.com/schemas/product.json",
+  "type": "object",
+  "properties": {
+    "product_id" : {
+      "type" : "string",
+      "maxLength": 15,
+      "pattern": "^\\d{4}$"
+    },
+    "product_name" : {
+      "type" : "string",
+      "maxLength": 50
+    },
+    "tags" : {
+      "type" : "array",
+      "items" : {
+        "type" : "string",
+        "enum": ["apim", "iam", "integration", "enterprise"]
+      }
+    }
+  },
+  "required": [ "product_id", "product_name", "tags" ]
+}

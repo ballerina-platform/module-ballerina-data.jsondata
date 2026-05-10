@@ -19,14 +19,21 @@
 package io.ballerina.lib.data.jsondata.json;
 
 import io.ballerina.lib.data.jsondata.io.BallerinaByteBlockInputStream;
+import io.ballerina.lib.data.jsondata.json.schema.EvaluationContext;
+import io.ballerina.lib.data.jsondata.json.schema.SchemaJsonParser;
+import io.ballerina.lib.data.jsondata.json.schema.SchemaRegistry;
+import io.ballerina.lib.data.jsondata.json.schema.SchemaTypeParser;
+import io.ballerina.lib.data.jsondata.json.schema.Validator;
 import io.ballerina.lib.data.jsondata.utils.Constants;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticErrorCode;
 import io.ballerina.lib.data.jsondata.utils.DiagnosticLog;
+import io.ballerina.lib.data.jsondata.utils.SchemaParserUtils;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.PredefinedTypes;
 import io.ballerina.runtime.api.types.RecordType;
+import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.utils.JsonUtils;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.utils.TypeUtils;
@@ -42,6 +49,8 @@ import io.ballerina.runtime.api.values.BTypedesc;
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -81,6 +90,105 @@ public class Native {
         } catch (BError e) {
             return e;
         }
+    }
+
+    public static Object validate(Object jsonValue, Object schema) {
+        Object err = null;
+        SchemaTypeParser typeParser = new SchemaTypeParser();
+        SchemaRegistry registry = new SchemaRegistry();
+
+        try {
+            if (schema instanceof BString) {
+                String schemaPath = ((BString) schema).getValue();
+                Object rootJson = SchemaParserUtils.readSchemaFile(schemaPath);
+                if (rootJson instanceof BError) {
+                    return rootJson;
+                }
+
+                Set<URI> currentCallUris = new HashSet<>();
+                SchemaJsonParser rootParser = new SchemaJsonParser(currentCallUris, registry);
+                Object rootSchema = rootParser.parse(rootJson);
+                if (rootSchema instanceof BError) {
+                    return rootSchema;
+                }
+
+                ArrayList<Object> siblings = SchemaParserUtils.readSiblingSchemas(schemaPath);
+                for (Object s : siblings) {
+                    SchemaJsonParser parser = new SchemaJsonParser(currentCallUris, registry);
+                    if (parser.parse(s) instanceof BError parseError) {
+                        return parseError;
+                    }
+                }
+
+                EvaluationContext context = new EvaluationContext(registry);
+                if (!Validator.validate(jsonValue, rootSchema, context)) {
+                    String errorMessage = String.join("\n- ", context.getErrors());
+                    return DiagnosticLog.createJsonError(errorMessage);
+                }
+
+            } else if (schema instanceof BMap || schema instanceof Boolean) {
+                Set<URI> currentCallUris = new HashSet<>();
+                SchemaJsonParser parser = new SchemaJsonParser(currentCallUris, registry);
+                Object parsedSchema = parser.parse(schema);
+                if (parsedSchema instanceof BError) {
+                    return parsedSchema;
+                }
+
+                EvaluationContext context = new EvaluationContext(registry);
+
+                boolean isValid = Validator.validate(jsonValue, parsedSchema, context);
+                if (!isValid) {
+                    String errorMessage = String.join("\n- ", context.getErrors());
+                    err = DiagnosticLog.createJsonError(errorMessage);
+                }
+
+            } else if (schema instanceof BArray schemaArray) {
+                Set<URI> currentCallUris = new HashSet<>();
+                int length = (int) schemaArray.getLength();
+                for (int i = 0; i < length; i++) {
+                    Object s = schemaArray.get(i);
+                    SchemaJsonParser parser = new SchemaJsonParser(currentCallUris, registry);
+                    if (parser.parse(s) instanceof BError parseError) {
+                        return parseError;
+                    }
+                }
+                Object rootSchema = registry.findRootSchema(currentCallUris);
+
+                if (rootSchema instanceof BError) {
+                    return rootSchema;
+                }
+
+                EvaluationContext context = new EvaluationContext(registry);
+
+                if (!Validator.validate(jsonValue, rootSchema, context)) {
+                    String errorMessage = String.join("\n- ", context.getErrors());
+                    return DiagnosticLog.createJsonError(errorMessage);
+                }
+
+            } else if (schema instanceof BTypedesc) {
+                Type type = ((BTypedesc) schema).getDescribingType();
+                Object schemaObj = typeParser.parse(type);
+                if (schemaObj instanceof BError) {
+                    err = schemaObj;
+                } else {
+                    EvaluationContext context = new EvaluationContext();
+                    if (!Validator.validate(jsonValue, schemaObj, context)) {
+                        String errorMessage = String.join("\n- ", context.getErrors());
+                        err = DiagnosticLog.error(
+                            DiagnosticErrorCode.SCHEMA_VALIDATION_FAILED,
+                            "- " + errorMessage);
+                    }
+                }
+            } else {
+                err = DiagnosticLog.createJsonError("invalid schema type: expected string, json, or json[]: " +
+                        TypeUtils.getType(schema).getName());
+            }
+        } catch (BError e) {
+            return e;
+        } catch (Exception e) {
+            err = DiagnosticLog.createJsonError("schema processing error: " + e.getMessage());
+        }
+        return err;
     }
 
     public static Object parseStream(Environment env, BStream json, BMap<BString, Object> options, BTypedesc typed) {

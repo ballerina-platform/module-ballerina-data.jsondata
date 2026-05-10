@@ -82,6 +82,16 @@ public type Options record {
     boolean enableConstraintValidation = true;
 };
 
+# Validate JSON value against the given JSON Schema or Ballerina type.
+#
+# + jsonValue - The `json` input value
+# + schema - The JSON Schema used to validate the `json` input.
+#            This can be passed in as a file path to the schema file, or a `json` value(s) containing the schema content,
+#            or a Ballerina type generated from the json-schema tool which represents a JSON schema.
+# + return - A `jsondata:Error` if validation fails, else returns `nil`
+public isolated function validate(json jsonValue, string|boolean|map<json>|(boolean|map<json>)[]|typedesc<json> schema)
+        returns Error? = @java:Method {'class: "io.ballerina.lib.data.jsondata.json.Native"} external;
+
 # Defines the name of the JSON Object key.
 #
 # + value - The name of the JSON Object key

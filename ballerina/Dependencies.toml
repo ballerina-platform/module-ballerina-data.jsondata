@@ -5,7 +5,7 @@
 
 [ballerina]
 dependencies-toml-version = "2"
-distribution-version = "2201.12.0"
+distribution-version = "2201.12.10"
 
 [[package]]
 org = "ballerina"
@@ -22,7 +22,7 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "data.jsondata"
-version = "1.1.4"
+version = "1.1.5"
 dependencies = [
 	{org = "ballerina", name = "constraint"},
 	{org = "ballerina", name = "file"},
@@ -153,7 +153,7 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "os"
-version = "1.10.1"
+version = "1.10.0"
 scope = "testOnly"
 dependencies = [
 	{org = "ballerina", name = "io"},

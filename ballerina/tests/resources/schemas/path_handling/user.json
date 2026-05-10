@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "http://wso2.com/schemas/user.json",
+  "type": "object",
+  "properties": {
+    "username": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 30,
+      "pattern": "^[a-zA-Z0-9_]+$"
+    },
+    "nickname": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "role": {
+      "type": "string",
+      "enum": ["admin", "moderator", "user", "guest"]
+    },
+    "subscription": {
+      "$ref": "http://wso2.com/schemas/common/subscription.json"
+    },
+    "profile": {
+      "$ref": "#/$defs/profile"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_active": {
+      "type": "boolean"
+    },
+    "preferences": {
+      "type": "object",
+      "properties": {
+        "theme": {
+          "type": "string",
+          "enum": ["light", "dark", "system"]
+        },
+        "language": {
+          "type": "string",
+          "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+        },
+        "notifications": {
+          "type": "boolean"
+        }
+      }
+    }
+  },
+  "required": ["username", "email", "role"],
+  "$defs": {
+    "profile": {
+      "type": "object",
+      "properties": {
+        "avatar": {
+          "type": "string",
+          "format": "uri"
+        },
+        "bio": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "website": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    }
+  }
+}

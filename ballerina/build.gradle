@@ -85,6 +85,7 @@ task updateTomlFiles {
         newConfig = newConfig.replace("@accessors.version@", project.javaAccessorsSmartVersion)
         newConfig = newConfig.replace("@stdlib.constraintnative.version@", stdlibDependentConstraintNativeVersion)
         newConfig = newConfig.replace("@constraint.version@", stdlibDependentConstraintVersion)
+
         ballerinaTomlFile.text = newConfig
 
         def newCompilerPluginToml = compilerPluginTomlFilePlaceHolder.text.replace("@project.version@", project.version)
@@ -137,8 +138,17 @@ build.dependsOn ":${packageName}-native:build"
 build.dependsOn ":${packageName}-compiler-plugin:build"
 build.dependsOn deleteDependencyTomlFiles
 
+task initTestSubmodules {
+    doLast {
+        exec {
+            commandLine 'git', 'submodule', 'update', '--init', '--recursive'
+        }
+    }
+}
+
 test.dependsOn ":${packageName}-native:build"
 test.dependsOn ":${packageName}-compiler-plugin:build"
+test.dependsOn initTestSubmodules
 
 publish.dependsOn build
 publishToMavenLocal.dependsOn build
