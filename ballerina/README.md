@@ -2,7 +2,7 @@
 
 This module provides APIs to convert JSON data — as a Ballerina JSON value, string, byte array, or stream — into native Ballerina types, with support for selective conversion via projection.
 
-## Features
+### Key Features
 
 - **Versatile JSON Data Input**: Accept JSON data as a ballerina JSON value, a string, byte array, or a stream and convert it into a subtype of anydata.
 - **JSON to anydata Value Conversion**: Transform JSON data into expected type which is subtype of anydata.
