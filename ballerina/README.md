@@ -1,8 +1,8 @@
-# Ballerina JSON Data Library
+## Overview
 
-The Ballerina JSON Data Library is a comprehensive toolkit designed to facilitate the handling and manipulation of JSON data within Ballerina applications. It streamlines the process of converting JSON data to native Ballerina data types, enabling developers to work with JSON content seamlessly and efficiently.
+This module provides APIs to convert JSON data — as a Ballerina JSON value, string, byte array, or stream — into native Ballerina types, with support for selective conversion via projection.
 
-## Features
+### Key Features
 
 - **Versatile JSON Data Input**: Accept JSON data as a ballerina JSON value, a string, byte array, or a stream and convert it into a subtype of anydata.
 - **JSON to anydata Value Conversion**: Transform JSON data into expected type which is subtype of anydata.
