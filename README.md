@@ -7,7 +7,9 @@
 [![GitHub Last Commit](https://img.shields.io/github/last-commit/ballerina-platform/module-ballerina-data.jsondata.svg)](https://github.com/ballerina-platform/module-ballerina-data.jsondata/commits/master)
 [![Github issues](https://img.shields.io/github/issues/ballerina-platform/ballerina-standard-library/module/data.jsondata.svg?label=Open%20Issues)](https://github.com/ballerina-platform/ballerina-standard-library/labels/module%2Fdata.jsondata)
 
-The Ballerina JSON Data Library is a comprehensive toolkit designed to facilitate the handling and manipulation of JSON data within Ballerina applications. It streamlines the process of converting JSON data to native Ballerina data types, enabling developers to work with JSON content seamlessly and efficiently.
+## Overview
+
+This module provides APIs to convert JSON data — as a Ballerina JSON value, string, byte array, or stream — into native Ballerina types, with support for selective conversion via projection.
 
 ## Features
 
@@ -260,7 +262,7 @@ Execute the commands below to build from source.
 
 ## Contributing to Ballerina
 
-As an open source project, Ballerina welcomes contributions from the community.
+As an open-source project, Ballerina welcomes contributions from the community.
 
 For more information, go to the [contribution guidelines](https://github.com/ballerina-platform/ballerina-lang/blob/master/CONTRIBUTING.md).
 
