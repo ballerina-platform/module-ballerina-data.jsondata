@@ -15,7 +15,7 @@ graalvmCompatible = true
 
 [[platform.java21.dependency]]
 groupId = "io.ballerina.lib"
-artifactId = "jsondata-native"
+artifactId = "data.jsondata-native"
 version = "@toml.version@"
 path = "../native/build/libs/data.jsondata-native-@project.version@.jar"
 
