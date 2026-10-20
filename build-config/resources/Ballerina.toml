@@ -3,7 +3,7 @@ org = "ballerina"
 name = "data.jsondata"
 version = "@toml.version@"
 authors = ["Ballerina"]
-keywords = ["json", "json path", "json-transform", "json transform", "json to json", "json-convert", "json convert", "Type/Library", "Area/Built-in", "Name/JSON Data"]
+keywords = ["json", "json path", "json-transform", "json transform", "json to json", "json-convert", "json convert", "Type/Library", "Area/Data Formats & Utilities", "Name/JSON Data"]
 repository = "https://github.com/ballerina-platform/module-ballerina-data.jsondata"
 icon = "icon.png"
 license = ["Apache-2.0"]
@@ -15,7 +15,7 @@ graalvmCompatible = true
 
 [[platform.java21.dependency]]
 groupId = "io.ballerina.lib"
-artifactId = "jsondata-native"
+artifactId = "data.jsondata-native"
 version = "@toml.version@"
 path = "../native/build/libs/data.jsondata-native-@project.version@.jar"
 
